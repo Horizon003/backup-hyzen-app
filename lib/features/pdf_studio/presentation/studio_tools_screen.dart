@@ -143,7 +143,9 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
       final first = int.parse(match.group(1)!);
       final last = int.tryParse(match.group(2) ?? '') ?? first;
       if (first < 1 || last > count || last < first) throw const FormatException('Page range is outside this PDF.');
-      for (var page = first; page <= last; page++) result.add(page - 1);
+      for (var page = first; page <= last; page++) {
+        result.add(page - 1);
+      }
     }
     return result.toList()..sort();
   }
@@ -217,8 +219,11 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
                 trailing: widget.tool == StudioTool.merge || widget.tool == StudioTool.images
                     ? IconButton(icon: const Icon(Icons.close), tooltip: 'Remove file', onPressed: _busy ? null : () async {
                         final updated = [..._sources]..removeAt(index);
-                        if (updated.isEmpty) setState(() { _sources.clear(); _pages.clear(); });
-                        else await _work(() => _addPaths(updated, replace: true));
+                        if (updated.isEmpty) {
+                          setState(() { _sources.clear(); _pages.clear(); });
+                        } else {
+                          await _work(() => _addPaths(updated, replace: true));
+                        }
                       }) : null,
               ),
           ],
@@ -288,8 +293,11 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
                 ]) : Wrap(children: [
                   IconButton(icon: const Icon(Icons.close), tooltip: 'Remove file', onPressed: _busy ? null : () async {
                     final updated = [..._sources]..removeAt(i);
-                    if (updated.isEmpty) setState(() { _sources.clear(); _pages.clear(); });
-                    else await _work(() => _addPaths(updated, replace: true));
+                    if (updated.isEmpty) {
+                      setState(() { _sources.clear(); _pages.clear(); });
+                    } else {
+                      await _work(() => _addPaths(updated, replace: true));
+                    }
                   }),
                   const Icon(Icons.drag_handle),
                 ]),
