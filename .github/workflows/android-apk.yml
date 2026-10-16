@@ -1,0 +1,58 @@
+name: Build signed Hyzen APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract source
+        run: unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Restore owner signing key
+        working-directory: hyzen_flutter
+        env:
+          KEYSTORE_BASE64: ${{ secrets.HYZEN_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.HYZEN_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.HYZEN_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.HYZEN_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS"
+          mkdir -p android/signing
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/signing/hyzen-release.jks
+          chmod 600 android/signing/hyzen-release.jks
+          printf 'storeFile=signing/hyzen-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > android/key.properties
+          chmod 600 android/key.properties
+      - run: flutter pub get
+        working-directory: hyzen_flutter
+      - run: flutter analyze
+        working-directory: hyzen_flutter
+        continue-on-error: true
+      - run: flutter test
+        working-directory: hyzen_flutter
+        continue-on-error: true
+      - run: flutter build apk --release
+        working-directory: hyzen_flutter
+      - name: Identify artifact
+        run: sha256sum hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk > hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PharmD_With_Hyzen_1.3.3_signed
+          path: |
+            hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk
+            hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
