@@ -1,0 +1,21 @@
+# PHARM D WITH HYZEN
+
+Private Android app build repository.
+
+## Current release
+
+- App version: **1.3.3+7** (`com.hyzen.pharmd`).
+- Verified build: GitHub Actions run **38841171153**.
+- Flutter **3.35.4**, Dart **3.9.2**, JDK **17**.
+- Analysis: no issues. Tests: **62 passed**.
+- Signed release APK built successfully. Android API 35 emulator install and startup check passed.
+- APK SHA256: `813ab4af12eea5015f393cd82a1745316cbf4f4a7e5d67bf806e4807d71c9f2b`.
+- Public signing certificate SHA256: `3fd902d131ae56d8de4792c9f5953759e2b375e32bcad8f57f7ef5c0ab887f83` (same as the 1.3.0 APK).
+
+## Source and builds
+
+Extract `PharmD_With_Hyzen_Source_1.3.3.zip` to get the complete project. The root `lib/` and `android/` files are the compiler corrections applied during the verified build; the final source ZIP now includes those same code changes directly. The root workflow extracts the ZIP, applies the checked-in corrections, then analyzes, tests, builds and runs an emulator install check.
+
+Use Actions → **Build signed Hyzen APK** → **Run workflow**. The original production signing secrets are already configured. Never commit keystores or passwords. Keep the independent owner signing backup.
+
+For subsequent releases update the project version/build number and keep the ZIP and any checked-in correction files consistent. Review `hyzen_flutter/docs/VALIDATION_1_3_3.md` and `PDF_STUDIO_IMPLEMENTATION_STATUS.md` inside the source archive. The install check verifies startup, not a complete signed-in or real-phone acceptance run.
