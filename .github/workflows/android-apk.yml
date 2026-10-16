@@ -43,13 +43,11 @@ jobs:
           chmod 600 android/key.properties
       - run: flutter pub get
         working-directory: hyzen_flutter
-      - run: flutter analyze
+      - run: flutter analyze --no-pub
         working-directory: hyzen_flutter
-        continue-on-error: true
-      - run: flutter test
+      - run: flutter test --no-pub --reporter expanded
         working-directory: hyzen_flutter
-        continue-on-error: true
-      - run: flutter build apk --release
+      - run: flutter build apk --release --no-pub
         working-directory: hyzen_flutter
       - name: Identify artifact
         run: sha256sum hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk > hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
