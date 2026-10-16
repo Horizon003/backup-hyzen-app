@@ -15,6 +15,7 @@ jobs:
         run: |
           unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
           cp -a lib/. hyzen_flutter/lib/
+          cp -a android/. hyzen_flutter/android/
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
