@@ -1,0 +1,56 @@
+name: Deploy Hyzen web preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/web-preview.yml'
+      - 'PharmD_With_Hyzen_Source_1.3.3.zip'
+      - 'lib/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract source
+        run: |
+          unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
+          cp -a lib/. hyzen_flutter/lib/
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: hyzen_flutter
+      - name: Build browser preview
+        run: flutter build web --release --no-pub --base-href "/pharm-d-with-hyzen/"
+        working-directory: hyzen_flutter
+      - name: Add SPA fallback
+        run: cp hyzen_flutter/build/web/index.html hyzen_flutter/build/web/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: hyzen_flutter/build/web
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy preview
+        id: deployment
+        uses: actions/deploy-pages@v4
