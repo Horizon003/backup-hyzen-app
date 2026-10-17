@@ -1,9 +1,9 @@
-name: Hyzen 1.4 build and preview
+name: Hyzen 1.4.1 scan and PDF build
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['updates_1_4_0.json', '.github/workflows/release14.yml']
+    paths: ['updates_1_4_0.json', 'updates_1_4_1.json', '.github/workflows/release14.yml']
 permissions:
   contents: read
   pages: write
@@ -25,7 +25,9 @@ jobs:
           import json
           from pathlib import Path
           root=Path('hyzen_flutter').resolve()
-          for rel, text in json.loads(Path('updates_1_4_0.json').read_text()).items():
+          changes=json.loads(Path('updates_1_4_0.json').read_text())
+          changes.update(json.loads(Path('updates_1_4_1.json').read_text()))
+          for rel, text in changes.items():
               target=(root/rel).resolve()
               if not target.is_relative_to(root) or rel.startswith('android/signing') or rel=='android/key.properties':
                   raise ValueError('Invalid patch target')
@@ -36,6 +38,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk/ndk/27.0.12077973
+            /usr/local/lib/android/sdk/cmake/3.22.1
+          key: hyzen-android-native-sdk-v1
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.4'
@@ -56,7 +65,7 @@ jobs:
         working-directory: hyzen_flutter
       - uses: actions/upload-artifact@v4
         with:
-          name: Hyzen_1.4_UI_QA
+          name: Hyzen_1.4.1_UI_QA
           path: hyzen_flutter/qa/*.png
           if-no-files-found: error
       - name: Benchmark original Drive file IDs
@@ -68,7 +77,7 @@ jobs:
       - name: Package updated source without signing credentials
         run: |
           cd hyzen_flutter
-          zip -qr ../PharmD_With_Hyzen_Source_1.4.0.zip . -x '.dart_tool/*' 'build/*' 'android/.gradle/*' 'android/.kotlin/*' 'android/local.properties' 'android/key.properties' 'android/signing/*' 'android/test-signing/*' '*.jks' '*.keystore' '.flutter-plugins*'
+          zip -qr ../PharmD_With_Hyzen_Source_1.4.1.zip . -x '.dart_tool/*' 'build/*' 'android/.gradle/*' 'android/.kotlin/*' 'android/local.properties' 'android/key.properties' 'android/signing/*' 'android/test-signing/*' '*.jks' '*.keystore' '.flutter-plugins*'
       - name: Restore owner signing key
         working-directory: hyzen_flutter
         env:
@@ -85,12 +94,16 @@ jobs:
       - name: Build signed APK
         working-directory: hyzen_flutter
         run: flutter build apk --release --no-pub
+      - name: Build native PDF instrumentation tests
+        working-directory: hyzen_flutter/android
+        run: ./gradlew :app:assembleReleaseAndroidTest
       - uses: actions/upload-artifact@v4
         with:
-          name: Hyzen_1.4.0_signed_and_source
+          name: Hyzen_1.4.1_signed_and_source
           path: |
             hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk
-            PharmD_With_Hyzen_Source_1.4.0.zip
+            hyzen_flutter/build/app/outputs/apk/androidTest/release/*.apk
+            PharmD_With_Hyzen_Source_1.4.1.zip
             hyzen_flutter/qa/drive_benchmark_results.json
           if-no-files-found: error
       - uses: actions/configure-pages@v5
@@ -100,7 +113,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: Hyzen_1.4_diagnostics
+          name: Hyzen_1.4.1_diagnostics
           path: |
             hyzen_flutter/qa/drive_benchmark_results.json
             hyzen_flutter/pubspec.lock
@@ -121,7 +134,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Hyzen_1.4.0_signed_and_source
+          name: Hyzen_1.4.1_signed_and_source
           path: artifact
       - name: Enable KVM
         run: |
@@ -140,8 +153,13 @@ jobs:
             sleep 8
             adb shell pidof com.hyzen.pharmd
             adb logcat -d > launch14-logcat.txt
+            adb install -r artifact/hyzen_flutter/build/app/outputs/apk/androidTest/release/app-release-androidTest.apk
+            adb shell am instrument -w com.hyzen.pharmd.test/androidx.test.runner.AndroidJUnitRunner | tee native-pdf-tests.txt
+            python3 -c "from pathlib import Path; s=Path('native-pdf-tests.txt').read_text(); assert 'OK (' in s and 'FAILURES' not in s, s"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Hyzen_1.4_install_logs
-          path: launch14-logcat.txt
+          name: Hyzen_1.4.1_install_logs
+          path: |
+            launch14-logcat.txt
+            native-pdf-tests.txt
