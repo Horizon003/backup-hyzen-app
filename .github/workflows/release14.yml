@@ -135,7 +135,7 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: |
-            adb install -r artifact/app-release.apk
+            adb install -r artifact/hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk
             adb shell monkey -p com.hyzen.pharmd -c android.intent.category.LAUNCHER 1
             sleep 8
             adb shell pidof com.hyzen.pharmd
