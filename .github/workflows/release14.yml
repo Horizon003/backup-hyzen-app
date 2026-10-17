@@ -52,8 +52,13 @@ jobs:
           dart format lib test
       - run: flutter analyze --no-pub
         working-directory: hyzen_flutter
-      - run: flutter test --no-pub --reporter expanded
+      - run: flutter test --no-pub --reporter expanded --dart-define=HYZEN_CAPTURE_QA=true --update-goldens
         working-directory: hyzen_flutter
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hyzen_1.4_UI_QA
+          path: hyzen_flutter/qa/*.png
+          if-no-files-found: error
       - name: Benchmark original Drive file IDs
         working-directory: hyzen_flutter
         run: python3 qa/drive_benchmark.py --output qa/drive_benchmark_results.json
