@@ -46,7 +46,9 @@ jobs:
       - name: Format and apply standard lint fixes
         working-directory: hyzen_flutter
         run: |
+          dart format lib test
           dart fix --apply
+          dart fix --apply --code=curly_braces_in_flow_control_structures
           dart format lib test
       - run: flutter analyze --no-pub
         working-directory: hyzen_flutter
