@@ -1,9 +1,9 @@
-name: Hyzen 1.4.1 scan and PDF build
+name: Hyzen 1.4.2 compact UI and durable scanner build
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['updates_1_4_0.json', 'updates_1_4_1.json', '.github/workflows/release14.yml']
+    paths: ['updates_1_4_0.json', 'updates_1_4_1.json', 'updates_1_4_2.json', '.github/workflows/release14.yml']
 permissions:
   contents: read
   pages: write
@@ -27,6 +27,7 @@ jobs:
           root=Path('hyzen_flutter').resolve()
           changes=json.loads(Path('updates_1_4_0.json').read_text())
           changes.update(json.loads(Path('updates_1_4_1.json').read_text()))
+          changes.update(json.loads(Path('updates_1_4_2.json').read_text()))
           for rel, text in changes.items():
               target=(root/rel).resolve()
               if not target.is_relative_to(root) or rel.startswith('android/signing') or rel=='android/key.properties':
@@ -66,7 +67,7 @@ jobs:
         working-directory: hyzen_flutter
       - uses: actions/upload-artifact@v4
         with:
-          name: Hyzen_1.4.1_UI_QA
+          name: Hyzen_1.4.2_UI_QA
           path: hyzen_flutter/qa/*.png
           if-no-files-found: error
       - name: Benchmark original Drive file IDs
@@ -78,7 +79,7 @@ jobs:
       - name: Package updated source without signing credentials
         run: |
           cd hyzen_flutter
-          zip -qr ../PharmD_With_Hyzen_Source_1.4.1.zip . -x '.dart_tool/*' 'build/*' 'android/.gradle/*' 'android/.kotlin/*' 'android/local.properties' 'android/key.properties' 'android/signing/*' 'android/test-signing/*' '*.jks' '*.keystore' '.flutter-plugins*'
+          zip -qr ../PharmD_With_Hyzen_Source_1.4.2.zip . -x '.dart_tool/*' 'build/*' 'android/.gradle/*' 'android/.kotlin/*' 'android/local.properties' 'android/key.properties' 'android/signing/*' 'android/test-signing/*' '*.jks' '*.keystore' '.flutter-plugins*'
       - name: Restore owner signing key
         working-directory: hyzen_flutter
         env:
@@ -120,11 +121,11 @@ jobs:
           key: hyzen-android-native-sdk-v1
       - uses: actions/upload-artifact@v4
         with:
-          name: Hyzen_1.4.1_signed_and_source
+          name: Hyzen_1.4.2_signed_and_source
           path: |
             hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk
             hyzen_flutter/build/app/outputs/apk/androidTest/release/*.apk
-            PharmD_With_Hyzen_Source_1.4.1.zip
+            PharmD_With_Hyzen_Source_1.4.2.zip
             hyzen_flutter/qa/drive_benchmark_results.json
           if-no-files-found: error
       - uses: actions/configure-pages@v5
@@ -134,7 +135,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: Hyzen_1.4.1_diagnostics
+          name: Hyzen_1.4.2_diagnostics
           path: |
             hyzen_flutter/qa/drive_benchmark_results.json
             hyzen_flutter/pubspec.lock
@@ -155,7 +156,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Hyzen_1.4.1_signed_and_source
+          name: Hyzen_1.4.2_signed_and_source
           path: artifact
       - name: Enable KVM
         run: |
@@ -178,11 +179,28 @@ jobs:
             adb shell am instrument -w com.hyzen.pharmd.test/androidx.test.runner.AndroidJUnitRunner | tee native-pdf-tests.txt
             adb logcat -d > native-pdf-logcat.txt
             python3 -c "from pathlib import Path; s=Path('native-pdf-tests.txt').read_text(); assert 'OK (' in s and 'FAILURES' not in s, s"
+            adb shell am force-stop com.hyzen.pharmd
+            adb shell am start -W -n com.hyzen.pharmd/.MainActivity -a android.intent.action.VIEW -t application/pdf -d content://com.hyzen.pharmd.updates/shares/external_fixture.pdf
+            sleep 10
+            adb shell uiautomator dump /sdcard/hyzen-external-cold.xml
+            adb pull /sdcard/hyzen-external-cold.xml external-cold.xml
+            adb shell screencap -p /sdcard/hyzen-external-cold.png
+            adb pull /sdcard/hyzen-external-cold.png external-cold.png
+            adb shell am start -W -n com.hyzen.pharmd/.MainActivity -a android.intent.action.VIEW -t application/pdf -d content://com.hyzen.pharmd.updates/shares/external_fixture.pdf
+            sleep 5
+            adb shell uiautomator dump /sdcard/hyzen-external-warm.xml
+            adb pull /sdcard/hyzen-external-warm.xml external-warm.xml
+            adb logcat -d > external-intent-logcat.txt
+            python3 -c "from pathlib import Path; files=['external-cold.xml','external-warm.xml']; [(lambda s: (print(f),exec(\"assert 'external_fixture.pdf' in s and 'Page unavailable' not in s and 'This page could not be found' not in s\")))(Path(f).read_text()) for f in files]"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Hyzen_1.4.1_install_logs
+          name: Hyzen_1.4.2_install_logs
           path: |
             launch14-logcat.txt
             native-pdf-tests.txt
             native-pdf-logcat.txt
+            external-cold.xml
+            external-warm.xml
+            external-cold.png
+            external-intent-logcat.txt
