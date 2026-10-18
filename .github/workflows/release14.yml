@@ -167,11 +167,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: Hyzen_1.4.3_signed_and_source
           path: artifact
-      - uses: actions/checkout@v4
       - name: Restore reader UI verification script
         run: |
           python3 - <<'PY'
