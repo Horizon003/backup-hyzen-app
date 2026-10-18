@@ -40,6 +40,7 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
       - uses: actions/cache@v4
+        id: android_native_cache
         with:
           path: |
             /usr/local/lib/android/sdk/ndk/27.0.12077973
@@ -97,6 +98,14 @@ jobs:
       - name: Build native PDF instrumentation tests
         working-directory: hyzen_flutter/android
         run: ./gradlew :app:assembleReleaseAndroidTest
+      - name: Retain installed Android native SDK for subsequent builds
+        if: always() && steps.android_native_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk/ndk/27.0.12077973
+            /usr/local/lib/android/sdk/cmake/3.22.1
+          key: hyzen-android-native-sdk-v1
       - uses: actions/upload-artifact@v4
         with:
           name: Hyzen_1.4.1_signed_and_source
@@ -153,7 +162,7 @@ jobs:
             sleep 8
             adb shell pidof com.hyzen.pharmd
             adb logcat -d > launch14-logcat.txt
-            adb install -r artifact/hyzen_flutter/build/app/outputs/apk/androidTest/release/app-release-androidTest.apk
+            adb install -r -t artifact/hyzen_flutter/build/app/outputs/apk/androidTest/release/app-release-androidTest.apk
             adb shell am instrument -w com.hyzen.pharmd.test/androidx.test.runner.AndroidJUnitRunner | tee native-pdf-tests.txt
             python3 -c "from pathlib import Path; s=Path('native-pdf-tests.txt').read_text(); assert 'OK (' in s and 'FAILURES' not in s, s"
       - uses: actions/upload-artifact@v4
