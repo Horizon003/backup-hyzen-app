@@ -92,13 +92,22 @@ jobs:
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/signing/hyzen-release.jks
           printf 'storeFile=signing/hyzen-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > android/key.properties
           chmod 600 android/key.properties android/signing/hyzen-release.jks
-      - name: Build signed APK
+      - name: Configure the signed Android release
         working-directory: hyzen_flutter
-        run: flutter build apk --release --no-pub
+        run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          version = re.search(r'^version:\s*(\S+)', Path('pubspec.yaml').read_text(), re.M).group(1)
+          name, code = version.split('+')
+          sdk = os.environ.get('ANDROID_HOME') or os.environ['ANDROID_SDK_ROOT']
+          flutter = os.environ['FLUTTER_ROOT']
+          Path('android/local.properties').write_text(f'sdk.dir={sdk}\nflutter.sdk={flutter}\nflutter.versionName={name}\nflutter.versionCode={code}\n')
+          PY
       - name: Build native PDF instrumentation tests
         working-directory: hyzen_flutter/android
         run: |
-          ./gradlew :app:assembleReleaseAndroidTest :app:assembleRelease
+          ./gradlew :app:assembleReleaseAndroidTest :app:assembleRelease -Ptarget-platform=android-arm,android-arm64,android-x64 -Ptarget=lib/main.dart -Ptree-shake-icons=true
           cp ../build/app/outputs/apk/release/app-release.apk ../build/app/outputs/flutter-apk/app-release.apk
       - name: Retain installed Android native SDK for subsequent builds
         if: always() && steps.android_native_cache.outputs.cache-hit != 'true'
