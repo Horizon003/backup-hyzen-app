@@ -97,7 +97,9 @@ jobs:
         run: flutter build apk --release --no-pub
       - name: Build native PDF instrumentation tests
         working-directory: hyzen_flutter/android
-        run: ./gradlew :app:assembleReleaseAndroidTest
+        run: |
+          ./gradlew :app:assembleReleaseAndroidTest :app:assembleRelease
+          cp ../build/app/outputs/apk/release/app-release.apk ../build/app/outputs/flutter-apk/app-release.apk
       - name: Retain installed Android native SDK for subsequent builds
         if: always() && steps.android_native_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
