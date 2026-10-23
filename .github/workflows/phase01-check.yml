@@ -1,0 +1,61 @@
+name: Hyzen phase 01 review checks
+on:
+  push:
+    branches: [work/hyzen-phase-01]
+    paths: [updates_phase_01.json, .github/workflows/phase01-check.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble current application and isolated phase overlay
+        run: |
+          unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
+          cp -a lib/. hyzen_flutter/lib/
+          cp -a android/. hyzen_flutter/android/
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('hyzen_flutter').resolve()
+          for patch in ['updates_1_4_0.json', 'updates_1_4_1.json', 'updates_1_4_2.json', 'updates_1_4_3.json', 'updates_phase_01.json']:
+              for rel, text in json.loads(Path(patch).read_text()).items():
+                  target = (root / rel).resolve()
+                  if not target.is_relative_to(root) or rel.startswith('android/signing') or rel == 'android/key.properties':
+                      raise ValueError('Invalid patch target')
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_text(text)
+          PY
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: hyzen_flutter
+      - name: Normalize inherited source as in baseline build
+        working-directory: hyzen_flutter
+        run: |
+          dart format lib test
+          dart fix --apply
+          dart fix --apply --code=curly_braces_in_flow_control_structures
+          dart format lib test
+      - run: flutter analyze --no-pub
+        working-directory: hyzen_flutter
+      - name: Unit and widget regression suite
+        working-directory: hyzen_flutter
+        run: flutter test --no-pub --reporter expanded
+      - name: Capture review screens (not a golden comparison)
+        working-directory: hyzen_flutter
+        run: flutter test test/navigation_test.dart --no-pub --dart-define=HYZEN_CAPTURE_QA=true --update-goldens
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hyzen-phase01-review
+          path: |
+            hyzen_flutter/qa/*.png
+            hyzen_flutter/pubspec.lock
+          if-no-files-found: warn
