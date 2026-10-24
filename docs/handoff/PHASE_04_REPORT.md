@@ -31,3 +31,7 @@ This is not a complete Phase 04 scanner. Durable originals currently belong to t
 ## Rollback
 
 Remove updates_phase_04.json from review assembly before any user-data rollout. On devices that have used this overlay, preview paths remain compatible with old code, but old code does not understand the original/transform metadata and can orphan originals. Do not downgrade a live in-progress draft; export/complete it first or retain the new store while rolling back UI. Production assembly does not consume any review overlays. No merge or deployment performed.
+
+## Automated checkpoint
+
+Latest source 879ed6000fb6fee122ccbb0d85252fb0e8356e59, run 40084450549: analyzer, full widget/unit suite and screenshot capture PASS (121 tests in the prior same implementation run 40084276450; latest count verified from job logs separately). The follow-up adds native-platform guards and a 320px history-action regression. Native build/emulator verification is still running; no native test pass claimed. Phase 03 correction run 40083886627 now successfully builds both the Android debug application and instrumentation APK; its emulator step is running. This confirms the original compilation failure was fixed.
