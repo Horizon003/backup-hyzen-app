@@ -15,11 +15,10 @@ Review branch: work/hyzen-phase-01. Draft PR: https://github.com/Horizon003/phar
 
 ## Verification checkpoints
 
-Source52edfc985381888d4eb9af0b0876c4b17c86c9b0, run40127226578: analyzer clean, 124 Dart tests passed; Android debug and test APKs built; Android35 emulator instrumentation **26 tests passed**. This closes the earlier emulator disk blockage and verifies original/crop/export/archive behavior at that source.
-
-Source97cf63f8c3f009416af5d83642e8d3edd53fb445, run40135168896: analyzer, Dart suite and screenshot capture passed for tonal controls, crop loupe and paper/export options. Native verification still running when this report was prepared.
-
-Final batch source b5a84b6cff2dbec163e40c94c9b69f2546c1fc6a additionally includes selection/removal undo, explicit discard and archive isolation. New instrumentation covers tonal pixel change, raw-byte equality, archive/reopen/Undo, all paper/orientation combinations, batch removal and restart. Widget tests exercise export options, cancellation/failure retention, selection/restore and the real decoded corner editor at320px. Final-source CI and generated editor screenshots must be checked before claiming final pass.
+- Latest application code and screenshot-only follow-up080e60028f78a6dd3cb39767e5ac43ab0f2eebc2: run40136098876, clean analysis9.6s and all125 Dart tests PASS38s. Production-font/icon screenshots downloaded, SHA256 verified and visually checked at320px. Both document and controls are visible; crop loupe appears above the mask. These are synthetic-document captures, not camera/device acceptance or golden comparisons.
+- Earlier source97cf63f8c3f009416af5d83642e8d3edd53fb445: run40135168896 built app/test APKs and passed28 Android35 instrumentation tests, including tonal pixel changes, original-byte equality and A4/Letter/Legal portrait/landscape PDF bounds.
+- Batch-removal source5ca3491d163e4f88e12baea7595aa6efebb6db31: run40135369136 ran29 native tests; the new removal/restart test passed but two older tests still expected immediate permanent deletion. Those expectations conflict with the newly implemented removal Undo. This run is FAILED, not a complete native pass.
+- Follow-upaf658df195f42cb4869a3e65e3b3340a432f3a4c updates those tests to verify retention, restart restoration, superseded-batch cleanup and explicit clear; application code is unchanged. Full native rerun is pending. Do not mark the final native gate green until that rerun completes.
 
 ## Remaining acceptance work
 
@@ -30,7 +29,3 @@ Retained risks: cross-channel draft operations use separate workers and still ne
 ## Rollback
 
 All changes are isolated in updates_phase_05.json consumed by the review workflow after earlier overlays. Removing the overlay is only a code rollback; it does not migrate back saved archives or new tonal state. Preserve user originals and archive manifests during any rollback. No merge, deployment or release signing was performed.
-
-## Latest application validation
-
-Application source5322932e1a5ddb42597204f6d9747bd7832d01f1, run40135747793: clean analysis7.7s, all125 Dart tests PASS31s; screenshot capture PASS. Crop loupe screen reviewed at320px: readable layout and corners; first tone screenshot exposed asynchronous image-capture timing, so test-only follow-up080e60028f78a6dd3cb39767e5ac43ab0f2eebc2 waits for the decoded image and loads MaterialIcons. Native application code is unchanged by that follow-up. New-batch Android native verification is still running;26 passed tests refer only to the older52edfc98 checkpoint.
