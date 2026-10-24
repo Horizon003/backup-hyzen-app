@@ -6,8 +6,9 @@ Baseline: e19bf01b63df7dffb419e900eb0fa13bc994b304. Review branch: work/hyzen-ph
 |---|---|
 | 00 | Read-only reconnaissance complete; live rules/device limitations recorded |
 | 01 | Foundation CI PASS (94 tests + analysis); screenshot review partial; device/release acceptance pending |
-| 02 | Gen Z approved; 12 avatars, 5 illustrations, 4 vector dock glyphs integrated; Final CI 40070062288 PASS: analysis, 98 tests and screenshot capture; photo crop/remove and session welcome added; CI 40071150279 PASS, 104 tests; remaining icon/state-motion/device gates open |
-| 03–05 | Proposed; scanner raw-original/draft risks recorded |
+| 02 | Gen Z approved; 12 avatars, 5 illustrations, 4 vector dock glyphs integrated; Final CI 40070062288 PASS: analysis, 98 tests and screenshot capture; photo crop/remove and session welcome added; CI 40071150279 PASS, 104 tests; icon/state software checkpoint PASS (107 tests); device/live-service gates open |
+| 03 | Study/mixed folders/PDF preview and offline hierarchy overlay implemented; CI pending; no production acceptance |
+| 04–05 | Proposed; scanner raw-original/draft risks recorded |
 | 06–07 | Proposed; retain real existing account/content/commerce behavior |
 | 08–10 | Proposed; no quiz backend or routes added; scoring/privacy decisions pending |
 | 11 | Not started; no release authorization or full acceptance |
