@@ -27,3 +27,11 @@ New regressions: mixed files/folders, hidden nodes, deep query IDs, legacy norma
 G1–G5 pending automated and visual review. Prior Phase 02 software checkpoint: run 40072570400 PASS, analyzer clean/107 tests; device/live-service gates remain blocked. The documented independent-work variation allows this reversible Study work without claiming those gates passed.
 
 Rollback: remove updates_phase_03.json from review assembly; original route code is retained and `legacy=1` can inspect the previous hierarchy. Cached previews are disposable; existing offline_docs, download record keys, originals and viewer entry routes remain unchanged. Production workflow does not consume any review overlay.
+
+## Native preview verification added
+
+The existing native page-render implementation is factored into PdfPagePreviewRenderer with identical 1800px default behavior; the same channel accepts an optional maxEdge bound. Study requests 320px, reducing thumbnail raster cost before bytes cross into Dart. New Android instrumentation writes a real two-page red/blue PDF, verifies each page's actual PNG pixels/bounds, rejects an invalid index and checks source bytes unchanged. The existing Android suite remains included.
+
+A separate review-only debug build/emulator job runs after Dart checks. It temporarily sets testBuildType=debug in its workspace, preserves the production signing guard and generates a development key only if no development key is present, for the fresh CI emulator. No owner production key is read or replaced; no release workflow or deployment is triggered. Native/emulator results pending. This does not replace physical-device profiling.
+
+The first widget run had clean analysis and passing model/cache tests but three navigation tests stalled because the helper preloaded only the old parser. It now preloads the new parser in runAsync too, retaining real route/back assertions. Settings also has a separate Clear PDF previews action; tests verify this preserves source PDFs and permits regeneration.
