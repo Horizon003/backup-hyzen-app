@@ -43,3 +43,11 @@ Phase 03 Study/Offline source readiness is documented in PHASE_03_READINESS.md. 
 ## Preservation and rollback
 
 Review workflow alone applies updates_phase_01.json, then updates_phase_02.json and phase02_assets. Production assembly remains untouched. No merge, deployment, backend migration, production signing or live account mutation was performed during this task. Revert/exclude phase-02 overlay and retain all existing IDs/files/keys for rollback. No user-data migration introduced.
+
+## Remaining visual-state implementation
+
+Three additional original 384px alpha WebP illustrations: error, offline/cache and transfer, 46370 bytes total; STATE_ASSET_MANIFEST.json records provenance/hashes. ErrorState uses error art, cache hint uses static offline art with wrapping truthful text, empty Downloads uses transfer art. Full original icon catalog now 32 glyphs on the same 24-unit stroke grid; shared buttons/badges/resource tiles and category chips use a compatibility adapter, retaining existing labels/actions and Material fallback for unmapped utilities. Campus artwork does not enable features.
+
+Download status uses measured received/total bytes, shows genuine 0% distinctly from unknown totals, never trusts legacy progress without a measured total, and only shows downloaded when the existing ready-record contract is met. Byte interpolation is short; state crossfade is status-only; reduced motion is immediate/static. Pause/retry/delete/download controller logic is unchanged. Icon family capture at 16/24/32px in light/dark and status/reduced-motion tests added. CI pending.
+
+Documented execution dependency: after this software checkpoint passes, isolated Study/offline implementation can proceed independently of unavailable physical animation profiling or live profile-sync acceptance. Those acceptance gates remain BLOCKED and prohibit release, without blocking reversible data/UI work that neither changes those services nor activates native scanner defaults. Phase 02 is not labelled fully accepted. The specification explicitly permits completing safe independent work when tools/capabilities are unavailable (START_HERE.md handoff directive).

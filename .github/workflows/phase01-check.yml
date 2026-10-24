@@ -51,7 +51,7 @@ jobs:
         run: flutter test --no-pub --reporter expanded
       - name: Capture review screens (not a golden comparison)
         working-directory: hyzen_flutter
-        run: flutter test test/navigation_test.dart --no-pub --dart-define=HYZEN_CAPTURE_QA=true --update-goldens
+        run: flutter test test/navigation_test.dart test/symbol_state_test.dart --no-pub --dart-define=HYZEN_CAPTURE_QA=true --update-goldens
       - uses: actions/upload-artifact@v4
         if: always()
         with:
