@@ -118,10 +118,16 @@ jobs:
           flutter build apk --debug --target-platform android-x64 --no-pub
           cd android
           ./gradlew :app:assembleDebugAndroidTest --no-daemon
+      - name: Release native build tools before emulator installation
+        working-directory: hyzen_flutter/android
+        run: |
+          ./gradlew --stop
+          rm -rf /usr/local/lib/android/sdk/ndk /usr/local/lib/android/sdk/cmake
+          df -h /
       - name: Verify emulator disk headroom
         run: |
           df -h /
-          python3 -c "import shutil; free=shutil.disk_usage('/').free; print(f'Free bytes before emulator: {free}'); assert free >= 8 * 1024**3, 'Need 8 GiB for emulator image and AVD'"
+          python3 -c "import shutil; free=shutil.disk_usage('/').free; print(f'Free bytes before emulator: {free}'); assert free >= 12 * 1024**3, 'Need 12 GiB for emulator image and minimum userdata'"
       - name: Enable emulator KVM (same setup as existing verification)
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

@@ -25,3 +25,11 @@ Remove updates_phase_05.json from review assembly to restore prior export behavi
 ## Passing combined Dart checkpoint
 
 Source342f10b8d77b4720434006281384f51032cf6c39, run40125517511: analyzer clean (11.3s), all123 tests PASS (38s), screenshot capture PASS. This includes the real-async corner route-result correction, independent corner coordinates at320px and export cancellation/quality/failure retention. Native job120966616621 is queued at this checkpoint; no native export-resolution test pass or complete phase acceptance inferred.
+
+## Editable saved scan follow-up
+
+Successful export now archives immutable originals and the versioned graph/history under a separate private scan_archives/<Studio id> directory before clearing the live draft. Archive publication copies into a staging directory, fsyncs files/manifest and renames the directory; failed backup retains the draft and reports that the PDF was saved. Studio's Android IMAGE_SCAN menu has Edit saved scan, reopening a copy into an empty draft and preserving the old saved PDF. Existing active/pending capture blocks reopening instead of overwriting pages. Deleting a Studio scan attempts archive cleanup after PDF deletion. Legacy scans without archives report unavailability; no lost original is invented.
+
+New native test covers archive, clear, recreation, raw byte equality, persisted geometry/Undo, overwrite protection and archive deletion; widget covers archive channel routing and the existing save test requires archive before clear. Execution pending. Remaining risks: cleanup failure can leave private orphan archives; copied originals increase storage; no OS fault-injection or physical-device validation. Cross-channel native draft serialization still needs hardening. Full Phase04/05 acceptance remains open.
+
+Native run40125517511 built app and instrumentation APK successfully, but the Android35 image still required a minimum7372.80MB userdata partition despite disk-size2048M; boot failed with5783.86MB free. Workflow now stops Gradle and removes no-longer-needed NDK/CMake from the disposable runner after APK assembly, then requires12GiB before installing emulator images. No production SDK/workflow changed.
