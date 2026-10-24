@@ -21,3 +21,7 @@ Phase04 custom camera, YUV live detection, confidence smoothing, auto/manual cap
 ## Rollback
 
 Remove updates_phase_05.json from review assembly to restore prior export behavior. Keep the Phase04 graph-aware store for any already-created quad drafts. Production workflow/main remain unchanged; no release/signing/deployment operation performed.
+
+## Passing combined Dart checkpoint
+
+Source342f10b8d77b4720434006281384f51032cf6c39, run40125517511: analyzer clean (11.3s), all123 tests PASS (38s), screenshot capture PASS. This includes the real-async corner route-result correction, independent corner coordinates at320px and export cancellation/quality/failure retention. Native job120966616621 is queued at this checkpoint; no native export-resolution test pass or complete phase acceptance inferred.
