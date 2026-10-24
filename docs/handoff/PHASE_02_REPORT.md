@@ -25,3 +25,13 @@ Subsequent changes add custom dock glyphs/safe welcome and restrict selectable c
 Final CI: https://github.com/Horizon003/pharm-d-with-hyzen/actions/runs/40070062288 . Earlier formal concept and original legacy picker candidates are superseded by the approved Gen Z direction. Legacy images are rendering compatibility only, absent from selectable choices.
 
 Final artifact 12550776815 SHA256 cd71a4a424b804c39d6db8cacee9de63133b25e54dd37edeb0f4a90e20153091 verified. Final light Edit Profile and dark Home captures reviewed: 12 Gen Z options only, new vector dock, new art and legible greeting.
+
+## Photo and session follow-up
+
+Photo picker now opens a bounded-resolution local crop/preview before upload; cancellation preserves existing selection and sends no upload. Zoom and horizontal/vertical sliders use the same source rectangle for preview and 512px PNG export. Decoded image is capped at 1600px longest edge; inputs over 20MB rejected. Pending image resources are disposed by the sheet after its dismissal animation. Existing upload endpoint/preset reused, no new external service.
+
+Remove photo/avatar uses the explicit empty-string photoUrl sentinel, preserving legacy null-to-Auth fallback while rendering initials after removal. Changes are draft-only until the existing Save action persists them through PendingProfileStore. Auth photo metadata is cleared when a non-HTTPS avatar/removal is saved. Avatar selection/removal/Save are guarded during photo processing. Provider-specific live sync remains unverified.
+
+Welcome artwork now claims once per authenticated UID session after profile readiness. Route remounts do not replay; sign-out/account change replaces playback state. Reduced motion remains immediate; Skip animation is available during the short entrance; its timer is cancelled on disposal. Nothing blocks Study navigation.
+
+New tests exercise crop bounds/control extremes, explicit removal serialization, cancel behavior, one-time session claims, profile readiness, skip and route remount. Validation pending. Remaining original icon categories and error/download motion still open; device performance/TalkBack and live backend validation remain unperformed. Phase 03 has NOT started while these phase-02 gates remain incomplete.
