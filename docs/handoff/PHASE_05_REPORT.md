@@ -1,37 +1,36 @@
-# Phase 05 — export groundwork paired with Phase 04 review
+# Phase 05 — scan editing, page review and configurable export
 
-User requested two phases in one go. This checkpoint advances Phase 04 manual perspective editing and Phase 05 export together. It does not mark either whole phase complete. Previous native checks remain unverified; independent reversible review/export work is explicitly isolated on the draft branch.
+Review branch: work/hyzen-phase-01. Draft PR: https://github.com/Horizon003/pharm-d-with-hyzen/pull/1. Main and the production release workflow are unchanged.
 
-## Implemented candidate
+## Implemented
 
-Existing Save PDF opens a compact export sheet with filename, A4/workspace destination and optional higher-quality raster export (up to 2600px, standard up to 1800px). No unsupported cloud/OCR controls. Cancel does not start export or clear a draft.
+- Four independent perspective corners, convexity/bounds checks and a 2.5x crop loupe opposite the active corner. Crop preview remains based on geometry before tonal filters.
+- Original, Colour, Gray, B & W and Enhance presets; brightness and contrast sliders; before/after comparison and tone reset. Enhance is a deterministic contrast/brightness preset, not AI, OCR or automatic shadow removal.
+- Native rendering, preview and high-quality export reconstruct the same reversible graph from immutable imported bytes. Tonal values persist through app restart and saved-scan archive/reopen. Earlier graph records default to neutral tone. Undo/Reset remain available.
+- Multi-page selection, select-all and batch removal. Last removed batch and original insertion indices persist in the same preferences commit as the surviving page list. Restore works after recreation. Only one removed batch is retained; a later removal replaces it, and explicit discard clears it. Export archives only surviving pages.
+- Explicit discard confirmation protects accidental clearing. Opening a saved archive requires no live pages, pending capture or removal history, preventing accidental mixing of different scans.
+- Export sheet: editable filename, standard/high quality (1800/2600 px upper bound), A4/US Letter/US Legal, per-page automatic orientation or forced portrait/landscape, and optional margins. Whole image is fitted without cropping; zero margins does not stretch or guarantee full-bleed coverage of a different aspect ratio.
+- PDFBox writes one page image at a time with temporary-file spill. Export validates page identities, conservative free space and final PDF page count. History import and editable archive finish before the active draft is cleared. Export-sheet cancellation starts no operation; failed export preserves the draft.
+- Separate private saved archives preserve original image bytes and graph/history. Edit saved scan creates a new editable copy and subsequent save produces a new PDF. Older scans without archived originals report unavailability.
 
-Native scan export validates page identities against the current draft, checks a conservative temporary storage budget, reconstructs each page from the immutable imported image with its stored crop/rotate/quad/filter graph, and exports through the existing PDFBox A4 composer. It processes one bitmap at a time; temporary reconstructed JPEGs are removed on success or failure. The existing generic images-to-PDF API retains defaults. High quality increases the decoding bound and JPEG PDF compression quality; it cannot restore detail missing from a legacy or upstream processed image. Decode sampling may produce a raster smaller than the bound.
+## Verification checkpoints
 
-Existing page-count validation, private workspace atomic import and history commit occur before draft clear. Failed export leaves original files/metadata intact. Successful export still clears draft originals; long-lived editable originals/reopen are not implemented. Existing viewer retains Open/Share/Save to device behaviors; no new saved-success screen claimed.
+Source52edfc985381888d4eb9af0b0876c4b17c86c9b0, run40127226578: analyzer clean, 124 Dart tests passed; Android debug and test APKs built; Android35 emulator instrumentation **26 tests passed**. This closes the earlier emulator disk blockage and verifies original/crop/export/archive behavior at that source.
 
-## Tests and evidence
+Source97cf63f8c3f009416af5d83642e8d3edd53fb445, run40135168896: analyzer, Dart suite and screenshot capture passed for tonal controls, crop loupe and paper/export options. Native verification still running when this report was prepared.
 
-Adds export sheet cancel, quality argument and failed-export retention widget coverage. Native tests verify actual PDF embedded image resolution differs for a 2400px square original (standard1200/high2400), original bytes unchanged, reopen/page count and retained draft. Native tests require CI execution; not yet passed. Four-corner widget decode wait passed loading but route result assertion failed in run40125145884; route completion is now flushed in the real async zone used to launch it. Recheck pending. Analyzer previously clean; 121 preexisting tests passed alongside the failing added corner test. Do not describe latest suite as green until rerun passes.
+Final batch source b5a84b6cff2dbec163e40c94c9b69f2546c1fc6a additionally includes selection/removal undo, explicit discard and archive isolation. New instrumentation covers tonal pixel change, raw-byte equality, archive/reopen/Undo, all paper/orientation combinations, batch removal and restart. Widget tests exercise export options, cancellation/failure retention, selection/restore and the real decoded corner editor at320px. Final-source CI and generated editor screenshots must be checked before claiming final pass.
 
-## Still incomplete / release gates
+## Remaining acceptance work
 
-Phase04 custom camera, YUV live detection, confidence smoothing, auto/manual capture UI, torch/orientation and physical-device benchmarks. Phase05 magnifier/auto-redetect, Magic/brightness controls, delete undo, durable editable scans after export, export cancellation during processing, detailed page-size controls, saved-success flow and reader floating editing controls. No physical camera quality, memory/performance, low-storage fault injection or full phase acceptance established.
+Direct custom camera preview, YUV live detection, confidence smoothing, auto/manual capture, torch/orientation and physical-device benchmark are still Phase04 work. Phase05 still needs automatic corner re-detection, processing cancellation, dedicated export receipt, reader floating editing controls and device accessibility/memory/low-storage acceptance. No physical camera, live backend or release acceptance is implied by synthetic emulator fixtures.
+
+Retained risks: cross-channel draft operations use separate workers and still need a shared asynchronous ownership strategy; abrupt process death can leave unreferenced staging/preview files; archived originals use extra storage; failed archive cleanup can leave a private orphan. Do not delete arbitrary private files as cleanup. A saved archive does not include the removed-pages undo batch.
 
 ## Rollback
 
-Remove updates_phase_05.json from review assembly to restore prior export behavior. Keep the Phase04 graph-aware store for any already-created quad drafts. Production workflow/main remain unchanged; no release/signing/deployment operation performed.
+All changes are isolated in updates_phase_05.json consumed by the review workflow after earlier overlays. Removing the overlay is only a code rollback; it does not migrate back saved archives or new tonal state. Preserve user originals and archive manifests during any rollback. No merge, deployment or release signing was performed.
 
-## Passing combined Dart checkpoint
+## Latest application validation
 
-Source342f10b8d77b4720434006281384f51032cf6c39, run40125517511: analyzer clean (11.3s), all123 tests PASS (38s), screenshot capture PASS. This includes the real-async corner route-result correction, independent corner coordinates at320px and export cancellation/quality/failure retention. Native job120966616621 is queued at this checkpoint; no native export-resolution test pass or complete phase acceptance inferred.
-
-## Editable saved scan follow-up
-
-Successful export now archives immutable originals and the versioned graph/history under a separate private scan_archives/<Studio id> directory before clearing the live draft. Archive publication copies into a staging directory, fsyncs files/manifest and renames the directory; failed backup retains the draft and reports that the PDF was saved. Studio's Android IMAGE_SCAN menu has Edit saved scan, reopening a copy into an empty draft and preserving the old saved PDF. Existing active/pending capture blocks reopening instead of overwriting pages. Deleting a Studio scan attempts archive cleanup after PDF deletion. Legacy scans without archives report unavailability; no lost original is invented.
-
-New native test covers archive, clear, recreation, raw byte equality, persisted geometry/Undo, overwrite protection and archive deletion; widget covers archive channel routing and the existing save test requires archive before clear. Execution pending. Remaining risks: cleanup failure can leave private orphan archives; copied originals increase storage; no OS fault-injection or physical-device validation. Cross-channel native draft serialization still needs hardening. Full Phase04/05 acceptance remains open.
-
-Native run40125517511 built app and instrumentation APK successfully, but the Android35 image still required a minimum7372.80MB userdata partition despite disk-size2048M; boot failed with5783.86MB free. Workflow now stops Gradle and removes no-longer-needed NDK/CMake from the disposable runner after APK assembly, then requires12GiB before installing emulator images. No production SDK/workflow changed.
-
-Latest source52edfc985381888d4eb9af0b0876c4b17c86c9b0, run40127226578: clean analysis10.8s, all124 Dart tests PASS36s, screenshot capture PASS. Native job120971720556 is in progress. Native archive/reopen and export-resolution instrumentation remain pending; no full acceptance inferred.
+Application source5322932e1a5ddb42597204f6d9747bd7832d01f1, run40135747793: clean analysis7.7s, all125 Dart tests PASS31s; screenshot capture PASS. Crop loupe screen reviewed at320px: readable layout and corners; first tone screenshot exposed asynchronous image-capture timing, so test-only follow-up080e60028f78a6dd3cb39767e5ac43ab0f2eebc2 waits for the decoded image and loads MaterialIcons. Native application code is unchanged by that follow-up. New-batch Android native verification is still running;26 passed tests refer only to the older52edfc98 checkpoint.
