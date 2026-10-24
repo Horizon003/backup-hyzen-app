@@ -6,7 +6,7 @@ Baseline: e19bf01b63df7dffb419e900eb0fa13bc994b304. Review branch: work/hyzen-ph
 |---|---|
 | 00 | Read-only reconnaissance complete; live rules/device limitations recorded |
 | 01 | Foundation CI PASS (94 tests + analysis); screenshot review partial; device/release acceptance pending |
-| 02 | Concept review next; bulk assets await owner style review |
+| 02 | Gen Z concept approved; 12 avatars integrated in review overlay; CI pending; remaining art/motion and device gates open |
 | 03–05 | Proposed; scanner raw-original/draft risks recorded |
 | 06–07 | Proposed; retain real existing account/content/commerce behavior |
 | 08–10 | Proposed; no quiz backend or routes added; scoring/privacy decisions pending |
