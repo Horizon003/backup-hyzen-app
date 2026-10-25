@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {initializeApp,deleteApp} from 'firebase-admin/app';
 import {getFirestore} from 'firebase-admin/firestore';
 import {QuizImportService,ImportError,validateCsv} from '../import-service.mjs';
+import {expireImportPreviews} from '../preview-retention.mjs';
 
 const host=process.env.FIRESTORE_EMULATOR_HOST;
 if(!host||!/^127\.0\.0\.1:\d+$/.test(host))throw new Error('Local emulator required; production forbidden.');
@@ -123,4 +124,42 @@ test('client cannot choose taxonomy or authorization and unsafe confirmation inp
   await rejects(()=>service.preview(admin,{csv:csv([row()]),taxonomy:taxonomy()}),'invalid_request');
   await rejects(()=>service.preview(admin,{csv:csv([row()]),adminUid:'fixture-admin'}),'invalid_request');
   for(const changes of [{batchId:'../../settings/pw_orders'},{idempotencyKey:'short'},{checksum:'invalid'}])await rejects(()=>service.commit(admin,{batchId:'a'.repeat(36),checksum:'a'.repeat(64),idempotencyKey:'fixture_confirmation_123',...changes}),'invalid_request');
+});
+
+test('retention removes expired preview payload while preserving a private audit tombstone',async()=>{
+  const p=await preview([row()]);now+=16*60*1000;
+  const result=await expireImportPreviews(db,{now});assert.deepEqual(result,{scanned:1,expired:1});
+  const tombstone=(await db.doc('quiz_import_batches/'+p.batchId).get()).data();
+  assert.equal(tombstone.state,'expired');assert.equal(tombstone.rowCount,1);assert.equal(tombstone.actorUid,admin.uid);
+  assert.equal(tombstone.rows,undefined);assert.ok(!JSON.stringify(tombstone).includes('SECRET-FIXTURE'));
+  await rejects(()=>service.commit(admin,confirm(p)),'batch_expired');
+  assert.deepEqual(await expireImportPreviews(db,{now}),{scanned:0,expired:0});
+});
+test('retention preserves current previews committed replay and immutable draft revisions',async()=>{
+  const old=await preview([row('committed')]);const result=await service.commit(admin,confirm(old));
+  now+=16*60*1000;const current=await preview([row('current')]);
+  assert.deepEqual(await expireImportPreviews(db,{now}),{scanned:0,expired:0});
+  assert.equal((await db.doc('quiz_import_batches/'+current.batchId).get()).data().rows.length,1);
+  assert.deepEqual(await service.commit(admin,confirm(old)),result);
+  assert.equal((await db.doc('quiz_question_revisions/committed__v1').get()).data().stem,row().question);
+});
+test('retention is bounded and concurrent overlapping cleanup is idempotent',async()=>{
+  for (let i=0;i<3;i++) await preview([row('expired-'+i)]);
+  now+=16*60*1000;
+  const [a,b]=await Promise.all([expireImportPreviews(db,{now,limit:2}),expireImportPreviews(db,{now,limit:2})]);
+  assert.ok(a.expired+b.expired<=3);
+  const rest=await expireImportPreviews(db,{now,limit:2});
+  assert.equal(a.expired+b.expired+rest.expired,3);
+  assert.equal((await db.collection('quiz_import_batches').where('state','==','preview').get()).size,0);
+  for (const limit of [0,101,1.5]) await assert.rejects(()=>expireImportPreviews(db,{now,limit}));
+});
+test('retention never removes a batch committed after candidate selection',async()=>{
+  const p=await preview([row()]);
+  // Simulate Scheduler clock at expiry while an already-running valid commit
+  // wins the transaction. Cleanup must reread state inside its transaction.
+  const candidate=(await db.doc('quiz_import_batches/'+p.batchId).get());
+  await service.commit(admin,confirm(p));
+  const facade={collection:()=>({where:()=>({where:()=>({orderBy:()=>({limit:()=>({get:async()=>({docs:[candidate],size:1})})})})})}),runTransaction:callback=>db.runTransaction(callback)};
+  assert.deepEqual(await expireImportPreviews(facade,{now:now+16*60*1000}),{scanned:1,expired:0});
+  assert.equal((await candidate.ref.get()).data().state,'committed');
 });
