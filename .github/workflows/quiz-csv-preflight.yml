@@ -1,0 +1,19 @@
+name: Quiz CSV offline preflight checks
+on:
+  push:
+    branches: [work/hyzen-phase-01]
+    paths:
+      - tools/quiz_csv_preflight.py
+      - tools/tests/test_quiz_csv_preflight.py
+      - .github/workflows/quiz-csv-preflight.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate offline CSV contract and privacy-safe reports
+        run: python3 -m unittest discover -s tools/tests -p 'test_quiz_csv_preflight.py' -v
