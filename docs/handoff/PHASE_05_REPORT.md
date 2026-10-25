@@ -28,10 +28,12 @@ New widgets cover custom camera direct return, explicit legacy fallback, saved r
 
 ## Remaining acceptance work
 
-Direct custom camera/overlay and optional Auto are now a Phase04 candidate. Physical-device camera, accessibility, memory/heat and low-storage acceptance remain blocked. Phase05 still needs processing cancellation and annotation-specific floating editing controls; the saved receipt, read-mode dock/pill and crop re-detection are implemented candidates. No physical camera, live backend or release acceptance is implied by synthetic emulator fixtures.
+Direct custom camera/overlay and optional Auto are now a Phase04 candidate. Physical-device camera, accessibility, memory/heat and low-storage acceptance remain blocked. The annotation follow-up now implements a collapsible dock, grouped tools, new-mark size/color/opacity, page-scoped Undo/Redo and session-layer restore with acknowledged serialized saves. Its own verification is recorded in ANNOTATION_EDITING_FOLLOWUP.md; processing cancellation remains pending; the saved receipt, read-mode dock/pill and crop re-detection are implemented candidates. No physical camera, live backend or release acceptance is implied by synthetic emulator fixtures.
 
 Retained risks: cross-channel draft operations use separate workers and still need a shared asynchronous ownership strategy; abrupt process death can leave unreferenced staging/preview files; archived originals use extra storage; failed archive cleanup can leave a private orphan. Do not delete arbitrary private files as cleanup. A saved archive does not include the removed-pages undo batch.
 
 ## Rollback
 
 Editing/archive/export changes are isolated in updates_phase_05.json; updates_camera.json adds receipt, redetection and reader integration. Roll back dependent phase07/06 first, then camera/phase05 in both assembly loops as needed. Removing the overlay is only a code rollback; it does not migrate back saved archives or new tonal state. Preserve user originals and archive manifests during any rollback. No merge, deployment or release signing was performed.
+
+Annotation follow-up b5041bb5/run40168101542 passed clean analysis, all142 Dart tests and capture; unchanged native source2ce85921/run40167440933 passed all37 Android tests. Verified responsive screenshots, move/delete/history/style/failed-save/reopen tests and native opacity/legacy/default/original-integrity evidence are recorded in ANNOTATION_EDITING_FOLLOWUP.md.
