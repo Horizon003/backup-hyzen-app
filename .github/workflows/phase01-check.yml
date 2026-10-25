@@ -114,7 +114,15 @@ jobs:
         working-directory: hyzen_flutter
       - name: Inspect scanner future API dependency
         working-directory: hyzen_flutter/android
-        run: ./gradlew :app:dependencyInsight --configuration debugCompileClasspath --dependency listenablefuture --no-daemon
+        run: |
+          python3 - <<'PYSDK'
+          import os
+          from pathlib import Path
+          android_sdk = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
+          assert android_sdk and os.environ.get('FLUTTER_ROOT')
+          Path('local.properties').write_text('sdk.dir=' + android_sdk + '\nflutter.sdk=' + os.environ['FLUTTER_ROOT'] + '\n')
+          PYSDK
+          ./gradlew :app:dependencyInsight --configuration debugCompileClasspath --dependency listenablefuture --no-daemon
       - name: Build review debug application and native tests
         working-directory: hyzen_flutter
         run: |
