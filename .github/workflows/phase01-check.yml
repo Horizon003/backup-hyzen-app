@@ -71,17 +71,6 @@ jobs:
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
           df -h /
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: gradle
-          cache-dependency-path: updates_camera.json
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.35.4'
-          channel: stable
-          cache: true
       - name: Assemble the same review overlays
         run: |
           unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
@@ -104,6 +93,20 @@ jobs:
           gradle.write_text(content.replace('testBuildType = "release"', 'testBuildType = "debug"'))
           PY
           cp -a phase02_assets/. hyzen_flutter/assets/
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            hyzen_flutter/android/**/*.gradle.kts
+            hyzen_flutter/android/gradle/wrapper/gradle-wrapper.properties
+            hyzen_flutter/pubspec.yaml
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4'
+          channel: stable
+          cache: true
       - name: Prepare only development signing for the fresh emulator
         working-directory: hyzen_flutter
         run: |
