@@ -20,7 +20,7 @@ No actual academic taxonomy has been invented or configured. First revision impo
 
 ## Deployment and later phases
 
-Firebase Console access and deployed-rule inspection are now available; the existing source config matches the actual project. Owner-only profile rules are prepared but unpublished. The current project is Spark; Cloud Functions deployment requires a Blaze hosting/billing decision (https://firebase.google.com/docs/functions/get-started). No billing upgrade, new project, terms acceptance, endpoint deployment or question publication was performed. Dedicated staging is required before live integration.
+Firebase Console access and deployed-rule inspection are now available; the existing source config matches the actual project. Owner-only profile rules were published after user confirmation; live account acceptance remains. The current project is Spark; Cloud Functions deployment requires a Blaze hosting/billing decision (https://firebase.google.com/docs/functions/get-started). No billing upgrade, new project, terms acceptance, endpoint deployment or question publication was performed. Dedicated staging is required before live integration.
 
 Phase09/10 remain disabled/unimplemented: trusted allocator, private answer keys/assignments, atomic start/submit, server deadlines, no-repeat history, scoring/rankings, Special registrations and duels. Actual scoring/penalty/tie/best-attempt, daily timezone/aborted-attempt, eligibility/dispute and privacy/duel policies still need approval. No fee/payment/wallet/prize feature is introduced.
 

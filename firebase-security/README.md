@@ -1,6 +1,6 @@
 # Firebase security review
 
-Observed live project `pharmawhisper-debd2` on2026-10-25 through an owner-authorized cloud-browser session. Project number975548206224 and Android app `com.hyzen.pharmd` / `1:975548206224:android:4d1d78ad7f7e5b8cd95c15` match the existing source configuration. Email/Password sign-in is enabled. The project shows the no-billing Spark plan. No live accounts, orders, messages, profiles, deployed permissions or billing settings were changed during this audit. The tested profile-only candidate is pasted into Console as unpublished changes, pending explicit Publish confirmation; editor text was checked against the tested source ignoring formatting whitespace.
+Observed live project `pharmawhisper-debd2` on2026-10-25 through an owner-authorized cloud-browser session. Project number975548206224 and Android app `com.hyzen.pharmd` / `1:975548206224:android:4d1d78ad7f7e5b8cd95c15` match the existing source configuration. Email/Password sign-in is enabled. The project shows the no-billing Spark plan. No live accounts, orders, messages, profiles, deployed permissions or billing settings were changed during this audit. The tested profile-only candidate was published in Console on 2026-10-25 after user confirmation. The selected live version matches tested source ignoring editor formatting whitespace; its initial NOT DEPLOYED comment is stale. No isolated live account write was made.
 
 `deployed.2026-10-25.rules` is a whitespace-normalized transcription of the rules currently rendered by Firebase Console, not a raw server export. It preserves the observed policy for rollback/reference. Its last publication shown by Console was Jul15,2026. Never deploy the earlier speculative rules without diffing the live baseline.
 
@@ -10,7 +10,7 @@ Observed live project `pharmawhisper-debd2` on2026-10-25 through an owner-author
 
 The app's current DTO uses these fields and performs a get-before-create transaction; owner reads of a missing profile are intentionally allowed. Nullable/custom university/roll/photo fields and `avatar:<id>` values remain supported. Additional server-enforced data-size limits may require corrections to previously malformed records; no production profile data was enumerated or migrated.
 
-Publishing this rule adds access to a sensitive profile collection. Prepare/test/review it first, then obtain explicit action-time confirmation in the browser before Publish. It does not enable quiz gameplay or create a paid service.
+This rule added access to a sensitive profile collection after explicit user confirmation. Review the Console publication and run isolated live account acceptance before relying on it in the APK. It does not enable quiz gameplay or create a paid service.
 
 ## Rollout B — public verification privacy
 
