@@ -2,7 +2,7 @@ name: Hyzen design and avatar review checks
 on:
   push:
     branches: [work/hyzen-phase-01]
-    paths: [updates_phase_01.json, updates_phase_02.json, updates_phase_03.json, updates_phase_04.json, updates_phase_05.json, updates_camera.json, updates_phase_06.json, updates_phase_07.json, phase02_assets/**, .github/workflows/phase01-check.yml]
+    paths: [updates_phase_01.json, updates_phase_02.json, updates_phase_03.json, updates_phase_04.json, updates_phase_05.json, updates_camera.json, updates_phase_06.json, updates_phase_07.json, phase02_assets/**, tools/assemble_review.py, .github/workflows/phase01-check.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,24 +15,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble current application and isolated phase overlay
-        run: |
-          unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
-          cp -a lib/. hyzen_flutter/lib/
-          cp -a android/. hyzen_flutter/android/
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          root = Path('hyzen_flutter').resolve()
-          for patch in ['updates_1_4_0.json', 'updates_1_4_1.json', 'updates_1_4_2.json', 'updates_1_4_3.json', 'updates_phase_01.json', 'updates_phase_02.json', 'updates_phase_03.json', 'updates_phase_04.json', 'updates_phase_05.json', 'updates_camera.json', 'updates_phase_06.json', 'updates_phase_07.json']:
-              for rel, text in json.loads(Path(patch).read_text()).items():
-                  target = (root / rel).resolve()
-                  if not target.is_relative_to(root) or rel.startswith('android/signing') or rel == 'android/key.properties':
-                      raise ValueError('Invalid patch target')
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  target.write_text(text)
-          PY
-          cp -a phase02_assets/. hyzen_flutter/assets/
+      - name: Assemble current application with verified source manifest
+        run: python3 tools/assemble_review.py --repo . --output hyzen_flutter
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.4'
@@ -74,28 +58,8 @@ jobs:
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
           df -h /
       - uses: actions/checkout@v4
-      - name: Assemble the same review overlays
-        run: |
-          unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
-          cp -a lib/. hyzen_flutter/lib/
-          cp -a android/. hyzen_flutter/android/
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          root = Path('hyzen_flutter').resolve()
-          for patch in ['updates_1_4_0.json', 'updates_1_4_1.json', 'updates_1_4_2.json', 'updates_1_4_3.json', 'updates_phase_01.json', 'updates_phase_02.json', 'updates_phase_03.json', 'updates_phase_04.json', 'updates_phase_05.json', 'updates_camera.json', 'updates_phase_06.json', 'updates_phase_07.json']:
-              for rel, text in json.loads(Path(patch).read_text()).items():
-                  target = (root / rel).resolve()
-                  if not target.is_relative_to(root) or rel.startswith('android/signing') or rel == 'android/key.properties':
-                      raise ValueError('Invalid patch target')
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  target.write_text(text)
-          gradle = root / 'android/app/build.gradle.kts'
-          content = gradle.read_text()
-          assert 'testBuildType = "release"' in content
-          gradle.write_text(content.replace('testBuildType = "release"', 'testBuildType = "debug"'))
-          PY
-          cp -a phase02_assets/. hyzen_flutter/assets/
+      - name: Assemble the same review overlays for native debug tests
+        run: python3 tools/assemble_review.py --repo . --output hyzen_flutter --debug-tests
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
