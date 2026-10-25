@@ -2,7 +2,7 @@ import {after, before, beforeEach, test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment, assertSucceeds, assertFails} from '@firebase/rules-unit-testing';
-import {doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, query, where, writeBatch} from 'firebase/firestore';
+import {doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, query, where, writeBatch, runTransaction} from 'firebase/firestore';
 
 const host = process.env.FIRESTORE_EMULATOR_HOST;
 if (!host || !/^127\.0\.0\.1:\d+$/.test(host)) throw new Error('Local Firestore emulator required; production is never contacted.');
@@ -169,5 +169,24 @@ test('failed atomic checkout leaves no orphan verification receipt', async()=>{
     batch.set(ref(db,`verifications/${token}`),verification());
     await assertFails(batch.commit());
     assert.equal((await getDoc(ref(db,`verifications/${token}`))).exists(),false);
+  }
+});
+
+test('transactional receipt check prevents concurrent and post-drain retry even for admin checkout', async()=>{
+  for (const name of ['profile','commerce']) for (const privileged of [false,true]) {
+    const db=privileged?client(name,admin):guest(name), suffix=privileged?'admin':'guest';
+    const path=`orders_inbox/transaction-${suffix}`, inbox=ref(db,path);
+    const receipt=ref(db,`verifications/v_${(privileged?'b':'c').repeat(32)}`);
+    const submit=()=>runTransaction(db,async tx=>{
+      const previous=await tx.get(receipt);
+      if(previous.exists()) {assert.equal(previous.data().orderNumber,verification().orderNumber);return;}
+      tx.set(inbox,{value:{id:suffix},createdAt:123});tx.set(receipt,verification());
+    });
+    await Promise.all([assertSucceeds(submit()),assertSucceeds(submit())]);
+    await deleteDoc(ref(client(name,admin),path));
+    await updateDoc(ref(client(name,admin),receipt.path),{status:'Shipped'});
+    await assertSucceeds(submit());
+    assert.equal((await getDoc(ref(client(name,admin),path))).exists(),false);
+    assert.equal((await getDoc(receipt)).data().status,'Shipped');
   }
 });
