@@ -1,0 +1,20 @@
+# Private quiz CSV backend candidate — not deployed
+
+This adds actual Firebase Admin/Firestore transaction code and two Firebase callable handlers: `previewQuizCsv` and `commitQuizCsv`. The handlers require verified callable authentication, App Check, a server-configured `HYZEN_QUIZ_ADMIN_UIDS` list, enabled private import control and a privately stored owner-approved real taxonomy. Every gate defaults off/missing; client `role`/`admin` fields and supplied taxonomy are never trusted. No student endpoint, attempt allocator, score calculator or ranking is introduced.
+
+Server-only documents (client access remains default-denied by the observed/candidate rules):
+
+- `quiz_control/import`: explicit `enabled:true` plus matching `taxonomyVersion`.
+- `quiz_control/taxonomy`: `schema_version:1`, `approved:true`, a version and actual years/subjects/topic IDs using the same normalized contract as `tools/quiz_csv_preflight.py`. This configuration is not seeded and cannot be supplied in an upload request. Its populated values must come from the real approved academic taxonomy; fixtures are not curriculum data.
+- `quiz_import_batches/{random-uuid}`: private validated rows, actor, checksum, taxonomy digest, server dates, expiry and commit audit.
+- `quiz_question_revisions/{question_id}__v1`: private immutable first revision. Existing IDs fail the whole batch and require a separate future revision-review flow. Nothing is overwritten.
+
+Preview accepts bounded UTF-8/BOM CSV with the existing required/optional header contract. Quoting/multiline cells, duplicates, actual taxonomy membership, options/keys/lengths, spreadsheet formulas and markup are validated server-side. Limits are256 KiB CSV,200 rows and700 KB normalized batch; the offline preflight intentionally allows larger files, which must be split before server import. Errors contain only line/field/code metadata. Preview stores no public questions and returns only batch ID/checksum/count/expiry. Confirmation must supply that checksum and an idempotency key. One Firestore transaction rechecks the feature/taxonomy/actor/expiry, reads every target before writing, creates all draft revisions and records the outcome. Concurrent retry and overlapping batches cannot produce partial imports or overwrites. CSV `active` remains a requested status; every imported record is forced to `draft`. Responses never contain stems/options/keys/explanations, including idempotent replay.
+
+The callable handlers use Firebase's authentication/App Check transport; service transaction behavior is exercised against the local Firestore emulator. Full callable HTTP/Auth/App Check integration and deployed IAM are not tested yet. Admin SDKs bypass security rules, so handler authorization remains essential. No real ID token or service-account credential is included. No deployment configuration/command or production alias is wired into CI. Empty admin configuration denies everyone, even if the Functions files were mistakenly deployed.
+
+Expired previews are rejected; an automated private preview-retention/deletion policy is not implemented and requires an owner-approved retention decision. First revision import is supported; revision editing/publication, in-app Question Bank/wizard, live taxonomy setup, rate/abuse monitoring and staging integration remain open.
+
+Tests use synthetic `demo-hyzen-backend` only, real Admin SDK transactions and a loopback emulator. Install this directory's pinned lockfile with `npm ci --ignore-scripts`; run the combined suite from `firebase-security`. Dedicated CI uses Node22/Java21. Nothing is imported/published in the live project. Emulator success does not enable backend services.
+
+Live deployment requires dedicated staging and a backend hosting/billing decision. The existing project is Spark; Firebase Cloud Functions production deployment requires Blaze, per https://firebase.google.com/docs/functions/get-started. No billing upgrade, terms acceptance, project creation or endpoint deployment was performed. Scoring, timezone/aborted attempt, privacy and duel policies still need approval before gameplay activation. No monetary feature is present.
