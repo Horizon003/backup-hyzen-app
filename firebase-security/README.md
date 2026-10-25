@@ -20,10 +20,12 @@ This rule added access to a sensitive profile collection after explicit user con
 
 ## Isolated tests
 
-Run `npm ci --ignore-scripts` then `npm test`. The pinned test-only dependencies and lockfile are separate from the app. Firebase CLI is always passed `--project demo-hyzen-rules`; test environments use only `demo-hyzen-*` and require `FIRESTORE_EMULATOR_HOST=127.0.0.1:<port>`. There are no production credentials, aliases, deployments or live fixture writes. CI uses Node22 / Java21 and the dedicated Firebase review workflow. Local testing uses the available Node24 / Java17; the emulator suite passes, while the dedicated CI validates the supported Node22 runtime.
+Run `npm ci --ignore-scripts` then `npm test`. The pinned test-only dependencies and lockfile are separate from the app. Firebase CLI is always passed `--project demo-hyzen-rules`; test environments use only `demo-hyzen-*` and require `FIRESTORE_EMULATOR_HOST=127.0.0.1:<port>`. There are no production credentials, aliases, deployments or live fixture writes. CI uses Node22 / Java21 and the dedicated Firebase review workflow. The current combined suite also starts the loopback Auth emulator for a real Auth-client/profile integration fixture; CI validates Node22/Java21. No production account is used.
 
 Tests cover the actual old profile denial/public-verification weaknesses; owner/missing-profile access; anonymous/other-account/admin-claim denial; immutable fields/types/timestamps; old content/Shop compatibility; private quiz denial; and the separate strict verification/replacement contract. Fixtures are synthetic and contain no real student/order records.
 
 ## Remaining backend gate
 
 A default-off private CSV import service and callable handler candidate now exists in `../quiz-backend`, covered by18 real Admin SDK transaction tests. It is not deployed or integrated into an in-app wizard. The trusted student quiz allocator/scoring/registration/duel backend remains absent. Firebase Cloud Functions can be emulated before deployment; deploying Functions requires a Blaze billing project, per https://firebase.google.com/docs/functions/get-started. No billing upgrade was authorized or performed. Dedicated staging, approved scoring/time/aborted-attempt/privacy/duel policy and live acceptance remain required. Read-only Console access does not grant a deployed backend or a tested release.
+
+The latest tests also cover atomic receipt/inbox writes, concurrent receipt recovery, post-drain admin retry, and real Auth SDK owner/admin profile access. See docs/handoff/CHECKOUT_AND_IMPORT_RECOVERY.md and PR1 for the exact final run status.
