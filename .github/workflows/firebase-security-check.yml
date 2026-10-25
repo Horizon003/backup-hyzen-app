@@ -1,7 +1,7 @@
 name: Hyzen Firebase security review
 on:
-  push:
-    branches: [work/hyzen-phase-01]
+  pull_request:
+    branches: [main]
     paths: [firebase-security/**, quiz-backend/**, .github/workflows/firebase-security-check.yml]
   workflow_dispatch:
 permissions:

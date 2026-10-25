@@ -2,7 +2,7 @@ import {after, before, beforeEach, test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment, assertSucceeds, assertFails} from '@firebase/rules-unit-testing';
-import {doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, query, where} from 'firebase/firestore';
+import {doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, query, where, writeBatch} from 'firebase/firestore';
 
 const host = process.env.FIRESTORE_EMULATOR_HOST;
 if (!host || !/^127\.0\.0\.1:\d+$/.test(host)) throw new Error('Local Firestore emulator required; production is never contacted.');
@@ -146,4 +146,28 @@ test('admin verification replacement removes legacy PII; merge cannot silently r
   await assertFails(setDoc(ref(db,path),verification({status:'Shipped'}),{merge:true}));
   await assertSucceeds(setDoc(ref(db,path),verification({status:'Shipped',trackingId:'TRACK-fixture'})));
   const result=(await getDoc(ref(guest('commerce'),path))).data();assert.equal(result.customer,undefined);assert.equal(result.address,undefined);
+});
+
+// The existing receipt prevents a retry from recreating an already-drained inbox.
+test('atomic checkout creates both records and retry cannot recreate drained inbox', async()=>{
+  for (const name of ['profile', 'commerce']) {
+    const db=guest(name), inbox=ref(db,'orders_inbox/retry-fixture'), receipt=ref(db,`verifications/${token}`);
+    const submit=()=>{const batch=writeBatch(db);batch.set(inbox,{value:{id:'retry-fixture'},createdAt:123});batch.set(receipt,verification());return batch.commit();};
+    await assertSucceeds(submit());
+    await assertFails(submit());
+    await assertSucceeds(deleteDoc(ref(client(name,admin),'orders_inbox/retry-fixture')));
+    await assertFails(submit());
+    assert.equal((await getDoc(ref(client(name,admin),'orders_inbox/retry-fixture'))).exists(),false);
+    assert.deepEqual((await getDoc(receipt)).data(), verification());
+  }
+});
+test('failed atomic checkout leaves no orphan verification receipt', async()=>{
+  for(const name of ['profile','commerce']) {
+    await seed(name,'orders_inbox/collision',{value:{id:'existing'},createdAt:1});
+    const db=guest(name), batch=writeBatch(db);
+    batch.set(ref(db,'orders_inbox/collision'),{value:{id:'replacement'},createdAt:2});
+    batch.set(ref(db,`verifications/${token}`),verification());
+    await assertFails(batch.commit());
+    assert.equal((await getDoc(ref(db,`verifications/${token}`))).exists(),false);
+  }
 });
