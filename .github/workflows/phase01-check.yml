@@ -112,6 +112,9 @@ jobs:
           chmod +x android/gradlew
       - run: flutter pub get
         working-directory: hyzen_flutter
+      - name: Inspect scanner future API dependency
+        working-directory: hyzen_flutter/android
+        run: ./gradlew :app:dependencyInsight --configuration debugCompileClasspath --dependency listenablefuture --no-daemon
       - name: Build review debug application and native tests
         working-directory: hyzen_flutter
         run: |
