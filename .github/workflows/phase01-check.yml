@@ -64,11 +64,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
-          cache-dependency-path: |
-            hyzen_flutter/android/**/*.gradle.kts
-            hyzen_flutter/android/gradle/wrapper/gradle-wrapper.properties
-            hyzen_flutter/pubspec.yaml
+      - name: Restore verified Gradle dependencies with migration fallback
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/runner/.gradle/caches
+            /home/runner/.gradle/wrapper
+          key: hyzen-native-gradle-${{ runner.os }}-${{ hashFiles('hyzen_flutter/android/**/*.gradle.kts', 'hyzen_flutter/android/gradle/wrapper/gradle-wrapper.properties', 'hyzen_flutter/pubspec.yaml') }}
+          restore-keys: |
+            hyzen-native-gradle-${{ runner.os }}-
+            setup-java-Linux-x64-gradle-
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.4'
