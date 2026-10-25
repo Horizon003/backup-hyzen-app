@@ -1,21 +1,21 @@
 # Implementation status
 
-Baseline: e19bf01b63df7dffb419e900eb0fa13bc994b304. Review branch: work/hyzen-phase-01. Draft PR: https://github.com/Horizon003/pharm-d-with-hyzen/pull/1
+Baseline/main e19bf01b63df7dffb419e900eb0fa13bc994b304 remains unchanged. Review branch work/hyzen-phase-01; draft PR https://github.com/Horizon003/pharm-d-with-hyzen/pull/1. Latest application source f2c98599a0dba779d72aaece64663b4cbc4c80a2.
 
-| Phase | State |
+| Phase | Delivered and acceptance state |
 |---|---|
-| 00 | Read-only reconnaissance complete; live rules/device limitations recorded |
-| 01 | Foundation CI PASS (94 tests + analysis); screenshot review partial; device/release acceptance pending |
-| 02 | Software PASS: 12 Gen Z avatars, 8 illustrations, 32 glyphs, photo controls, session welcome and measured transfer states; 107 tests; physical/live-service acceptance open |
-| 03 | Software PASS: mixed folders/breadcrumbs, real on-demand PDF preview path, metadata search, offline hierarchy/restart safeguards; 120 tests; native preview fixtures passed at52edfc98; physical acceptance open |
-| 04 | Partial: immutable originals, perspective corners, crop loupe, tone/history and saved archives. Earlier26 Android fixtures passed; 28 tonal/export Android tests passed; final removal-Undo suite rerun pending. Direct custom camera/device gates remain open |
-| 05 | Substantial software batch: tonal comparison, batch selection/removal Undo, configurable paper/orientation/margins/quality, editable archives/reopen.125 Dart tests pass atb5a84b6c; 080e6002 analysis/125 tests and reviewed screenshots pass; native removal-Undo rerun pending after two outdated deletion assertions were corrected. Receipt/cancellation/reader controls/device acceptance remain open |
-| 06–07 | Proposed; retain real existing account/content/commerce behavior |
-| 08–10 | Proposed; no quiz backend or routes added; scoring/privacy decisions pending |
-| 11 | Not started; no release authorization or full acceptance |
+| 00 | Read-only repository audit complete; deployed rules and physical baseline unavailable |
+| 01 | Four-tab/design foundation, analyzer/94-test checkpoint passed; physical/full acceptance partial |
+| 02 | Approved Gen Z avatars/illustrations, custom glyphs, photo crop, session welcome and truthful transfers; 107-test checkpoint passed; physical/account acceptance open |
+| 03 | Mixed recursive Study hierarchy, year-aware metadata search, on-demand PDF preview and offline safeguards; 120-test checkpoint passed plus later native fixtures; physical acceptance open |
+| 04 | Direct CameraX preview/manual/opt-in Auto/focus/torch/zoom/landscape/thumbnails; run40162938847 passed 36 native tests with Material polish and inspected emulator screenshots. Physical camera quality/performance gates blocked |
+| 05 | Reversible crop/loupe/tone/re-detect, durable batch Undo, editable saved archives, original-based export, saved receipt and reader dock/page pill; combined 134 Dart/36 native checkpoint passed. Processing cancellation, annotation-specific controls, universal native ownership and physical acceptance remain open |
+| 06 | Home quick actions, real profile tabs, searchable workspace Settings/security routing, account-scoped notification archive/remove/Undo; clean analysis/134 tests at7e187372 and inspected screenshots. Badge contrast corrected and inspected atf2c98599; final Dart suite137 PASS; physical/live-account gates partial |
+| 07 | Shop search/clear/real stock layouts, actual Blog lead article, truthful About credits and Content/Commerce admin views implemented. Sourcef2c98599/run40164302166 passed clean analysis11.2s, all137 Dart tests47s and capture; corrected Blog import and credit-fixture envelope. Light/dark review screens inspected. No live commerce/ACL acceptance claim |
+| 08 | Original blank/sample/schema/CSV guide preserved as review resources; actual-stack server/staging design and acceptance blockers documented in PHASE_08_REPORT.md. No enabled Question Bank/backend migration/import API |
+| 09–10 | Server-dependent quiz/ranking/registration/duels disabled and unimplemented; scoring/tie/timezone/abandonment/duel decisions plus secure staging needed |
+| 11 | No release acceptance; full traceability, physical/live-service tests and rollback rehearsal open |
 
-The draft uses updates_phase_01.json, updates_phase_02.json, updates_phase_03.json, updates_phase_04.json, updates_phase_05.json and phase02_assets only through a separate validation workflow. Existing production assembly is unchanged. A merge alone will not ship the overlay; reviewed integration into the release assembly must be a separate explicit step after acceptance. No deployment, backend migration, production signing operation or force push was performed.
+Verified checkpoints: source638b1601/run40160740655 passed129 Dart+36 Android; source7e187372/run40162938847 passed134 Dart+36 Android. Final sourcef2c98599/run40164302166 passed137 Dart tests and capture; its redundant native rerun is in progress, while identical native source already passed36 tests at7e187372. Final overlay merge locally matches all77 owned application paths. No Flutter/Dart/native tool installation was performed locally; checks ran in the isolated existing GitHub Actions toolchain.
 
-Major editing/export source:5322932e1a5ddb42597204f6d9747bd7832d01f1. Previous fully green native checkpoint52edfc98 (run40127226578) passed124 Dart and26 Android35 instrumentation tests. See PHASE_05_REPORT.md for exact remaining scope.
-
-Final verification follow-upaf658df1 changes native tests only. The29-test run40135369136 had two failures from obsolete immediate-delete expectations; their replacement now checks Undo and actual cleanup. Native gate remains open pending rerun.
+The review workflow assembles phases01–05, camera, phase06, phase07 in that order plus phase02_assets. Production release assembly does not consume these review overlays; merging alone does not ship them. No main merge, production signing/deploy, backend migration, real order/contact message or live student-data edit was performed. Public Shop verification PII and server-role enforcement risks remain conditional on unverified deployed rules; see Phase07 report.

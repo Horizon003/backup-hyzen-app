@@ -4,6 +4,9 @@ Review branch: work/hyzen-phase-01. Draft PR: https://github.com/Horizon003/phar
 
 ## Implemented
 
+- Read-only Re-detect corners now uses the same conservative detector as the live preview and falls back explicitly to manual corners when ambiguous.
+- A saved-file receipt verifies workspace file existence and offers real Open, Share and SAF Save copy to device. Cancellation/errors retain the workspace file.
+- The existing immersive reader now has a collapsible quick-action dock and a pill driven by actual native page callbacks; no page count is invented while a PDF is opening or unsupported. Grouped More actions and pointer/pinch behavior are retained across academic, Studio and imported readers.
 - Four independent perspective corners, convexity/bounds checks and a 2.5x crop loupe opposite the active corner. Crop preview remains based on geometry before tonal filters.
 - Original, Colour, Gray, B & W and Enhance presets; brightness and contrast sliders; before/after comparison and tone reset. Enhance is a deterministic contrast/brightness preset, not AI, OCR or automatic shadow removal.
 - Native rendering, preview and high-quality export reconstruct the same reversible graph from immutable imported bytes. Tonal values persist through app restart and saved-scan archive/reopen. Earlier graph records default to neutral tone. Undo/Reset remain available.
@@ -15,17 +18,20 @@ Review branch: work/hyzen-phase-01. Draft PR: https://github.com/Horizon003/phar
 
 ## Verification checkpoints
 
-- Latest application code and screenshot-only follow-up080e60028f78a6dd3cb39767e5ac43ab0f2eebc2: run40136098876, clean analysis9.6s and all125 Dart tests PASS38s. Production-font/icon screenshots downloaded, SHA256 verified and visually checked at320px. Both document and controls are visible; crop loupe appears above the mask. These are synthetic-document captures, not camera/device acceptance or golden comparisons.
-- Earlier source97cf63f8c3f009416af5d83642e8d3edd53fb445: run40135168896 built app/test APKs and passed28 Android35 instrumentation tests, including tonal pixel changes, original-byte equality and A4/Letter/Legal portrait/landscape PDF bounds.
-- Batch-removal source5ca3491d163e4f88e12baea7595aa6efebb6db31: run40135369136 ran29 native tests; the new removal/restart test passed but two older tests still expected immediate permanent deletion. Those expectations conflict with the newly implemented removal Undo. This run is FAILED, not a complete native pass.
-- Follow-upaf658df195f42cb4869a3e65e3b3340a432f3a4c updates those tests to verify retention, restart restoration, superseded-batch cleanup and explicit clear; application code is unchanged. Full native rerun is pending. Do not mark the final native gate green until that rerun completes.
+Prior follow-upaf658df1 / run40136647436 passed analysis/Dart and29 Android instrumentation tests, including removal retention, restart restoration and superseded-batch cleanup. The earlier obsolete deletion assertions are resolved.
+
+Verified source 638b1601051f75212caa645607f66a36eb19a635 / https://github.com/Horizon003/pharm-d-with-hyzen/actions/runs/40160740655 passed clean analysis, all 129 Dart tests and all 36 Android instrumentation tests. Compile/API and PSS test issues were resolved before this checkpoint. Read-only re-detection, original hashes and five-page capture/export are covered. Phase06 subsequently passed 134 Dart tests at 7e187372; the same run also passed all 36 native tests with the newer Material camera polish. Phase07 checks are tracked separately in IMPLEMENTATION_STATUS.md.
+
+Saved receipt artifact from run40159219984 SHA256 e554717874fc1c4d33fe3f07d966d31ab936ba60a41b02656b0e3131c10b1727 was inspected; its synthetic file metadata/Open/Share/SAF actions remain real operations on fixture files. Landscape crop/receipt captures are also present in the verified Phase06 artifact 12587296628. No golden-comparison result is claimed.
+
+New widgets cover custom camera direct return, explicit legacy fallback, saved receipt/cancelled SAF copy retaining history, actual viewer route and dock/page-pill actions. New native fixtures cover luminance strides/rotation, light/dark quads, stability/Auto rearming, read-only redetection and five captured pages across orientation changes. Screenshot captures are synthetic/emulated review evidence, not physical-device acceptance or golden comparisons.
 
 ## Remaining acceptance work
 
-Direct custom camera preview, YUV live detection, confidence smoothing, auto/manual capture, torch/orientation and physical-device benchmark are still Phase04 work. Phase05 still needs automatic corner re-detection, processing cancellation, dedicated export receipt, reader floating editing controls and device accessibility/memory/low-storage acceptance. No physical camera, live backend or release acceptance is implied by synthetic emulator fixtures.
+Direct custom camera/overlay and optional Auto are now a Phase04 candidate. Physical-device camera, accessibility, memory/heat and low-storage acceptance remain blocked. Phase05 still needs processing cancellation and annotation-specific floating editing controls; the saved receipt, read-mode dock/pill and crop re-detection are implemented candidates. No physical camera, live backend or release acceptance is implied by synthetic emulator fixtures.
 
 Retained risks: cross-channel draft operations use separate workers and still need a shared asynchronous ownership strategy; abrupt process death can leave unreferenced staging/preview files; archived originals use extra storage; failed archive cleanup can leave a private orphan. Do not delete arbitrary private files as cleanup. A saved archive does not include the removed-pages undo batch.
 
 ## Rollback
 
-All changes are isolated in updates_phase_05.json consumed by the review workflow after earlier overlays. Removing the overlay is only a code rollback; it does not migrate back saved archives or new tonal state. Preserve user originals and archive manifests during any rollback. No merge, deployment or release signing was performed.
+Editing/archive/export changes are isolated in updates_phase_05.json; updates_camera.json adds receipt, redetection and reader integration. Roll back dependent phase07/06 first, then camera/phase05 in both assembly loops as needed. Removing the overlay is only a code rollback; it does not migrate back saved archives or new tonal state. Preserve user originals and archive manifests during any rollback. No merge, deployment or release signing was performed.
