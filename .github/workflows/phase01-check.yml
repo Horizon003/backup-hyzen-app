@@ -1,7 +1,7 @@
 name: Hyzen design and avatar review checks
 on:
-  push:
-    branches: [work/hyzen-phase-01]
+  pull_request:
+    branches: [main]
     paths: [updates_phase_01.json, updates_phase_02.json, updates_phase_03.json, updates_phase_04.json, updates_phase_05.json, updates_camera.json, updates_phase_06.json, updates_phase_07.json, phase02_assets/**, tools/assemble_review.py, .github/workflows/phase01-check.yml]
   workflow_dispatch:
 permissions:
