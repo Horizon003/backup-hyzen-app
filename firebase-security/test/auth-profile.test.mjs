@@ -10,7 +10,8 @@ import {getFirestore,connectFirestoreEmulator,doc,setDoc,getDocFromServer,getDoc
 // fixture creates the fixed admin account. No service-account credentials exist.
 const backendRequire=createRequire(new URL('../../quiz-backend/package.json',import.meta.url));
 const adminApps=backendRequire('firebase-admin/app'),adminAuth=backendRequire('firebase-admin/auth');
-const projectId='demo-hyzen-auth-profile';
+// Auth emulator resolves this synthetic API key to the CLI demo project.
+const projectId='demo-hyzen-rules';
 const adminUid='Vv6HtZjmUvfVACzvuyL2pFx5HR33';
 const firestoreHost=process.env.FIRESTORE_EMULATOR_HOST,authHost=process.env.FIREBASE_AUTH_EMULATOR_HOST;
 if(!/^127\.0\.0\.1:\d+$/.test(firestoreHost??'') || !/^127\.0\.0\.1:\d+$/.test(authHost??'')) {
