@@ -146,6 +146,7 @@ jobs:
             adb install -r hyzen_flutter/build/app/outputs/flutter-apk/app-debug.apk
             adb install -r -t hyzen_flutter/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell am instrument -w com.hyzen.pharmd.test/androidx.test.runner.AndroidJUnitRunner | tee native-review-tests.txt
+            adb exec-out run-as com.hyzen.pharmd cat cache/qa_live_camera.png > native-live-camera.png || true
             python3 -c "from pathlib import Path; s=Path('native-review-tests.txt').read_text(); assert 'OK (' in s and 'FAILURES' not in s, s"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -153,5 +154,6 @@ jobs:
           name: hyzen-native-review-evidence
           path: |
             native-review-tests.txt
+            native-live-camera.png
             hyzen_flutter/build/app/reports/androidTests/
           if-no-files-found: warn
