@@ -51,7 +51,7 @@ jobs:
         run: flutter test --no-pub --reporter expanded
       - name: Capture review screens (not a golden comparison)
         working-directory: hyzen_flutter
-        run: flutter test test/navigation_test.dart test/symbol_state_test.dart test/scan_corners_test.dart --no-pub --dart-define=HYZEN_CAPTURE_QA=true --update-goldens
+        run: flutter test test/navigation_test.dart test/symbol_state_test.dart test/scan_corners_test.dart test/scan_pdf_test.dart --no-pub --dart-define=HYZEN_CAPTURE_QA=true --update-goldens
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -146,6 +146,8 @@ jobs:
             adb install -r hyzen_flutter/build/app/outputs/flutter-apk/app-debug.apk
             adb install -r -t hyzen_flutter/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell am instrument -w com.hyzen.pharmd.test/androidx.test.runner.AndroidJUnitRunner | tee native-review-tests.txt
+            adb exec-out run-as com.hyzen.pharmd cat cache/qa_camera_metrics.json > native-camera-metrics.json || true
+            adb exec-out run-as com.hyzen.pharmd cat cache/qa_live_camera_portrait.png > native-live-camera-portrait.png || true
             adb exec-out run-as com.hyzen.pharmd cat cache/qa_live_camera.png > native-live-camera.png || true
             python3 -c "from pathlib import Path; s=Path('native-review-tests.txt').read_text(); assert 'OK (' in s and 'FAILURES' not in s, s"
       - uses: actions/upload-artifact@v4
@@ -155,5 +157,7 @@ jobs:
           path: |
             native-review-tests.txt
             native-live-camera.png
+            native-live-camera-portrait.png
+            native-camera-metrics.json
             hyzen_flutter/build/app/reports/androidTests/
           if-no-files-found: warn
