@@ -20,4 +20,4 @@ The live project remains Spark. Cloud Functions deployment needs a Blaze hosting
 
 See FIREBASE_SECURITY_AND_IMPORT_FOLLOWUP.md, PHASE_07_REPORT.md, PHASE_08_REPORT.md, REMAINING_EXECUTION_QUEUE.md and TRACEABILITY_MATRIX.csv for exact scope and remaining acceptance.
 
-Admin student roster review source3b4e88ea adds a read-only private profile list/detail route; its new CI result remains unverified. Published rules alone do not confirm a working admin login or user record in the app.
+Admin student roster review source3b4e88ea adds a read-only private profile list/detail route; source91ecc594 / run40198179439 passes analyzer,159 Flutter tests, debug builds and60 Android emulator tests. Published rules alone do not confirm a working admin login or user record in the app.
