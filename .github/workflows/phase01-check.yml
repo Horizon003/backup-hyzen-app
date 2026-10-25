@@ -2,7 +2,7 @@ name: Hyzen design and avatar review checks
 on:
   push:
     branches: [work/hyzen-phase-01]
-    paths: [updates_phase_01.json, updates_phase_02.json, updates_phase_03.json, updates_phase_04.json, updates_phase_05.json, updates_camera.json, updates_phase_06.json, phase02_assets/**, .github/workflows/phase01-check.yml]
+    paths: [updates_phase_01.json, updates_phase_02.json, updates_phase_03.json, updates_phase_04.json, updates_phase_05.json, updates_camera.json, updates_phase_06.json, updates_phase_07.json, phase02_assets/**, .github/workflows/phase01-check.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
           import json
           from pathlib import Path
           root = Path('hyzen_flutter').resolve()
-          for patch in ['updates_1_4_0.json', 'updates_1_4_1.json', 'updates_1_4_2.json', 'updates_1_4_3.json', 'updates_phase_01.json', 'updates_phase_02.json', 'updates_phase_03.json', 'updates_phase_04.json', 'updates_phase_05.json', 'updates_camera.json', 'updates_phase_06.json']:
+          for patch in ['updates_1_4_0.json', 'updates_1_4_1.json', 'updates_1_4_2.json', 'updates_1_4_3.json', 'updates_phase_01.json', 'updates_phase_02.json', 'updates_phase_03.json', 'updates_phase_04.json', 'updates_phase_05.json', 'updates_camera.json', 'updates_phase_06.json', 'updates_phase_07.json']:
               for rel, text in json.loads(Path(patch).read_text()).items():
                   target = (root / rel).resolve()
                   if not target.is_relative_to(root) or rel.startswith('android/signing') or rel == 'android/key.properties':
@@ -91,7 +91,7 @@ jobs:
           import json
           from pathlib import Path
           root = Path('hyzen_flutter').resolve()
-          for patch in ['updates_1_4_0.json', 'updates_1_4_1.json', 'updates_1_4_2.json', 'updates_1_4_3.json', 'updates_phase_01.json', 'updates_phase_02.json', 'updates_phase_03.json', 'updates_phase_04.json', 'updates_phase_05.json', 'updates_camera.json', 'updates_phase_06.json']:
+          for patch in ['updates_1_4_0.json', 'updates_1_4_1.json', 'updates_1_4_2.json', 'updates_1_4_3.json', 'updates_phase_01.json', 'updates_phase_02.json', 'updates_phase_03.json', 'updates_phase_04.json', 'updates_phase_05.json', 'updates_camera.json', 'updates_phase_06.json', 'updates_phase_07.json']:
               for rel, text in json.loads(Path(patch).read_text()).items():
                   target = (root / rel).resolve()
                   if not target.is_relative_to(root) or rel.startswith('android/signing') or rel == 'android/key.properties':
