@@ -12,7 +12,7 @@ const service=new QuizImportService(getFirestore(),{
 });
 const options={enforceAppCheck:true,maxInstances:1,memory:'256MiB',timeoutSeconds:60};
 // No automatic deployment/configuration is included. Empty admin list and missing
-// server-only control/taxonomy documents deny all work. No student endpoint exists.
+// server-only control/taxonomy documents deny imports. Gameplay is gated separately below.
 export const previewQuizCsv=onCall(options,importHandler(service,'preview'));
 export const commitQuizCsv=onCall(options,importHandler(service,'commit'));
 
@@ -21,3 +21,19 @@ export const commitQuizCsv=onCall(options,importHandler(service,'commit'));
 export const expireQuizCsvPreviews=onSchedule({schedule:'every 60 minutes',
   timeZone:'Etc/UTC',maxInstances:1,memory:'256MiB',timeoutSeconds:120},
   async()=>{await expireImportPreviews(getFirestore());});
+
+
+import {QuizPlayService} from './play-service.mjs';
+import {playHandler} from './play-handlers.mjs';
+const play = new QuizPlayService(getFirestore());
+// Default off: explicit approved server policy, memberships and pools required.
+export const startQuiz = onCall(options, playHandler(play, 'start'));
+export const getQuiz = onCall(options, playHandler(play, 'get'));
+export const saveQuiz = onCall(options, playHandler(play, 'save'));
+export const submitQuiz = onCall(options, playHandler(play, 'submit'));
+export const createQuizDuel = onCall(options, playHandler(play, 'createDuel'));
+export const joinQuizDuel = onCall(options, playHandler(play, 'joinDuel'));
+export const getQuizDuel = onCall(options, playHandler(play, 'duelStatus'));
+export const cancelQuizDuel = onCall(options, playHandler(play, 'cancelDuel'));
+
+export const quizLobby = onCall(options, playHandler(play, 'lobby'));

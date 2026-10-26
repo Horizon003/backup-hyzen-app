@@ -1,3 +1,5 @@
+> 2026-10-26 continuation: see `docs/handoff/QUIZ_DUEL_RELEASE_CONTINUATION.md` for the new default-off gameplay/client and canonical release changes. Earlier checkpoints below are historical.
+
 # Remaining execution queue
 
 Review branch `work/hyzen-phase-01` / draft PR https://github.com/Horizon003/pharm-d-with-hyzen/pull/1. Main and app deployment remain unchanged; the private profile rules are published.
@@ -14,3 +16,4 @@ Review branch `work/hyzen-phase-01` / draft PR https://github.com/Horizon003/pha
 These are review-stage engineering results with explicit remaining live/device gates. No unattended work after the turn or all-phases-complete/release-ready claim is implied.
 
 Latest independent code follow-up: CHECKOUT_AND_IMPORT_RECOVERY.md records durable checkout, actual Auth/profile emulator integration and private CSV handler/retention candidates. Exact completed CI evidence is maintained in draft PR1; none of these changes is a final APK or gameplay release.
+

@@ -15,7 +15,7 @@ import zipfile
 
 PATCHES = tuple(f'updates_1_4_{i}.json' for i in range(4)) + tuple(
     f'updates_phase_{i:02}.json' for i in range(1,6)) + (
-    'updates_camera.json','updates_phase_06.json','updates_phase_07.json')
+    'updates_camera.json','updates_phase_06.json','updates_phase_07.json','updates_phase_08.json')
 BASE = 'PharmD_With_Hyzen_Source_1.3.3.zip'
 MAX_EXPANDED = 1024 * 1024 * 1024
 
@@ -126,3 +126,4 @@ def main(argv=None):
 
 
 if __name__=='__main__':raise SystemExit(main())
+

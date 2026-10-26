@@ -196,3 +196,15 @@ test('transactional receipt check prevents concurrent and post-drain retry even 
     assert.equal((await getDoc(receipt)).data().status,'Shipped');
   }
 });
+
+
+test('all quiz gameplay namespaces stay private even for the client-side administrator',async()=>{
+  const paths=['quiz_control/play','quiz_members/alice','quiz_player_state/alice','quiz_attempts/fixture','quiz_duels/fixture','quiz_duel_requests/fixture','quiz_seen/fixture/questions/q1','quiz_pools/fixture','quiz_publications/q1__v1','quiz_question_revisions/q1__v1'];
+  for(const name of ['profile','commerce'])for(const path of paths){
+    await seed(name,path,{privateKey:'SECRET'});
+    for(const db of [guest(name),client(name),client(name,admin)]){
+      await assertFails(getDoc(ref(db,path)));
+      await assertFails(setDoc(ref(db,path),{enabled:true,score:999}));
+    }
+  }
+});

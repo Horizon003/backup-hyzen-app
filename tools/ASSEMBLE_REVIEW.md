@@ -1,3 +1,5 @@
+> 2026-10-26 continuation: see `docs/handoff/QUIZ_DUEL_RELEASE_CONTINUATION.md` for the new default-off gameplay/client and canonical release changes. Earlier checkpoints below are historical.
+
 # Reproducible source assembly
 
 Run from a checkout of the review branch with the actual base ZIP and overlays:
@@ -17,3 +19,4 @@ Guards reject absolute/traversal/ambiguous paths, ZIP/source symlinks, duplicate
 review_assembly_manifest.json records ordered overlays, SHA-256 digests of the base ZIP and each patch, every assembled output file, review-only status and test mode. It contains filenames/digests, not file contents or credentials. Identical inputs yield identical manifests. Final overlay hashes are verified after asset copying so a later copy cannot silently replace application source.
 
 The source-tools CI runs synthetic security/parity regressions and also assembles the actual repository inputs. Its artifact contains the manifest only. Passing assembly does not prove Flutter/native/device/backend acceptance. The production release workflow remains unchanged and does not automatically consume these review overlays; rollout integration and authorization remain separate release gates.
+

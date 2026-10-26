@@ -1,3 +1,5 @@
+> 2026-10-26 continuation: see `docs/handoff/QUIZ_DUEL_RELEASE_CONTINUATION.md` for the new default-off gameplay/client and canonical release changes. Earlier checkpoints below are historical.
+
 # Private quiz CSV backend candidate — not deployed
 
 This adds actual Firebase Admin/Firestore transaction code and two Firebase callable handlers: `previewQuizCsv` and `commitQuizCsv`. The handlers require verified callable authentication, App Check, a server-configured `HYZEN_QUIZ_ADMIN_UIDS` list, enabled private import control and a privately stored owner-approved real taxonomy. Every gate defaults off/missing; client `role`/`admin` fields and supplied taxonomy are never trusted. No student endpoint, attempt allocator, score calculator or ranking is introduced.
@@ -20,3 +22,4 @@ Tests use synthetic `demo-hyzen-backend` only, real Admin SDK transactions and a
 Live deployment requires dedicated staging and a backend hosting/billing decision. The existing project is Spark; Firebase Cloud Functions production deployment requires Blaze, per https://firebase.google.com/docs/functions/get-started. No billing upgrade, terms acceptance, project creation or endpoint deployment was performed. Scoring, timezone/aborted attempt, privacy and duel policies still need approval before gameplay activation. No monetary feature is present.
 
 The callable/scheduler APIs follow the pinned Firebase Functions SDK. Reference: https://firebase.google.com/docs/app-check/cloud-functions and https://firebase.google.com/docs/functions/schedule-functions. The scheduled job is source only; no Scheduler job, billed service or production index was created.
+
