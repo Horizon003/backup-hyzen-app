@@ -4,7 +4,7 @@ import {ImportError} from './import-service.mjs';
 // Firebase verifies the tokens before constructing request.auth/request.app.
 // These checks also fail closed if a future adapter bypasses the callable wrapper.
 export function importHandler(service, method) {
-  if (!['preview','commit'].includes(method)) throw new Error('Unknown import operation');
+  if (!['preview','commit','listQuestions','reviewQuestion','setPublication'].includes(method)) throw new Error('Unknown import operation');
   return async request => {
     if (!request?.auth?.uid) throw new HttpsError('unauthenticated','Sign in to continue.');
     if (!request.app?.appId) throw new HttpsError('failed-precondition','App verification is required.');
@@ -31,3 +31,4 @@ export function importHandler(service, method) {
     }
   };
 }
+

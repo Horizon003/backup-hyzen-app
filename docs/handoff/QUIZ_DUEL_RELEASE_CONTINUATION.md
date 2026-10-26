@@ -14,7 +14,9 @@ Starting snapshot: `b84307e4`, PR1 / `work/hyzen-phase-01`. This continuation us
 
 ## Validation
 
-Final local validation: **78 backend/emulator tests passed, 0 failed**, including real Firestore transaction races and client rules denial across gameplay namespaces. **16 Python source/CSV/release-evidence tests passed**. Workflow YAML parses and `git diff --check` passes. Four Flutter widget tests are included in the overlay but have NOT been run; Flutter dependency resolution, analyzer, widget/native builds and signed release remain unverified.
+Latest local validation: **87 backend/emulator tests passed, 0 failed**, including nine new administrator review/publication tests. The previous source commit `d570894eed8219ea3633e7fa001cd61b887ee172` passed backend CI, Flutter dependency resolution/analyzer, **176 Flutter tests**, and **60 native Android instrumentation tests** (workflow run 40272946571). Its native debug build and emulator installation succeeded. **16 Python source/CSV/release-evidence tests passed** previously. The additional admin backend change has local emulator validation; its new remote CI is pending. Signed release remains unbuilt.
+
+Firebase login was visibly successful on 2026-10-26 and the project overview showed **Spark**. After browser runtime/tab recovery, the new Firebase tab returned to Google signed-out account selection. No deployment or billing change occurred. Cloud Functions deployment requires a Blaze billing decision; no spending approval has been inferred.
 
 **Remote persistence:** the first GitHub create-tree write did not execute because automatic approval review hit an account usage limit. After the user's continuation, retrying the same normal approval path succeeded. Source is being recorded on independent branch `work/hyzen-quiz-duel-release`; consult its PR and completed CI for actual remote validation. A recovery ZIP also preserves the earlier unpushed checkpoint. No merge, deployment, final release or Drive upload is implied.
 
@@ -38,3 +40,10 @@ Final local validation: **78 backend/emulator tests passed, 0 failed**, includin
 
 Deploy only to an explicitly selected staging project using `firebase.quiz.json` after provisioning App Check and the administrator allowlist for import. No `.firebaserc` production default or credentials are included. Check the scheduled preview-retention index separately. Disabling `quiz_control/play.enabled` blocks new and existing gameplay APIs; rollback does not delete existing data.
 
+## Administrator publication continuation
+
+Added `QuizAdminService` with `listQuizQuestions`, `reviewQuizQuestion`, and `setQuizPublication` callables. They reuse the fixed server administrator allowlist, App Check, and enabled import/approved taxonomy gate. List pages contain at most 20 questions without answer keys. Only an authorized review returns the content and answer key, never import actor metadata.
+
+Publication/withdrawal requires the exact reviewed content hash, explicit `reviewed:true`, current publication version, and a request ID. Transactions prevent stale or concurrent admin decisions from overwriting newer ones. Exact retries return the original receipt; immutable revision documents are never edited. Private `quiz_publication_audit` records capture the administrator and decision. Withdrawal affects future allocations, not question snapshots in already-started attempts. Import/taxonomy must remain enabled for these administration APIs.
+
+The in-app admin Question Bank screen, new-revision editor, member/pool administration, and production setup remain pending. These callable APIs are not deployed and do not automatically approve or publish any real MCQs.

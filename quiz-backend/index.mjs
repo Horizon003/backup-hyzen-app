@@ -37,3 +37,11 @@ export const getQuizDuel = onCall(options, playHandler(play, 'duelStatus'));
 export const cancelQuizDuel = onCall(options, playHandler(play, 'cancelDuel'));
 
 export const quizLobby = onCall(options, playHandler(play, 'lobby'));
+
+import {QuizAdminService} from './admin-service.mjs';
+const quizAdmin = new QuizAdminService(getFirestore(), {
+  adminUids:(process.env.HYZEN_QUIZ_ADMIN_UIDS??'').split(',').map(v=>v.trim()).filter(Boolean),
+});
+export const listQuizQuestions = onCall(options, importHandler(quizAdmin, 'listQuestions'));
+export const reviewQuizQuestion = onCall(options, importHandler(quizAdmin, 'reviewQuestion'));
+export const setQuizPublication = onCall(options, importHandler(quizAdmin, 'setPublication'));
