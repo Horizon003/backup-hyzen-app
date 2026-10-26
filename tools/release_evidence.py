@@ -16,7 +16,7 @@ def evidence(source, output, commit, version, build):
     assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version), 'Invalid version'
     assert build.isdigit() and int(build) > 11, 'Version code must exceed baseline'
     report=(output/'signing-report.txt').read_text().lower()
-    certificates=re.findall(r'^signer #\d+ certificate sha-256 digest:\s*([a-f0-9]+)\s*$',report,re.M)
+    certificates=re.findall(r'^(?:signer #\d+|v2 signer:) certificate sha-256 digest:\s*([a-f0-9]+)\s*$',report,re.M)
     assert certificates == [CERT], 'Unexpected release certificate'
     assembly=json.loads((source/'review_assembly_manifest.json').read_text())
     assert assembly['debug_tests'] is False, 'Debug assembly cannot be released'

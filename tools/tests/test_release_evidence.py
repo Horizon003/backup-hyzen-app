@@ -23,3 +23,6 @@ class ReleaseEvidenceTests(unittest.TestCase):
  def test_debug_source_rejected(self):
   (self.source/'review_assembly_manifest.json').write_text('{"debug_tests":true}')
   with self.assertRaises(AssertionError):self.run_evidence()
+ def test_v2_signer_report_from_current_android_tool(self):
+  (self.output/'signing-report.txt').write_text('V2 Signer: certificate SHA-256 digest: '+release.CERT+'\n')
+  self.assertEqual(self.run_evidence()['certificate_sha256'],release.CERT)
