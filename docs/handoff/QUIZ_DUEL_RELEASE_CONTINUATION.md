@@ -1,5 +1,9 @@
 # Quiz/duel and canonical release continuation — 2026-10-26
 
+## Current owner decision: free release with Campus League coming soon
+
+The owner declined paid billing and requested an APK now with Campus League marked Coming soon. Student and Question Bank routes now show a static Coming soon screen; the admin Question Bank menu is hidden and the concrete Firebase quiz gateway refuses calls before Auth/App Check/network initialization. Existing quiz implementation is retained for future work. Quiz deployment, rankings, pools, membership and reward features are deferred, not release claims. No billing upgrade is authorized. A branch-scoped push starts the signed candidate APK workflow without publishing or merging automatically.
+
 Starting snapshot: `b84307e4`, PR1 / `work/hyzen-phase-01`. This continuation uses an independent branch to avoid overwriting another ongoing chat. It does not merge PR1 or deploy Firebase, billing, rules, Pages or customer data.
 
 ## Implemented in this continuation
