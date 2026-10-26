@@ -119,7 +119,14 @@ jobs:
           cp hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk release/PharmD-With-Hyzen.apk
           signer=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
           "$signer" verify --verbose --print-certs release/PharmD-With-Hyzen.apk > release/signing-report.txt
+          cat release/signing-report.txt
           python3 tools/release_evidence.py --source hyzen_flutter --output release --commit "$GITHUB_SHA" --version "$VERSION_NAME" --build "$VERSION_CODE"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: hyzen-signing-diagnostics-not-for-release
+          path: release/signing-report.txt
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         with:
           name: hyzen-current-signed-candidate
