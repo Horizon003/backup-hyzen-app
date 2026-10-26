@@ -46,4 +46,10 @@ Added `QuizAdminService` with `listQuizQuestions`, `reviewQuizQuestion`, and `se
 
 Publication/withdrawal requires the exact reviewed content hash, explicit `reviewed:true`, current publication version, and a request ID. Transactions prevent stale or concurrent admin decisions from overwriting newer ones. Exact retries return the original receipt; immutable revision documents are never edited. Private `quiz_publication_audit` records capture the administrator and decision. Withdrawal affects future allocations, not question snapshots in already-started attempts. Import/taxonomy must remain enabled for these administration APIs.
 
-The in-app admin Question Bank screen, new-revision editor, member/pool administration, and production setup remain pending. These callable APIs are not deployed and do not automatically approve or publish any real MCQs.
+The new-revision editor, member/pool administration, and production setup remain pending. These callable APIs are not deployed and do not automatically approve or publish any real MCQs.
+
+## Administrator screen continuation
+
+Added the in-app Question Bank route under Admin → Content, keyed by the current auth identity. It provides bounded question pages, answer/explanation review, explicit acknowledgement before publish/withdraw, and CSV paste → server validation → explicit draft import confirmation. Failed mutations retain the exact request payload and deterministic request ID for safe retry. CSV imports never auto-publish. This iteration accepts pasted CSV text; a device CSV file picker is still pending. Server allowlist checks remain authoritative regardless of route visibility.
+
+Four widget tests cover failure recovery, review acknowledgement, exact publication retries, and explicit CSV commit with stable retry identity. The 16 local Python checks pass. Remote Flutter/analyzer/native validation for this screen is pending; do not infer it from the previous successful CI. Previous administrator API commit 72e87a38 passed both remote review and Firebase-security workflows.
