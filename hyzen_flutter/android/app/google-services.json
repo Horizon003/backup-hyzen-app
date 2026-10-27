@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "975548206224",
+    "project_id": "pharmawhisper-debd2",
+    "storage_bucket": "pharmawhisper-debd2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:975548206224:android:4d1d78ad7f7e5b8cd95c15",
+        "android_client_info": {
+          "package_name": "com.hyzen.pharmd"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrgo_nczpplCBRgeHk4oNCKLoStEdMV0g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

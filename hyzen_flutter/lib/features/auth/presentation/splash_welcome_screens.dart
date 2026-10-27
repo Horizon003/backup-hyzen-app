@@ -1,0 +1,253 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/theme/tokens.dart';
+import '../../../core/config/brand.dart';
+import '../../../core/widgets/hyzen_art.dart';
+
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(Brand.logoAsset, width: 72, height: 72),
+            const SizedBox(height: 16),
+            Text(
+              'PHARM D',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: HColors.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const Text('WITH HYZEN · Your pharmacy journey'),
+            const SizedBox(height: 20),
+            const HyzenArt('welcome', size: 280),
+            const SizedBox(height: 24),
+            const SizedBox(
+              width: 120,
+              child: LinearProgressIndicator(minHeight: 5),
+            ),
+            const SizedBox(height: 12),
+            const Text('Preparing your study space…'),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class WelcomeScreen extends StatefulWidget {
+  const WelcomeScreen({super.key});
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  final _pages = PageController();
+  int _index = 0;
+  static const _content = [
+    (
+      'welcome',
+      'Your smart\nPharm-D study partner',
+      'Learn with notes, MCQs and past papers, organised around your professional year.',
+    ),
+    (
+      'library',
+      'Every library,\nat your fingertips.',
+      'Find the right subject, practise questions and continue your pharmacy journey.',
+    ),
+    (
+      'downloads',
+      'Read anywhere.\nEven offline.',
+      'Save your study notes once and open them again without an internet connection.',
+    ),
+  ];
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              child: Row(
+                children: [
+                  Image.asset(Brand.logoAsset, width: 48, height: 48),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(
+                    'PHARM D',
+                    style: t.textTheme.headlineMedium?.copyWith(
+                      color: t.colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const Text('WITH HYZEN · Your pharmacy journey'),
+                    ],
+                  )),
+                ],
+              ),
+            ),
+            Expanded(
+              child: PageView.builder(
+                controller: _pages,
+                itemCount: _content.length,
+                onPageChanged: (i) => setState(() => _index = i),
+                itemBuilder: (context, i) {
+                  final item = _content[i];
+                  return LayoutBuilder(
+                    builder: (context, c) => SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: i == 0
+                          ? Column(
+                              children: [
+                                Container(
+                                  height: (c.maxHeight * .52).clamp(170, 380),
+                                  width: double.infinity,
+                                  clipBehavior: Clip.antiAlias,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(36),
+                                    color: t.brightness == Brightness.dark
+                                        ? const Color(0xFF302846)
+                                        : const Color(0xFFE4F4EB),
+                                  ),
+                                  child: Image.asset(
+                                    'assets/illustrations/welcome.png',
+                                    fit: BoxFit.contain,
+                                    alignment: Alignment.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(22),
+                                  decoration: BoxDecoration(
+                                    color: t.colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Your Brain',
+                                        style: t.textTheme.displaySmall
+                                            ?.copyWith(fontSize: 36),
+                                      ),
+                                      Text(
+                                        'Called. It wants more 👋',
+                                        style: t.textTheme.titleMedium,
+                                      ),
+                                      const SizedBox(height: 18),
+                                      Text(
+                                        'Small lessons. Big wins. Your Pharm-D journey starts here.',
+                                        style: t.textTheme.bodyMedium,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                HyzenArt(
+                                  item.$1,
+                                  size: (c.maxHeight * .59).clamp(180, 340),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  item.$2,
+                                  textAlign: TextAlign.center,
+                                  style: t.textTheme.displaySmall?.copyWith(
+                                    fontSize: 29,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  item.$3,
+                                  textAlign: TextAlign.center,
+                                  style: t.textTheme.bodyLarge?.copyWith(
+                                    color: t.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < 3; i++)
+                  AnimatedContainer(
+                    duration: HMotion.fast,
+                    margin: const EdgeInsets.all(3),
+                    height: 6,
+                    width: i == _index ? 25 : 12,
+                    decoration: BoxDecoration(
+                      color: i == _index
+                          ? t.colorScheme.primary
+                          : t.colorScheme.primary.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+              child: FilledButton(
+                onPressed: () => _index < 2
+                    ? _pages.nextPage(
+                        duration: HMotion.medium,
+                        curve: Curves.easeOut,
+                      )
+                    : context.push('/login'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _index == 0 ? const Color(0xFF1A1723) : null,
+                  foregroundColor: _index == 0 ? Colors.white : null,
+                  shape: const StadiumBorder(),
+                ),
+                child: Text(
+                  _index == 0
+                      ? 'Get Started →'
+                      : _index == 2
+                      ? 'Log in →'
+                      : 'Continue →',
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () => context.push('/login'),
+                  child: const Text('Skip'),
+                ),
+                TextButton(
+                  onPressed: () => context.push('/register/personal'),
+                  child: const Text('Create account'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}

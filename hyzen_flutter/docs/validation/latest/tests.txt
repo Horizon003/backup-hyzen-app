@@ -1,0 +1,58 @@
+00:00 +0: loading /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart
+00:00 +0: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/registration_test.dart: empty draft fails each step
+00:00 +1: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: (setUpAll)
+00:00 +2: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: (setUpAll)
+00:00 +3: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: (setUpAll)
+00:00 +3: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +4: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +5: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +6: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +7: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +8: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +9: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +10: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +11: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +12: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +13: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +14: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +15: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +16: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +17: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +18: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +19: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +20: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +21: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +22: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +23: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +24: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +25: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:00 +26: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:01 +27: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:01 +27: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/content_refresh_test.dart: failed forced refresh falls back to the cached content
+content pw_notes_tree fetch failed: Bad state: offline
+00:01 +28: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:01 +29: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:01 +30: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:01 +31: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:01 +32: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:01 +33: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:01 +34: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:01 +35: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:02 +36: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:02 +37: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:02 +38: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: all bottom tabs load real screens
+00:02 +39: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/bug_regression_test.dart: signup typing, keyboard resize and scroll retain field focus
+00:03 +40: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/bug_regression_test.dart: signup typing, keyboard resize and scroll retain field focus
+00:03 +41: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: blog, about, contact and safe missing viewer render
+00:03 +42: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: blog, about, contact and safe missing viewer render
+00:03 +43: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: blog, about, contact and safe missing viewer render
+00:03 +44: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: blog, about, contact and safe missing viewer render
+00:03 +45: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: blog, about, contact and safe missing viewer render
+00:04 +46: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: Android back returns to Home from a tab and pops one library level
+00:05 +47: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: academic content switches when a student changes professional year
+00:05 +48: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: completed student profile is retained without a repeat completion prompt
+00:05 +49: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: student cannot enter admin routes
+00:06 +50: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: small phone home layout supports larger text
+00:06 +51: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: admin settings, import template and content editor render
+00:08 +52: /workspace/scratch/d8f628be0d15/source/hyzen_flutter/test/navigation_test.dart: (tearDownAll)
+00:08 +52: All tests passed!

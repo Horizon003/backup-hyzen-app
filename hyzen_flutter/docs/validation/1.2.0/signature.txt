@@ -1,0 +1,17 @@
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+Signer #1 certificate DN: CN=Hyzen Release, OU=Android, O=Hyzen, C=PK
+Signer #1 certificate SHA-256 digest: 3fd902d131ae56d8de4792c9f5953759e2b375e32bcad8f57f7ef5c0ab887f83
+Signer #1 certificate SHA-1 digest: a08e2cbe5321b439cc74e40914cc570b8b9986b6
+Signer #1 certificate MD5 digest: 65b87d834eab92589edca397783e98bf
+Signer #1 key algorithm: RSA
+Signer #1 key size (bits): 3072
+Signer #1 public key SHA-256 digest: 577cf69b40bad902258ba4004f6cddc1da24ff2bd6485173bec59a2b36f62db9
+Signer #1 public key SHA-1 digest: 57294814cb38891f94b7e2c393b3bd4a9cf3301f
+Signer #1 public key MD5 digest: d1f3a960f961d278978acf2040f98d46
