@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/content/data/content_providers.dart';
+import '../theme/tokens.dart';
 
 /// Opaque floating dock matching the supplied five-destination reference.
 /// No blurred glass, no stacked system/navigation padding, no tiny hit areas.
+/// Approved compact four-tab dock (Q03): Home / Study / PDF Studio / Shop.
+/// Profile and Settings live behind the top-right avatar, never as a tab.
 class MainDock extends StatelessWidget {
   const MainDock({super.key, required this.path});
   final String path;
@@ -14,109 +17,58 @@ class MainDock extends StatelessWidget {
     final t = Theme.of(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     if (keyboard) return const SizedBox.shrink();
+    final dark = t.brightness == Brightness.dark;
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      minimum: const EdgeInsets.fromLTRB(14, 0, 14, 10),
       child: Center(
         heightFactor: 1,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 540),
+          constraints: const BoxConstraints(maxWidth: 520),
           child: Container(
             key: const ValueKey('main-dock'),
-            padding: const EdgeInsets.fromLTRB(5, 5, 5, 4),
+            height: 66,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             decoration: BoxDecoration(
-              color: t.colorScheme.surface,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: t.colorScheme.outlineVariant),
-              boxShadow: [
+              color: dark ? const Color(0xFF10232B) : const Color(0xFF1A3440),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: const [
                 BoxShadow(
-                  color: t.colorScheme.primary.withValues(alpha: .12),
-                  blurRadius: 22,
-                  offset: const Offset(0, 5),
+                  color: Color(0x331A3440),
+                  blurRadius: 24,
+                  offset: Offset(0, 8),
                 ),
               ],
             ),
             child: Row(
               children: [
-                _item(
-                  context,
-                  'Home',
-                  Icons.home_rounded,
-                  path == '/home',
-                  () => context.go('/home'),
+                _DockItem(
+                  label: 'Home',
+                  icon: Icons.home_outlined,
+                  selectedIcon: Icons.home_rounded,
+                  selected: path == '/home',
+                  onTap: () => context.go('/home'),
                 ),
-                _item(
-                  context,
-                  'Study',
-                  Icons.menu_rounded,
-                  path.startsWith('/study') || path == '/downloads',
-                  () => showStudyMenu(context),
+                _DockItem(
+                  label: 'Study',
+                  icon: Icons.menu_book_outlined,
+                  selectedIcon: Icons.menu_book_rounded,
+                  selected: path.startsWith('/study') || path == '/downloads',
+                  onTap: () => showStudyMenu(context),
                 ),
-                Expanded(
-                  child: Semantics(
-                    button: true,
-                    label: 'PDF Studio',
-                    selected: path.startsWith('/pdf-studio'),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(30),
-                      onTap: () => context.go('/pdf-studio'),
-                      child: Container(
-                        height: 62,
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              t.colorScheme.primary,
-                              t.colorScheme.primaryContainer == t.colorScheme.primary ? t.colorScheme.primary : Color.lerp(t.colorScheme.primary, Colors.black, .15)!,
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: t.colorScheme.primary.withValues(
-                                alpha: .24,
-                              ),
-                              blurRadius: 12,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.description_rounded,
-                              color: t.colorScheme.onPrimary,
-                              size: 25,
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'PDF',
-                              style: TextStyle(
-                                color: t.colorScheme.onPrimary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                _DockItem(
+                  label: 'PDF Studio',
+                  icon: Icons.picture_as_pdf_outlined,
+                  selectedIcon: Icons.picture_as_pdf_rounded,
+                  selected: path.startsWith('/pdf-studio'),
+                  onTap: () => context.go('/pdf-studio'),
                 ),
-                _item(
-                  context,
-                  'Shop',
-                  Icons.storefront_outlined,
-                  path.startsWith('/shop'),
-                  () => context.go('/shop'),
-                ),
-                _item(
-                  context,
-                  'Settings',
-                  Icons.settings_rounded,
-                  path == '/settings',
-                  () => context.go('/settings'),
+                _DockItem(
+                  label: 'Shop',
+                  icon: Icons.storefront_outlined,
+                  selectedIcon: Icons.storefront_rounded,
+                  selected: path.startsWith('/shop'),
+                  onTap: () => context.go('/shop'),
                 ),
               ],
             ),
@@ -125,54 +77,62 @@ class MainDock extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _item(
-    BuildContext context,
-    String label,
-    IconData icon,
-    bool selected,
-    VoidCallback onTap,
-  ) {
-    final t = Theme.of(context);
-    final color = selected
-        ? t.colorScheme.primary
-        : t.colorScheme.onSurfaceVariant;
+class _DockItem extends StatelessWidget {
+  const _DockItem({
+    required this.label,
+    required this.icon,
+    required this.selectedIcon,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final IconData icon, selectedIcon;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    const active = Color(0xFF5FD1C1);
+    final reduce = MediaQuery.disableAnimationsOf(context);
     return Expanded(
       child: Tooltip(
         message: label,
         child: Semantics(
           selected: selected,
           button: true,
+          label: label,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(26),
-            child: SizedBox(
-              height: 62,
+            borderRadius: BorderRadius.circular(18),
+            child: AnimatedContainer(
+              duration: reduce ? Duration.zero : const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: selected
+                    ? Colors.white.withValues(alpha: .10)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? t.colorScheme.primary.withValues(alpha: .08)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Icon(icon, color: color, size: 25),
+                  Icon(
+                    selected ? selectedIcon : icon,
+                    color: selected ? active : Colors.white70,
+                    size: 23,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     label,
                     maxLines: 1,
+                    overflow: TextOverflow.fade,
+                    softWrap: false,
                     style: TextStyle(
-                      fontSize: 10,
-                      color: color,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 10.5,
+                      color: selected ? Colors.white : Colors.white60,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
                 ],
@@ -213,8 +173,8 @@ Future<void> showStudyMenu(BuildContext context) {
             alignment: Alignment.bottomLeft,
             child: Padding(
               padding: EdgeInsets.only(
-                left: (MediaQuery.sizeOf(c).width * .20).clamp(12, 150),
-                bottom: 91,
+                left: (MediaQuery.sizeOf(c).width * .16).clamp(12, 150),
+                bottom: 92,
                 right: 16,
               ),
               child: StatefulBuilder(
@@ -290,7 +250,7 @@ Future<void> showStudyMenu(BuildContext context) {
                               _StudyRow(
                                 'MCQs',
                                 Icons.quiz_rounded,
-                                const Color(0xFF1988EA),
+                                HColors.mcqs,
                                 () {
                                   Navigator.pop(c);
                                   router.go('/study/mcqs');
@@ -300,7 +260,7 @@ Future<void> showStudyMenu(BuildContext context) {
                               _StudyRow(
                                 'PPS',
                                 Icons.assignment_rounded,
-                                const Color(0xFFDB8B22),
+                                HColors.special,
                                 () {
                                   Navigator.pop(c);
                                   router.go('/study/papers');

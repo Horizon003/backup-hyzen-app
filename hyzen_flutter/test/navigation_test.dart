@@ -324,7 +324,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await open(tester, '/home');
-    final greeting = find.text('Welcome back,\nAli');
+    final greeting = find.text('Welcome back, Ali');
     final image = find.byWidgetPredicate(
       (w) => w is HyzenArt && w.name == 'home',
     );

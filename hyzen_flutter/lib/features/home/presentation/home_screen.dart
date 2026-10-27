@@ -17,6 +17,9 @@ import '../../content/domain/site_models.dart';
 import '../../shell/app_shell.dart';
 import '../../auth/presentation/auth_controllers.dart';
 import '../data/recent_controller.dart';
+import '../../pdf_studio/data/pdf_studio_repository.dart';
+import '../../downloads/data/downloads_controller.dart';
+import '../../auth/domain/reference_data.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -30,7 +33,6 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t = Theme.of(context);
     final p = ref.watch(profileProvider).valueOrNull;
     final user = ref.watch(authStateProvider).valueOrNull;
     final settings = ref.watch(siteSettingsProvider);
@@ -45,9 +47,22 @@ class HomeScreen extends ConsumerWidget {
         .toList();
     final shopOn = settings.sectionEnabled('shop');
 
+    final libraryCount = kinds.isEmpty
+        ? null
+        : kinds
+              .map((k) => ref.watch(libraryProvider(k)).valueOrNull?.data.fileCount)
+              .whereType<int>()
+              .fold<int>(0, (a, b) => a + b);
+    final studioCount = ref.watch(pdfStudioHistoryProvider).length;
+    final saved = ref
+        .watch(downloadsProvider)
+        .values
+        .where((r) => r.isReady)
+        .length;
+
     return TabPage(
       title: 'PHARM D',
-      subtitle: 'WITH HYZEN · Your pharmacy journey',
+      subtitle: 'WITH HYZEN',
       onRefresh: () => refreshContent(ref, [
         'pw_settings',
         'pw_announcement',
@@ -58,75 +73,75 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: HSpace.screen),
           sliver: SliverList.list(
             children: [
+              HEntrance(
+                child: _GreetingHero(
+                  eyebrow: _greet(),
+                  title: newAccount ? 'Welcome, $name' : 'Welcome back, $name',
+                  year: p == null ? null : ReferenceData.yearLabel(p.professionalYear),
+                  onStudy: () => context.go('/study'),
+                ),
+              ),
+              const Gap(HSpace.md),
+              _SearchBar(onTap: () => context.go('/search', extra: true)),
               if (ann != null) ...[
-                _AnnouncementBar(a: ann),
                 const Gap(HSpace.md),
+                _AnnouncementBar(a: ann),
               ],
-              HyzenBanner(
-                eyebrow: _greet(),
-                title: newAccount
-                    ? 'Welcome to PHARM D,\n$name'
-                    : 'Welcome back,\n$name',
-                subtitle: 'Your next chapter in Pharm-D starts here.',
-                art: 'home',
-                actionLabel: 'Let’s study',
-                action: () => context.go('/study'),
-              ),
-              const Gap(16),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(HRadius.lg),
-                  border: Border.all(color: t.colorScheme.primary, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: t.colorScheme.primary.withValues(alpha: .20),
-                      blurRadius: 18,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-                child: HCard(
-                  onTap: () => context.go('/search', extra: true),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search_rounded, color: t.colorScheme.primary),
-                      const Gap(10),
-                      Expanded(
-                        child: Text(
-                          'Find a subject, topic or file',
-                          style: t.textTheme.bodyMedium,
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_rounded, size: 18),
-                    ],
-                  ),
-                ),
-              ),
-              const Gap(16),
+              const Gap(HSpace.lg),
               const SectionHeader(title: 'Quick access'),
-              const Gap(HSpace.sm),
+              const Gap(4),
               GridView(
                 padding: EdgeInsets.zero,
                 primary: false,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount:
-                      MediaQuery.sizeOf(context).width < 340 ||
-                          MediaQuery.textScalerOf(context).scale(1) > 1.2
-                      ? 2
-                      : 4,
+                  crossAxisCount: 2,
                   mainAxisSpacing: HSpace.sm,
                   crossAxisSpacing: HSpace.sm,
                   mainAxisExtent:
-                      114 *
-                      MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6),
+                      108 *
+                      MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
                 ),
-                children: [for (final k in kinds) _QuickCard(kind: k)],
+                children: [
+                  _QuickTile(
+                    icon: Icons.local_library_rounded,
+                    color: HColors.primary,
+                    title: 'Study Library',
+                    sub: libraryCount == null ? 'Notes, MCQs, PPS' : '$libraryCount files',
+                    onTap: () => context.go('/study'),
+                  ),
+                  _QuickTile(
+                    icon: Icons.document_scanner_rounded,
+                    color: HColors.info,
+                    title: 'PDF Studio',
+                    sub: studioCount == 0 ? 'Scan & create' : '$studioCount documents',
+                    onTap: () => context.go('/pdf-studio'),
+                  ),
+                  _QuickTile(
+                    icon: Icons.download_done_rounded,
+                    color: HColors.papers,
+                    title: 'Downloads',
+                    sub: saved == 0 ? 'Read offline' : '$saved saved',
+                    onTap: () => context.go('/downloads'),
+                  ),
+                  if (shopOn)
+                    _QuickTile(
+                      icon: Icons.storefront_rounded,
+                      color: HColors.special,
+                      title: 'Shop',
+                      sub: settings.shopComingSoon ? 'Coming soon' : 'Study essentials',
+                      onTap: () => context.go('/shop'),
+                    )
+                  else
+                    _QuickTile(
+                      icon: Icons.search_rounded,
+                      color: HColors.special,
+                      title: 'Search',
+                      sub: 'Find any topic',
+                      onTap: () => context.go('/search', extra: true),
+                    ),
+                ],
               ),
               if (recent.isNotEmpty) ...[
                 const Gap(HSpace.lg),
@@ -135,45 +150,41 @@ class HomeScreen extends ConsumerWidget {
                   action: 'Clear',
                   onAction: () => ref.read(recentProvider.notifier).clear(),
                 ),
-                const Gap(HSpace.sm),
-                for (final r in recent.take(2))
+                for (final r in recent.take(3))
                   FileTile(file: r.file, color: kindColor(r.file.kind)),
               ],
-              const Gap(HSpace.lg),
+              const Gap(HSpace.md),
               const SubjectDiscovery(),
-              const Gap(HSpace.sm),
-              if (shopOn)
-                ResourceTile(
-                  icon: Icons.storefront_rounded,
-                  color: HColors.special,
-                  title: 'Pharm-D essentials',
-                  subtitle: settings.shopComingSoon
-                      ? 'Coming soon'
-                      : 'Lab essentials & study companions',
-                  onTap: () => context.push('/shop'),
+              const Gap(HSpace.md),
+              const SectionHeader(title: 'More from Hyzen'),
+              const Gap(4),
+              HCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    if (settings.sectionEnabled('blog'))
+                      _LinkRow(
+                        icon: Icons.article_outlined,
+                        title: 'Blog',
+                        subtitle: 'Articles & study updates',
+                        onTap: () => context.push('/blog'),
+                      ),
+                    if (settings.sectionEnabled('about'))
+                      _LinkRow(
+                        icon: Icons.info_outline_rounded,
+                        title: 'About Hyzen',
+                        subtitle: 'The people behind your journey',
+                        onTap: () => context.push('/about'),
+                      ),
+                    _LinkRow(
+                      icon: Icons.mail_outline_rounded,
+                      title: 'Contact us',
+                      subtitle: 'Send a message to the team',
+                      onTap: () => context.push('/contact'),
+                      last: true,
+                    ),
+                  ],
                 ),
-              if (settings.sectionEnabled('blog'))
-                ResourceTile(
-                  icon: Icons.article_rounded,
-                  color: HColors.info,
-                  title: 'Blog',
-                  subtitle: 'Articles & updates',
-                  onTap: () => context.push('/blog'),
-                ),
-              if (settings.sectionEnabled('about'))
-                ResourceTile(
-                  icon: Icons.favorite_rounded,
-                  color: HColors.lectures,
-                  title: 'About us',
-                  subtitle: 'The people behind your journey',
-                  onTap: () => context.push('/about'),
-                ),
-              ResourceTile(
-                icon: Icons.mail_rounded,
-                color: HColors.primary,
-                title: 'Contact us',
-                subtitle: 'Send a message to the team',
-                onTap: () => context.push('/contact'),
               ),
             ],
           ),
@@ -183,18 +194,190 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _QuickCard extends ConsumerWidget {
-  const _QuickCard({required this.kind});
-  final LibraryKind kind;
+class _GreetingHero extends StatelessWidget {
+  const _GreetingHero({
+    required this.eyebrow,
+    required this.title,
+    required this.onStudy,
+    this.year,
+  });
+  final String eyebrow, title;
+  final String? year;
+  final VoidCallback onStudy;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final n = ref.watch(libraryProvider(kind)).valueOrNull?.data.fileCount;
-    return _QuickTile(
-      icon: kindIcon(kind),
-      color: kindColor(kind),
-      title: kind.shortTitle,
-      sub: n == null ? '\u2026' : '$n files',
-      onTap: () => context.push('/study/${kind.name}'),
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    final hideArt = MediaQuery.textScalerOf(context).scale(1) > 1.6;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        gradient: hSlateGradient,
+        borderRadius: BorderRadius.circular(HRadius.xl),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -40,
+            top: -40,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: .05),
+              ),
+            ),
+          ),
+          if (!hideArt)
+            const Positioned(
+              right: -6,
+              bottom: 0,
+              child: HyzenArt('home', size: 150),
+            ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, 20, hideArt ? 20 : 140, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eyebrow.toUpperCase(),
+                  style: t.textTheme.labelSmall?.copyWith(
+                    color: HColors.mint,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const Gap(6),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                  ),
+                ),
+                if (year != null) ...[
+                  const Gap(8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(HRadius.pill),
+                    ),
+                    child: Text(
+                      year!,
+                      style: t.textTheme.labelSmall?.copyWith(
+                        color: Colors.white,
+                        letterSpacing: .2,
+                      ),
+                    ),
+                  ),
+                ],
+                const Gap(14),
+                FilledButton.icon(
+                  onPressed: onStudy,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: HColors.slate,
+                    minimumSize: const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(HRadius.pill),
+                    ),
+                  ),
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                  label: const Text('Continue to Study'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({required this.onTap});
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Semantics(
+      button: true,
+      label: 'Search',
+      child: Material(
+        color: t.colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HRadius.md),
+          side: BorderSide(color: t.colorScheme.outline),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(HRadius.md),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            child: Row(
+              children: [
+                Icon(Icons.search_rounded, color: t.colorScheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Search subjects, topics or files',
+                    style: t.textTheme.bodyMedium,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: t.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.tune_rounded,
+                    size: 16,
+                    color: t.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.last = false,
+  });
+  final IconData icon;
+  final String title, subtitle;
+  final VoidCallback onTap;
+  final bool last;
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Column(
+      children: [
+        ListTile(
+          onTap: onTap,
+          leading: IconBadge(icon: icon, color: HColors.primary, size: 38),
+          title: Text(title),
+          subtitle: Text(subtitle),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: t.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        if (!last) const Divider(indent: 70, height: 1),
+      ],
     );
   }
 }
@@ -217,32 +400,38 @@ class _QuickTile extends StatelessWidget {
     return HCard(
       onTap: onTap,
       semanticLabel: title,
-      color: t.brightness == Brightness.light
-          ? Color.alphaBlend(color.withValues(alpha: .07), Colors.white)
-          : null,
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(14),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconBadge(icon: icon, color: color, size: 44),
+          Row(
+            children: [
+              IconBadge(icon: icon, color: color, size: 40),
+              const Spacer(),
+              Icon(
+                Icons.arrow_outward_rounded,
+                size: 16,
+                color: t.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: t.textTheme.labelSmall?.copyWith(
-                  fontSize: 11.5,
-                  letterSpacing: 0,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: t.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               Text(
                 sub,
-                style: t.textTheme.bodySmall?.copyWith(fontSize: 10.5),
                 maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: t.textTheme.bodySmall,
               ),
             ],
           ),
@@ -260,27 +449,31 @@ class _AnnouncementBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color.lerp(Theme.of(context).colorScheme.primary, Colors.black, .18)!, Theme.of(context).colorScheme.primary],
+        color: Theme.of(context).colorScheme.primaryContainer,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: .25),
         ),
         borderRadius: BorderRadius.circular(HRadius.md),
       ),
       child: Row(
         children: [
-          const Icon(Icons.campaign_rounded, color: Colors.white, size: 20),
+          Icon(
+            Icons.campaign_rounded,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               a.text,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
           if (a.linkUrl.isNotEmpty)
             TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
               onPressed: () => openLink(context, a.linkUrl),
               child: Text(a.linkText.isEmpty ? 'Open' : a.linkText),
             ),

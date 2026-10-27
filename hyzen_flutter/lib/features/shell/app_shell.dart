@@ -10,6 +10,7 @@ import '../../core/widgets/main_dock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/widgets/profile_avatar.dart';
+import '../auth/domain/reference_data.dart';
 
 /// Authenticated shell: Material navigation with Android back handling.
 class AppShell extends StatelessWidget {
@@ -177,23 +178,60 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.textTheme.headlineMedium?.copyWith(
-                        color: title == 'PHARM D'
-                            ? t.colorScheme.primary
-                            : null,
-                        fontWeight: FontWeight.w800,
+                    if (title == 'PHARM D')
+                      Row(
+                        children: [
+                          Image.asset(
+                            'assets/brand/hyzen_icon_square.png',
+                            width: 30,
+                            height: 30,
+                          ),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'PHARM D ',
+                                    style: TextStyle(
+                                      color: t.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: 'WITH HYZEN',
+                                    style: TextStyle(
+                                      color: t.colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: t.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 17,
+                                letterSpacing: -.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -.4,
+                        ),
                       ),
-                    ),
-                    if (subtitle != null)
+                    if (subtitle != null && title != 'PHARM D')
                       Text(
                         subtitle!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: t.textTheme.bodyMedium,
+                        style: t.textTheme.bodySmall,
                       ),
                   ],
                 ),
@@ -203,18 +241,34 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
               Consumer(
                 builder: (context, ref, _) {
                   final profile = ref.watch(profileProvider).valueOrNull;
-                  return IconButton(
-                    tooltip: 'Profile',
-                    onPressed: () => context.go('/profile'),
-                    icon: ProfileAvatar(
-                      photoUrl: profile?.photoUrl,
-                      radius: 14,
-                      fallback: profile?.firstName ?? 'H',
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 2),
+                    child: Tooltip(
+                      message: 'Profile & settings',
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => showAccountMenu(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: t.colorScheme.primary,
+                              width: 1.6,
+                            ),
+                          ),
+                          child: ProfileAvatar(
+                            photoUrl: profile?.photoUrl,
+                            radius: 16,
+                            fallback: profile?.firstName ?? 'H',
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 },
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 12),
             ],
           ),
         ),
@@ -247,6 +301,100 @@ class OfflineHint extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
+    ),
+  );
+}
+
+
+/// Account sheet behind the top-right avatar (Q03 / Q15): Profile, Settings,
+/// Downloads, Orders and Notifications without adding bottom tabs.
+Future<void> showAccountMenu(BuildContext context) {
+  final router = GoRouter.of(context);
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (c) => Consumer(
+      builder: (c, ref, _) {
+        final t = Theme.of(c);
+        final p = ref.watch(profileProvider).valueOrNull;
+        void go(String path) {
+          Navigator.pop(c);
+          if (path == '/profile' || path == '/settings' || path == '/downloads') {
+            router.go(path);
+          } else {
+            router.push(path);
+          }
+        }
+
+        Widget row(IconData icon, String label, String path) => ListTile(
+          leading: Icon(icon, color: t.colorScheme.primary),
+          title: Text(label),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => go(path),
+        );
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: hSlateGradient,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      ProfileAvatar(
+                        photoUrl: p?.photoUrl,
+                        radius: 26,
+                        fallback: p?.firstName ?? 'H',
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              p?.fullName ?? 'Your account',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: t.textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              p == null
+                                  ? 'PHARM D WITH HYZEN'
+                                  : ReferenceData.yearLabel(p.professionalYear),
+                              style: t.textTheme.bodySmall?.copyWith(
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () => go('/profile'),
+                        child: const Text('View'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                row(Icons.settings_outlined, 'Settings', '/settings'),
+                row(Icons.download_done_rounded, 'Downloads', '/downloads'),
+                row(Icons.notifications_none_rounded, 'Notifications', '/notifications'),
+                row(Icons.receipt_long_outlined, 'My orders', '/orders'),
+              ],
+            ),
+          ),
+        );
+      },
     ),
   );
 }
