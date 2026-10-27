@@ -109,21 +109,44 @@ class AppTheme {
     final ink = dark ? HColors.darkInk : HColors.ink;
     final ink2 = dark ? HColors.darkInk2 : HColors.ink2;
     final generated = ColorScheme.fromSeed(seedColor: seed, brightness: b);
-    final bg = generated.surface;
-    final surface = generated.surfaceContainerLowest;
-    final scheme = ColorScheme.fromSeed(seedColor: seed, brightness: b)
-        .copyWith(
-          primary: dark
-              ? ColorScheme.fromSeed(seedColor: seed, brightness: b).primary
-              : seed,
-          onPrimary: dark ? generated.onPrimary : Colors.white,
-          surface: surface,
-          onSurface: ink,
-          onSurfaceVariant: ink2,
-          error: HColors.error,
-          outline: dark ? const Color(0x33FFFFFF) : HColors.outlineStrong,
-          outlineVariant: dark ? const Color(0x1FFFFFFF) : HColors.outline,
-        );
+    final isBrand = seed.toARGB32() == HColors.primary.toARGB32();
+    final bg = dark ? HColors.darkBackground : HColors.background;
+    final surface = dark ? HColors.darkSurface : HColors.surface;
+    final primary = dark
+        ? (isBrand ? HColors.darkPrimary : generated.primary)
+        : seed;
+    final container = dark
+        ? Color.alphaBlend(primary.withValues(alpha: .18), HColors.darkSurface)
+        : (isBrand
+              ? HColors.primarySoft
+              : Color.alphaBlend(seed.withValues(alpha: .14), Colors.white));
+    final scheme = generated.copyWith(
+      primary: primary,
+      onPrimary: dark ? const Color(0xFF00201D) : Colors.white,
+      primaryContainer: container,
+      onPrimaryContainer: dark ? HColors.darkInk : HColors.slate,
+      secondary: dark ? const Color(0xFF8FB4BC) : HColors.slate,
+      onSecondary: dark ? HColors.slateDeep : Colors.white,
+      surface: surface,
+      onSurface: ink,
+      onSurfaceVariant: ink2,
+      surfaceContainerLowest: dark ? HColors.darkSurface : Colors.white,
+      surfaceContainerLow: dark ? HColors.darkSurfaceAlt : HColors.surfaceAlt,
+      surfaceContainer: dark
+          ? const Color(0xFF223D48)
+          : const Color(0xFFE4EFED),
+      surfaceContainerHigh: dark
+          ? const Color(0xFF284652)
+          : const Color(0xFFDCE9E7),
+      surfaceContainerHighest: dark
+          ? const Color(0xFF2E4E5B)
+          : const Color(0xFFD3E3E0),
+      error: HColors.error,
+      outline: dark ? const Color(0x33FFFFFF) : HColors.outlineStrong,
+      outlineVariant: dark ? const Color(0x1FFFFFFF) : HColors.outline,
+      inverseSurface: dark ? HColors.darkInk : HColors.slate,
+      onInverseSurface: dark ? HColors.slate : Colors.white,
+    );
     final text = _text(ink, ink2);
     final border = OutlineInputBorder(
       borderRadius: HRadius.all(HRadius.md),
@@ -160,7 +183,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: generated.surfaceContainerLowest,
+        fillColor: dark ? HColors.darkSurface : Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
@@ -190,14 +213,45 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(0, 46),
-          textStyle: text.labelLarge,
+          minimumSize: const Size(0, 50),
+          textStyle: text.labelLarge?.copyWith(fontSize: 14),
+          elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: HRadius.all(HRadius.md)),
         ),
       ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: HRadius.all(HRadius.lg)),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? Colors.white : null,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? scheme.primary : null,
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? Colors.transparent : null,
+        ),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: scheme.primary,
+        linearTrackColor: scheme.primaryContainer,
+        circularTrackColor: Colors.transparent,
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: scheme.primary,
+        unselectedLabelColor: ink2,
+        indicatorColor: scheme.primary,
+        dividerColor: scheme.outlineVariant,
+        labelStyle: text.labelLarge,
+        unselectedLabelStyle: text.labelMedium,
+      ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 46),
+          minimumSize: const Size(0, 50),
           foregroundColor: ink,
           textStyle: text.labelLarge,
           side: BorderSide(color: scheme.outline),
@@ -211,10 +265,11 @@ class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
+        backgroundColor: surface,
         selectedColor: scheme.primaryContainer,
         checkmarkColor: scheme.primary,
         labelStyle: text.labelMedium,
-        side: BorderSide.none,
+        side: BorderSide(color: scheme.outlineVariant),
         shape: RoundedRectangleBorder(borderRadius: HRadius.all(HRadius.pill)),
       ),
       navigationBarTheme: NavigationBarThemeData(
@@ -236,8 +291,8 @@ class AppTheme {
       dividerTheme: DividerThemeData(color: scheme.outlineVariant, space: 1),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          backgroundColor: scheme.surfaceContainerLow,
-          foregroundColor: ink2,
+          backgroundColor: dark ? HColors.darkSurfaceAlt : Colors.white,
+          foregroundColor: ink,
           minimumSize: const Size(42, 42),
           shape: const CircleBorder(),
         ),
@@ -257,7 +312,7 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: HColors.ink,
+        backgroundColor: HColors.slate,
         contentTextStyle: text.bodyMedium?.copyWith(color: Colors.white),
         shape: RoundedRectangleBorder(borderRadius: HRadius.all(HRadius.md)),
       ),

@@ -51,7 +51,12 @@ class HCard extends StatelessWidget {
     final br = BorderRadius.circular(radius);
     final card = Material(
       color: color ?? t.colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: br, side: BorderSide.none),
+      shape: RoundedRectangleBorder(
+        borderRadius: br,
+        side: color == null
+            ? BorderSide(color: t.colorScheme.outlineVariant)
+            : BorderSide.none,
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -64,9 +69,9 @@ class HCard extends StatelessWidget {
         boxShadow: shadow && t.brightness == Brightness.light
             ? const [
                 BoxShadow(
-                  color: Color(0x07452C69),
-                  blurRadius: 22,
-                  offset: Offset(0, 7),
+                  color: Color(0x0A1A3440),
+                  blurRadius: 14,
+                  offset: Offset(0, 4),
                 ),
               ]
             : null,
@@ -107,7 +112,9 @@ class HEntrance extends StatelessWidget {
     duration: HMotion.slow,
     curve: HMotion.curve,
     child: child,
-    builder: (_, v, c) =>
-        Transform.translate(offset: Offset(0, 12 * (1 - v)), child: c),
+    builder: (_, v, c) => Opacity(
+      opacity: v.clamp(0, 1),
+      child: Transform.translate(offset: Offset(0, 12 * (1 - v)), child: c),
+    ),
   );
 }

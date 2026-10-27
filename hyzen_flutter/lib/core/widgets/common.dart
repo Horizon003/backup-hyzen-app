@@ -203,13 +203,13 @@ class EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 76,
+              height: 76,
               decoration: BoxDecoration(
-                color: t.colorScheme.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(HRadius.lg),
+                color: t.colorScheme.primaryContainer,
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 34, color: t.colorScheme.primary),
+              child: Icon(icon, size: 32, color: t.colorScheme.primary),
             ),
             const SizedBox(height: HSpace.md),
             Text(
@@ -335,7 +335,16 @@ class SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Expanded(child: Text(title, style: t.textTheme.titleMedium)),
+          Expanded(
+            child: Text(
+              title,
+              style: t.textTheme.titleLarge?.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -.2,
+              ),
+            ),
+          ),
           if (action != null)
             TextButton(onPressed: onAction, child: Text(action!)),
         ],
@@ -360,12 +369,10 @@ class IconBadge extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [adaptiveAccent(context, color).withValues(alpha: .10), adaptiveAccent(context, color).withValues(alpha: .20)],
+        color: adaptiveAccent(context, color).withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? .18 : .11,
         ),
-        borderRadius: BorderRadius.circular(size * 0.32),
+        borderRadius: BorderRadius.circular(size * 0.30),
       ),
       child: Icon(
         icon,
