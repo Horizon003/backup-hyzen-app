@@ -504,7 +504,7 @@ object ScanVision {
             if (s > bestScore) { bestScore = s; best = hq }
         }
         val chosen = best ?: return null
-        if (bestScore < 0.45) return null
+        if (bestScore < 0.52) return null
         if (refine && !fast) {
             val big = blur(downscale(source, 1100))
             val sx = big.w.toDouble() / small.w; val sy = big.h.toDouble() / small.h
