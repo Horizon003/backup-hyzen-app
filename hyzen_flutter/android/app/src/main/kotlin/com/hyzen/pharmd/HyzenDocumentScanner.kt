@@ -21,9 +21,23 @@ class HyzenDocumentScanner(private val activity: MainActivity, messenger: Binary
     private val channel = MethodChannel(messenger, "com.hyzen.pharmd/document_scanner")
     private val cameraChannel = MethodChannel(messenger, "com.hyzen.pharmd/camera_pages")
     private val requestCode = 8891
+    private val customCode = 8893
     init {
         channel.setMethodCallHandler { call, result ->
-            if (call.method != "scan") { result.notImplemented(); return@setMethodCallHandler }
+            if (call.method == "scan") {
+                // 1.5: Hyzen precision scanner (CameraX + on-device edge detection).
+                if (active) { result.error("busy", "Finish the current scan first.", null); return@setMethodCallHandler }
+                if (store.pages().size >= 30) { result.error("limit", "Save these 30 pages before scanning more.", null); return@setMethodCallHandler }
+                try {
+                    pending = result; active = true; store.beginScan()
+                    activity.startActivityForResult(android.content.Intent(activity, HyzenScannerActivity::class.java), customCode)
+                } catch (_: Exception) {
+                    pending = null; active = false; store.acknowledge()
+                    result.error("scanner_unavailable", "Camera scanner unavailable. Choose gallery images instead.", null)
+                }
+                return@setMethodCallHandler
+            }
+            if (call.method != "scanGoogle") { result.notImplemented(); return@setMethodCallHandler }
             if (active) { result.error("busy", "Finish the current scan first.", null); return@setMethodCallHandler }
             val available = 30 - store.pages().size
             if (available <= 0) { result.error("limit", "Save these 30 pages before scanning more.", null); return@setMethodCallHandler }
@@ -49,6 +63,17 @@ class HyzenDocumentScanner(private val activity: MainActivity, messenger: Binary
         pending = null; active = false
     }
     fun receive(code: Int, resultCode: Int, intent: Intent?): Boolean {
+        if (code == customCode) {
+            val result = pending; pending = null; active = false
+            store.acknowledge()
+            when (resultCode) {
+                HyzenScannerActivity.RESULT_DENIED -> result?.error("camera_permission", "Camera permission is needed to scan. Allow it in Settings or choose gallery images.", null)
+                HyzenScannerActivity.RESULT_UNAVAILABLE -> result?.error("scanner_unavailable", "Camera unavailable. Choose gallery images instead.", null)
+                else -> result?.success(store.pages())
+            }
+            cameraChannel.invokeMethod("draftReady", null)
+            return true
+        }
         if (code != requestCode) return false
         // Process results even when Android recreated this Activity and there
         // is no live MethodChannel callback to the previous Flutter isolate.

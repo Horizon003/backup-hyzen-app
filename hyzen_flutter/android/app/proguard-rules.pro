@@ -24,3 +24,8 @@
 -keep class kotlinx.coroutines.Job** { *; }
 -keep class kotlinx.coroutines.MainCoroutineDispatcher { *; }
 -keep class kotlinx.coroutines.TimeoutKt** { *; }
+
+-keep class com.hyzen.pharmd.ScanVision { *; }
+-keep class com.hyzen.pharmd.ScanBitmaps { *; }
+-keep class com.hyzen.pharmd.HyzenScannerActivity { *; }
+-keep class androidx.camera.** { *; }
