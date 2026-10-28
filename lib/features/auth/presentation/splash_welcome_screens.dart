@@ -263,10 +263,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                 ),
                 Semantics(
-                  label: 'Onboarding page ' +
-                      (_index + 1).toString() +
-                      ' of ' +
-                      _content.length.toString(),
+                  label: 'Onboarding page ${_index + 1} of ${_content.length}',
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
