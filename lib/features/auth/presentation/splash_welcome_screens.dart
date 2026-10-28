@@ -165,12 +165,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       return LayoutBuilder(
                         builder: (context, constraints) {
                           final artHeight =
-                              (constraints.maxHeight * .41).clamp(165.0, 310.0);
+                              (constraints.maxHeight * .41).clamp(165.0, 310.0).toDouble();
                           return SingleChildScrollView(
                             padding: const EdgeInsets.fromLTRB(24, 30, 24, 14),
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
-                                minHeight: (constraints.maxHeight - 44).clamp(0.0, double.infinity),
+                                minHeight: (constraints.maxHeight - 44).clamp(0.0, double.infinity).toDouble(),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
