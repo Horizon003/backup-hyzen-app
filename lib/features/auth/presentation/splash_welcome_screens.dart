@@ -41,211 +41,305 @@ class SplashScreen extends StatelessWidget {
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
+/// Screen 01: Editorial Minimal onboarding.
+/// The three existing pages and their authentication routes are preserved.
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  final _pages = PageController();
+  final PageController _pages = PageController();
   int _index = 0;
+
+  static const _deepTeal = Color(0xFF087F76);
+  static const _grayFilter = ColorFilter.matrix([
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0,      0,      0,      1, 0,
+  ]);
+
   static const _content = [
     (
       'welcome',
-      'Your smart\nPharm-D study partner',
-      'Learn with notes, MCQs and past papers, organised around your professional year.',
+      'Your future in\npharmacy starts here.',
+      'Study smarter with notes, MCQs and past papers organised around your professional year.',
+      'WELCOME TO HYZEN',
     ),
     (
       'library',
-      'Every library,\nat your fingertips.',
-      'Find the right subject, practise questions and continue your pharmacy journey.',
+      'Your library.\nAlways within reach.',
+      'Find subjects, explore study materials and continue your Pharm-D journey in one place.',
+      'STUDY WITH CLARITY',
     ),
     (
       'downloads',
-      'Read anywhere.\nEven offline.',
-      'Save your study notes once and open them again without an internet connection.',
+      'Learn anywhere.\nEven offline.',
+      'Save your study notes and open them again when you do not have an internet connection.',
+      'READY WHEN YOU ARE',
     ),
   ];
+
   @override
   void dispose() {
     _pages.dispose();
     super.dispose();
   }
 
+  void _onPrimaryPressed() {
+    if (_index == _content.length - 1) {
+      context.push('/login');
+      return;
+    }
+    _pages.nextPage(duration: HMotion.medium, curve: Curves.easeInOutCubic);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final background = dark ? const Color(0xFF101112) : Colors.white;
+    final ink = dark ? const Color(0xFFF8F8F8) : const Color(0xFF111111);
+    final secondary = dark ? const Color(0xFFB0B0B0) : const Color(0xFF737373);
+    final panel = dark ? const Color(0xFF1C2020) : const Color(0xFFF4F6F5);
+    final inactive = dark ? const Color(0xFF515656) : const Color(0xFFD9DEDC);
+
     return Scaffold(
+      backgroundColor: background,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Row(
-                children: [
-                  Image.asset(Brand.logoAsset, width: 48, height: 48),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 16, 0),
+                  child: Row(
                     children: [
-                  Text(
-                    'PHARM D',
-                    style: t.textTheme.headlineMedium?.copyWith(
-                      color: t.colorScheme.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const Text('WITH HYZEN · Your pharmacy journey'),
-                    ],
-                  )),
-                ],
-              ),
-            ),
-            Expanded(
-              child: PageView.builder(
-                controller: _pages,
-                itemCount: _content.length,
-                onPageChanged: (i) => setState(() => _index = i),
-                itemBuilder: (context, i) {
-                  final item = _content[i];
-                  return LayoutBuilder(
-                    builder: (context, c) => SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: i == 0
-                          ? Column(
-                              children: [
-                                Container(
-                                  height: (c.maxHeight * .52).clamp(170, 380),
-                                  width: double.infinity,
-                                  clipBehavior: Clip.antiAlias,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(36),
-                                    color: t.brightness == Brightness.dark
-                                        ? const Color(0xFF302846)
-                                        : const Color(0xFFE4F4EB),
-                                  ),
-                                  child: Image.asset(
-                                    'assets/illustrations/welcome.png',
-                                    fit: BoxFit.contain,
-                                    alignment: Alignment.center,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(22),
-                                  decoration: BoxDecoration(
-                                    color: t.colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Your Brain',
-                                        style: t.textTheme.displaySmall
-                                            ?.copyWith(fontSize: 36),
-                                      ),
-                                      Text(
-                                        'Called. It wants more 👋',
-                                        style: t.textTheme.titleMedium,
-                                      ),
-                                      const SizedBox(height: 18),
-                                      Text(
-                                        'Small lessons. Big wins. Your Pharm-D journey starts here.',
-                                        style: t.textTheme.bodyMedium,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              children: [
-                                HyzenArt(
-                                  item.$1,
-                                  size: (c.maxHeight * .59).clamp(180, 340),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  item.$2,
-                                  textAlign: TextAlign.center,
-                                  style: t.textTheme.displaySmall?.copyWith(
-                                    fontSize: 29,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  item.$3,
-                                  textAlign: TextAlign.center,
-                                  style: t.textTheme.bodyLarge?.copyWith(
-                                    color: t.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
+                      Image.asset(
+                        Brand.logoAsset,
+                        width: 37,
+                        height: 37,
+                        color: ink,
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'PHARM D WITH HYZEN',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                color: ink,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                              ),
                             ),
+                            Text(
+                              'Your pharmacy journey',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: secondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => context.push('/login'),
+                        style: TextButton.styleFrom(foregroundColor: secondary),
+                        child: const Text('Skip'),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pages,
+                    itemCount: _content.length,
+                    onPageChanged: (page) => setState(() => _index = page),
+                    itemBuilder: (context, i) {
+                      final page = _content[i];
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final artHeight =
+                              (constraints.maxHeight * .41).clamp(165.0, 310.0);
+                          return SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(24, 30, 24, 14),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: (constraints.maxHeight - 44).clamp(0.0, double.infinity),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    page.$4,
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: _deepTeal,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 1.8,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  Text(
+                                    page.$2,
+                                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                      color: ink,
+                                      fontSize: 34,
+                                      height: 1.13,
+                                      letterSpacing: -1.25,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  Text(
+                                    page.$3,
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: secondary,
+                                      fontSize: 14,
+                                      height: 1.55,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 28),
+                                  Container(
+                                    height: artHeight,
+                                    width: double.infinity,
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: BoxDecoration(
+                                      color: panel,
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        Positioned.fill(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: ColorFiltered(
+                                              colorFilter: _grayFilter,
+                                              child: i == 0
+                                                  ? Image.asset(
+                                                      'assets/illustrations/welcome.png',
+                                                      fit: BoxFit.contain,
+                                                    )
+                                                  : Center(
+                                                      child: HyzenArt(
+                                                        page.$1,
+                                                        size: artHeight * .79,
+                                                      ),
+                                                    ),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 17,
+                                          right: 17,
+                                          child: Container(
+                                            width: 28,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              color: _deepTeal.withValues(alpha: .11),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.auto_awesome_outlined,
+                                              color: _deepTeal,
+                                              size: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Semantics(
+                  label: 'Onboarding page ' +
+                      (_index + 1).toString() +
+                      ' of ' +
+                      _content.length.toString(),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var i = 0; i < _content.length; i++)
+                        AnimatedContainer(
+                          duration: HMotion.fast,
+                          curve: Curves.easeOut,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          height: 5,
+                          width: i == _index ? 25 : 8,
+                          decoration: BoxDecoration(
+                            color: i == _index ? _deepTeal : inactive,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+                  child: FilledButton(
+                    onPressed: _onPrimaryPressed,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ink,
+                      foregroundColor: background,
+                      minimumSize: const Size.fromHeight(56),
+                      shape: const StadiumBorder(),
                     ),
-                  );
-                },
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var i = 0; i < 3; i++)
-                  AnimatedContainer(
-                    duration: HMotion.fast,
-                    margin: const EdgeInsets.all(3),
-                    height: 6,
-                    width: i == _index ? 25 : 12,
-                    decoration: BoxDecoration(
-                      color: i == _index
-                          ? t.colorScheme.primary
-                          : t.colorScheme.primary.withValues(alpha: .12),
-                      borderRadius: BorderRadius.circular(8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _index == 0
+                              ? 'Get Started'
+                              : _index == 2
+                                  ? 'Log in'
+                                  : 'Continue',
+                        ),
+                        const SizedBox(width: 9),
+                        const Icon(Icons.arrow_forward_rounded, size: 19),
+                      ],
                     ),
                   ),
+                ),
+                if (_index != 2)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Already have an account?',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: secondary,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => context.push('/login'),
+                        style: TextButton.styleFrom(foregroundColor: ink),
+                        child: const Text('Log in'),
+                      ),
+                    ],
+                  ),
+                Center(
+                  child: TextButton(
+                    onPressed: () => context.push('/register/personal'),
+                    style: TextButton.styleFrom(foregroundColor: _deepTeal),
+                    child: const Text('Create account'),
+                  ),
+                ),
+                const SizedBox(height: 6),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
-              child: FilledButton(
-                onPressed: () => _index < 2
-                    ? _pages.nextPage(
-                        duration: HMotion.medium,
-                        curve: Curves.easeOut,
-                      )
-                    : context.push('/login'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: _index == 0 ? const Color(0xFF1A1723) : null,
-                  foregroundColor: _index == 0 ? Colors.white : null,
-                  shape: const StadiumBorder(),
-                ),
-                child: Text(
-                  _index == 0
-                      ? 'Get Started →'
-                      : _index == 2
-                      ? 'Log in →'
-                      : 'Continue →',
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton(
-                  onPressed: () => context.push('/login'),
-                  child: const Text('Skip'),
-                ),
-                TextButton(
-                  onPressed: () => context.push('/register/personal'),
-                  child: const Text('Create account'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
+          ),
         ),
       ),
     );
