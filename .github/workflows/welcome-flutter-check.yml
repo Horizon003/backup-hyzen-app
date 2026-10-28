@@ -1,0 +1,45 @@
+name: Validate Flutter Welcome Screen
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/features/auth/presentation/splash_welcome_screens.dart'
+      - '.github/workflows/welcome-flutter-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract complete Flutter source and apply reviewed overlay
+        run: |
+          unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
+          cp -a lib/. hyzen_flutter/lib/
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4'
+          channel: stable
+          cache: true
+      - name: Get packages
+        working-directory: hyzen_flutter
+        run: flutter pub get
+      - name: Flutter static analysis
+        working-directory: hyzen_flutter
+        run: flutter analyze --no-pub
+      - name: Flutter tests
+        working-directory: hyzen_flutter
+        run: flutter test --no-pub --reporter expanded
+      - name: Build actual Flutter Web preview
+        working-directory: hyzen_flutter
+        run: flutter build web --release --no-pub --base-href "/pharm-d-with-hyzen/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hyzen-flutter-web-preview
+          path: hyzen_flutter/build/web
+          retention-days: 14
+          if-no-files-found: error
