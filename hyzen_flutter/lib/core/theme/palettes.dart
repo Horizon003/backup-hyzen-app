@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 
-/// Approved brand is Deep Teal (Q02). Alternative accents remain available as
-/// personal preferences, but every install starts on Hyzen Teal.
+/// Graphite is the quiet default; accent palettes remain available as
+/// personal preferences and continue to drive primary actions and status.
 const brandPalettes = <String, (String, Color)>{
+  'graphite': ('Graphite', Color(0xFF1C1C1E)),
   'teal': ('Hyzen Teal', Color(0xFF087F76)),
   'ocean': ('Clinical Blue', Color(0xFF2B6F9E)),
   'green': ('Pharmacy Green', Color(0xFF15724A)),
@@ -27,11 +28,11 @@ class PaletteController extends Notifier<String> {
           old == 'purple' ||
           old == 'mint' ||
           old == 'lavender') {
-        prefs.setString('brand_palette', 'teal');
+        prefs.setString('brand_palette', 'graphite');
       }
       prefs.setBool('brand_palette_v15', true);
     }
-    return prefs.getString('brand_palette') ?? 'teal';
+    return prefs.getString('brand_palette') ?? 'graphite';
   }
 
   void set(String id) {
@@ -45,10 +46,10 @@ final paletteProvider = NotifierProvider<PaletteController, String>(
 );
 final effectivePaletteProvider = Provider<String>((ref) {
   final chosen = ref.watch(paletteProvider);
-  return brandPalettes.containsKey(chosen) ? chosen : 'teal';
+  return brandPalettes.containsKey(chosen) ? chosen : 'graphite';
 });
 final paletteColorProvider = Provider<Color>(
   (ref) =>
       brandPalettes[ref.watch(effectivePaletteProvider)]?.$2 ??
-      brandPalettes['teal']!.$2,
+      brandPalettes['graphite']!.$2,
 );

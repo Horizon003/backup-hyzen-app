@@ -41,8 +41,8 @@ class _ScanPageEditorState extends State<ScanPageEditor> {
   void _drag(int i, Offset delta, Size size) {
     final dx = delta.dx / size.width, dy = delta.dy / size.height;
     var l = _rect.left, t = _rect.top, r = _rect.right, b = _rect.bottom;
-    if (i == 0 || i == 3) l = (l + dx).clamp(0, r - .1); else r = (r + dx).clamp(l + .1, 1);
-    if (i < 2) t = (t + dy).clamp(0, b - .1); else b = (b + dy).clamp(t + .1, 1);
+    if (i == 0 || i == 3) { l = (l + dx).clamp(0, r - .1); } else { r = (r + dx).clamp(l + .1, 1); }
+    if (i < 2) { t = (t + dy).clamp(0, b - .1); } else { b = (b + dy).clamp(t + .1, 1); }
     setState(() => _rect = Rect.fromLTRB(l, t, r, b));
   }
   @override

@@ -1,36 +1,32 @@
 import 'package:flutter/material.dart';
 
-/// PHARM D WITH HYZEN design tokens (approved Q02 / Q31 design system).
+/// PHARM D WITH HYZEN design tokens.
 ///
-/// Premium-academic, minimal-professional palette:
-///   Deep Teal  #087F76  – brand / primary actions
-///   Slate      #1A3440  – ink, premium dark hero surfaces
-///   Background #F3F8F7  – calm light canvas
-///   Pale teal  #DDEDEA  – soft containers / chips
-///   Muted text #507379  – secondary copy
+/// Graphite is the quiet product foundation. The selected palette is reserved
+/// for primary actions, status, and small category accents.
 class HColors {
   HColors._();
   // Brand
-  static const primary = Color(0xFF087F76);
-  static const primaryDeep = Color(0xFF06655E);
-  static const primarySoft = Color(0xFFDDEDEA);
-  static const slate = Color(0xFF1A3440);
-  static const slateDeep = Color(0xFF12262F);
+  static const primary = Color(0xFF1C1C1E);
+  static const primaryDeep = Color(0xFF000000);
+  static const primarySoft = Color(0xFFE8E8E6);
+  static const slate = Color(0xFF252525);
+  static const slateDeep = Color(0xFF111111);
   static const teal = Color(0xFF087F76);
   static const mint = Color(0xFF5FD1C1);
   static const onPrimary = Colors.white;
 
   // Ink
-  static const ink = Color(0xFF1A3440);
-  static const ink2 = Color(0xFF507379);
-  static const ink3 = Color(0xFF7E9A9E);
+  static const ink = Color(0xFF1C1C1E);
+  static const ink2 = Color(0xFF626262);
+  static const ink3 = Color(0xFF8C8C8C);
 
   // Surfaces (light)
-  static const background = Color(0xFFF3F8F7);
+  static const background = Color(0xFFF6F6F4);
   static const surface = Colors.white;
-  static const surfaceAlt = Color(0xFFE9F3F1);
-  static const outline = Color(0xFFE1ECEA);
-  static const outlineStrong = Color(0xFFC6D9D6);
+  static const surfaceAlt = Color(0xFFEDEDEB);
+  static const outline = Color(0xFFE2E2E0);
+  static const outlineStrong = Color(0xFFCACAC7);
 
   // Status
   static const success = Color(0xFF15885A);
@@ -39,15 +35,15 @@ class HColors {
   static const info = Color(0xFF2B6F9E);
 
   // Dark
-  static const darkBackground = Color(0xFF0D1B21);
-  static const darkSurface = Color(0xFF152A33);
-  static const darkSurfaceAlt = Color(0xFF1D3540);
-  static const darkInk = Color(0xFFEAF4F2);
-  static const darkInk2 = Color(0xFFA5C2C3);
-  static const darkPrimary = Color(0xFF4CC3B5);
+  static const darkBackground = Color(0xFF101010);
+  static const darkSurface = Color(0xFF1C1C1C);
+  static const darkSurfaceAlt = Color(0xFF292929);
+  static const darkInk = Color(0xFFF5F5F3);
+  static const darkInk2 = Color(0xFFB4B4B0);
+  static const darkPrimary = Color(0xFFF2F2F0);
 
   /// Restrained module accents – used on small icon badges only.
-  static const notes = Color(0xFF087F76);
+  static const notes = Color(0xFF1C1C1E);
   static const mcqs = Color(0xFF2B6F9E);
   static const papers = Color(0xFF3F7D4E);
   static const special = Color(0xFFB0702A);
@@ -89,21 +85,21 @@ class HMotion {
 class HShadow {
   HShadow._();
   static const soft = [
-    BoxShadow(color: Color(0x0D1A3440), blurRadius: 16, offset: Offset(0, 4)),
+    BoxShadow(color: Color(0x0D1A1A1A), blurRadius: 16, offset: Offset(0, 4)),
   ];
   static const lifted = [
-    BoxShadow(color: Color(0x161A3440), blurRadius: 28, offset: Offset(0, 10)),
+    BoxShadow(color: Color(0x161A1A1A), blurRadius: 28, offset: Offset(0, 10)),
   ];
   static const glow = [
-    BoxShadow(color: Color(0x26087F76), blurRadius: 22, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x261C1C1E), blurRadius: 22, offset: Offset(0, 8)),
   ];
 }
 
-/// Premium dark Slate → Deep Teal hero gradient (Q31 D – selected screens only).
+/// Quiet graphite hero gradient for selected surfaces only.
 const hSlateGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFF1A3440), Color(0xFF0F4A4D), Color(0xFF087F76)],
+  colors: [Color(0xFF111111), Color(0xFF292929), Color(0xFF4A4A4A)],
   stops: [0, .62, 1],
 );
 
