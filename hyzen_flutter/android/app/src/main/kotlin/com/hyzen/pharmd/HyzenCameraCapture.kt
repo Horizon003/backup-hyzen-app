@@ -297,7 +297,7 @@ class HyzenCameraCapture(private val activity: MainActivity, messenger: BinaryMe
             busy = true
             worker.execute {
                 try {
-                    val answer: Any = when (call.method) {
+                    val answer: Any? = when (call.method) {
                         "needsRecovery" -> store.needsRecovery() && pending == null
                         "recover" -> store.recover().also { store.acknowledge() }
                         "addImages" -> store.add(call.argument<List<String>>("paths") ?: emptyList())

@@ -77,6 +77,7 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.4.2")
     implementation("androidx.camera:camera-view:1.4.2")
     implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation("com.google.guava:guava:33.2.1-android")
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
     androidTestImplementation("androidx.test:runner:1.6.2")

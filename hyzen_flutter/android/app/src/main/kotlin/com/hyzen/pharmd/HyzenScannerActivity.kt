@@ -90,7 +90,7 @@ class HyzenScannerActivity : ComponentActivity() {
         else requestPermissions(arrayOf(Manifest.permission.CAMERA), 41)
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 41 && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) startCamera()
         else { setResult(RESULT_DENIED); finish() }
@@ -131,7 +131,7 @@ class HyzenScannerActivity : ComponentActivity() {
         top.addView(autoBtn)
         root.addView(top, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
 
-        status = pill("Point at a document", 0x99000000).apply { textSize = 13f }
+        status = pill("Point at a document", 0x99000000.toInt()).apply { textSize = 13f }
         root.addView(status, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER_HORIZONTAL or Gravity.TOP).apply { topMargin = dp(100f).toInt() })
 
         // Bottom panel

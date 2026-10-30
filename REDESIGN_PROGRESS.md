@@ -5,3 +5,4 @@
 - [x] Step 2: 4-tab Slate dock (Home/Study/PDF Studio/Shop), header wordmark, avatar account sheet (Profile/Settings/Downloads/Notifications/Orders), new Home (Slate hero, search, quick access grid, link list). Tests pass.
 - [x] Step 3a: ScanVision.kt detection engine + JVM bench (24/24 synthetic exact, real photos OK)
 - [x] Step 3b: graphite-first visual hierarchy, accent palette preservation, PDF editor cleanup, version 1.5.3+12; `flutter analyze` clean and 86 tests pass on Flutter 3.35.4
+- [x] Step 3c: release-build fixes for CameraX permission callback, ARGB typing, nullable MethodChannel results, and Guava ListenableFuture dependency; hosted APK workflow rerun pending
