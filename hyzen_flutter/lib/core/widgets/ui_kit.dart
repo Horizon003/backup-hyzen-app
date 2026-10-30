@@ -7,6 +7,54 @@ import 'common.dart';
 import 'surfaces.dart';
 import 'hyzen_art.dart';
 
+IconData documentIconForName(String name) {
+  final lower = name.toLowerCase();
+  if (lower.endsWith('.pdf') || lower.contains('pdf')) {
+    return Icons.picture_as_pdf_rounded;
+  }
+  if (lower.endsWith('.doc') || lower.endsWith('.docx')) {
+    return Icons.article_rounded;
+  }
+  if (lower.endsWith('.ppt') || lower.endsWith('.pptx')) {
+    return Icons.slideshow_rounded;
+  }
+  if (lower.endsWith('.xls') ||
+      lower.endsWith('.xlsx') ||
+      lower.endsWith('.csv')) {
+    return Icons.table_chart_rounded;
+  }
+  if (lower.endsWith('.txt') ||
+      lower.endsWith('.md') ||
+      lower.endsWith('.rtf')) {
+    return Icons.text_snippet_rounded;
+  }
+  if (lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.png') ||
+      lower.endsWith('.webp')) {
+    return Icons.image_rounded;
+  }
+  return Icons.description_rounded;
+}
+
+Color documentColorForName(String name) {
+  final lower = name.toLowerCase();
+  if (lower.endsWith('.pdf') || lower.contains('pdf')) return HColors.error;
+  if (lower.endsWith('.doc') || lower.endsWith('.docx')) return HColors.info;
+  if (lower.endsWith('.ppt') || lower.endsWith('.pptx')) return HColors.special;
+  if (lower.endsWith('.xls') ||
+      lower.endsWith('.xlsx') ||
+      lower.endsWith('.csv')) {
+    return HColors.success;
+  }
+  if (lower.endsWith('.txt') ||
+      lower.endsWith('.md') ||
+      lower.endsWith('.rtf')) {
+    return HColors.ink2;
+  }
+  return HColors.primary;
+}
+
 /// Material list tile used across libraries, downloads, search, settings.
 class ResourceTile extends StatelessWidget {
   const ResourceTile({
@@ -37,18 +85,18 @@ class ResourceTile extends StatelessWidget {
       child: HCard(
         color:
             eyebrow != null && badge == null && t.brightness == Brightness.light
-            ? Color.alphaBlend(adaptiveAccent(context, color).withValues(alpha: .07), t.colorScheme.surface)
+            ? Color.alphaBlend(
+                adaptiveAccent(context, color).withValues(alpha: .07),
+                t.colorScheme.surface,
+              )
             : null,
         onTap: onTap,
         semanticLabel: title,
-        padding: const EdgeInsets.symmetric(
-          horizontal: HSpace.md,
-          vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: HSpace.sm, vertical: 9),
         child: Row(
           children: [
-            IconBadge(icon: icon, color: color, size: 44),
-            const SizedBox(width: HSpace.md),
+            IconBadge(icon: icon, color: color, size: 36),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,22 +110,17 @@ class ResourceTile extends StatelessWidget {
                         color: adaptiveAccent(context, color),
                       ),
                     ),
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.textTheme.titleMedium,
-                  ),
+                  HMarqueeText(title, style: t.textTheme.titleMedium),
                   if (subtitle != null && subtitle!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       subtitle!,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: t.textTheme.bodyMedium,
                     ),
                   ],
-                  if (badge != null) ...[const SizedBox(height: 6), badge!],
+                  if (badge != null) ...[const SizedBox(height: 4), badge!],
                 ],
               ),
             ),

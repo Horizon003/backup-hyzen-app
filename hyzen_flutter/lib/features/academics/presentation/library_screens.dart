@@ -444,8 +444,8 @@ class FileTile extends ConsumerWidget {
       );
     }
     return ResourceTile(
-      icon: Icons.picture_as_pdf_rounded,
-      color: color,
+      icon: documentIconForName(file.title),
+      color: documentColorForName(file.title),
       title: file.title,
       subtitle: file.trail.isNotEmpty ? file.trail.last : null,
       badge: badge,

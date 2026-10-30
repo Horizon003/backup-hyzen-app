@@ -12,7 +12,7 @@ class AppTheme {
     return TextTheme(
       displaySmall: TextStyle(
         fontFamily: f,
-        fontSize: 28,
+        fontSize: 26,
         height: 1.15,
         fontWeight: FontWeight.w800,
         color: ink,
@@ -20,7 +20,7 @@ class AppTheme {
       ),
       headlineMedium: TextStyle(
         fontFamily: f,
-        fontSize: 23,
+        fontSize: 21,
         height: 1.2,
         fontWeight: FontWeight.w800,
         color: ink,
@@ -28,7 +28,7 @@ class AppTheme {
       ),
       headlineSmall: TextStyle(
         fontFamily: f,
-        fontSize: 20,
+        fontSize: 18,
         height: 1.25,
         fontWeight: FontWeight.w700,
         color: ink,
@@ -36,42 +36,42 @@ class AppTheme {
       ),
       titleLarge: TextStyle(
         fontFamily: f,
-        fontSize: 16,
+        fontSize: 15,
         height: 1.3,
         fontWeight: FontWeight.w700,
         color: ink,
       ),
       titleMedium: TextStyle(
         fontFamily: f,
-        fontSize: 14,
+        fontSize: 13,
         height: 1.35,
         fontWeight: FontWeight.w700,
         color: ink,
       ),
       titleSmall: TextStyle(
         fontFamily: f,
-        fontSize: 14,
+        fontSize: 13,
         height: 1.35,
         fontWeight: FontWeight.w700,
         color: ink,
       ),
       bodyLarge: TextStyle(
         fontFamily: f,
-        fontSize: 14,
+        fontSize: 13,
         height: 1.45,
         fontWeight: FontWeight.w500,
         color: ink,
       ),
       bodyMedium: TextStyle(
         fontFamily: f,
-        fontSize: 13,
+        fontSize: 12,
         height: 1.4,
         fontWeight: FontWeight.w500,
         color: ink2,
       ),
       bodySmall: TextStyle(
         fontFamily: f,
-        fontSize: 11.5,
+        fontSize: 11,
         height: 1.45,
         fontWeight: FontWeight.w500,
         color: ink2,
@@ -85,13 +85,13 @@ class AppTheme {
       ),
       labelMedium: TextStyle(
         fontFamily: f,
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: FontWeight.w600,
         color: ink2,
       ),
       labelSmall: TextStyle(
         fontFamily: f,
-        fontSize: 11.5,
+        fontSize: 11,
         fontWeight: FontWeight.w700,
         color: ink2,
         letterSpacing: 0.6,
@@ -186,7 +186,7 @@ class AppTheme {
         fillColor: dark ? HColors.darkSurface : Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 16,
+          vertical: 12,
         ),
         border: border,
         enabledBorder: border,
@@ -213,7 +213,7 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(0, 50),
+          minimumSize: const Size(0, 44),
           textStyle: text.labelLarge?.copyWith(fontSize: 14),
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: HRadius.all(HRadius.md)),
@@ -251,7 +251,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 50),
+          minimumSize: const Size(0, 44),
           foregroundColor: ink,
           textStyle: text.labelLarge,
           side: BorderSide(color: scheme.outline),

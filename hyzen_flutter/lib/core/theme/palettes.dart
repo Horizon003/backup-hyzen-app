@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 
-/// Graphite is the quiet default; accent palettes remain available as
-/// personal preferences and continue to drive primary actions and status.
+/// One general product palette keeps the study utility visually consistent.
 const brandPalettes = <String, (String, Color)>{
   'graphite': ('Graphite', Color(0xFF1C1C1E)),
+  // Kept for admin-managed legacy content; end users no longer select these.
   'teal': ('Hyzen Teal', Color(0xFF087F76)),
   'ocean': ('Clinical Blue', Color(0xFF2B6F9E)),
   'green': ('Pharmacy Green', Color(0xFF15724A)),
@@ -36,8 +36,9 @@ class PaletteController extends Notifier<String> {
   }
 
   void set(String id) {
-    state = id;
-    ref.read(sharedPrefsProvider).setString('brand_palette', id);
+    final chosen = brandPalettes.containsKey(id) ? id : 'graphite';
+    state = chosen;
+    ref.read(sharedPrefsProvider).setString('brand_palette', chosen);
   }
 }
 

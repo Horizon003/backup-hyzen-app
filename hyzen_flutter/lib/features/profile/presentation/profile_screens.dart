@@ -12,7 +12,6 @@ import '../../../app/providers.dart';
 import '../../../core/config/brand.dart';
 import '../../../core/utils/media_upload.dart';
 import '../../../core/theme/tokens.dart';
-import '../../../core/theme/palettes.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/surfaces.dart';
@@ -684,16 +683,42 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: HSpace.screen),
           sliver: SliverList.list(
             children: [
-              PanelBlock(child: Row(children: [
-                ProfileAvatar(photoUrl: ref.watch(profileProvider).valueOrNull?.photoUrl,
-                  fallback: ref.watch(profileProvider).valueOrNull?.fullName ?? '', radius: 27),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(ref.watch(profileProvider).valueOrNull?.fullName ?? 'Your account', style: t.textTheme.titleMedium),
-                  const Gap(3), const Text('Make it yours'),
-                ])),
-                IconButton(tooltip: 'Edit profile', onPressed: () => context.push('/profile/edit'), icon: const Icon(Icons.edit_outlined)),
-              ])),
+              PanelBlock(
+                child: Row(
+                  children: [
+                    ProfileAvatar(
+                      photoUrl: ref
+                          .watch(profileProvider)
+                          .valueOrNull
+                          ?.photoUrl,
+                      fallback:
+                          ref.watch(profileProvider).valueOrNull?.fullName ??
+                          '',
+                      radius: 27,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ref.watch(profileProvider).valueOrNull?.fullName ??
+                                'Your account',
+                            style: t.textTheme.titleMedium,
+                          ),
+                          const Gap(3),
+                          const Text('Make it yours'),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Edit profile',
+                      onPressed: () => context.push('/profile/edit'),
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
+                  ],
+                ),
+              ),
               const Gap(18),
               ResourceTile(
                 icon: Icons.system_update_rounded,
@@ -719,26 +744,23 @@ class SettingsScreen extends ConsumerWidget {
                   children: [
                     Text('Appearance', style: t.textTheme.titleMedium),
                     const Gap(HSpace.md),
-                    Wrap(
-                      spacing: 10, runSpacing: 10,
-                      children: [for (final entry in brandPalettes.entries)
-                        Tooltip(message: entry.value.$1, child: Semantics(
-                          label: entry.value.$1, selected: ref.watch(effectivePaletteProvider) == entry.key,
-                          button: true,
-                          child: InkWell(
-                            onTap: () => ref.read(paletteProvider.notifier).set(entry.key),
-                            customBorder: const CircleBorder(),
-                            child: AnimatedContainer(duration: const Duration(milliseconds: 180),
-                              width: 44, height: 44,
-                              decoration: BoxDecoration(shape: BoxShape.circle, color: entry.value.$2,
-                                border: Border.all(color: ref.watch(effectivePaletteProvider) == entry.key ? t.colorScheme.onSurface : Colors.transparent, width: 3)),
-                              child: ref.watch(effectivePaletteProvider) == entry.key ? const Icon(Icons.check_rounded, color: Colors.white, size: 22) : null),
+                    Row(
+                      children: [
+                        IconBadge(
+                          icon: Icons.contrast_rounded,
+                          color: HColors.primary,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'General graphite palette',
+                            style: t.textTheme.bodyMedium,
                           ),
-                        )),
+                        ),
+                        const Icon(Icons.check_circle_rounded, size: 20),
                       ],
                     ),
-                    const Gap(12),
-                    Text(brandPalettes[ref.watch(effectivePaletteProvider)]!.$1, style: t.textTheme.bodySmall),
                     const Gap(16),
                     SegmentedButton<ThemeMode>(
                       segments: const [

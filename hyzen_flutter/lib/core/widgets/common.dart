@@ -7,6 +7,70 @@ import '../config/brand.dart';
 import '../theme/tokens.dart';
 import 'surfaces.dart';
 
+/// Keeps dense utility rows to one line while gently revealing long titles.
+/// Reduced-motion users receive a normal ellipsis instead of autoplaying text.
+class HMarqueeText extends StatefulWidget {
+  const HMarqueeText(this.text, {super.key, this.style});
+  final String text;
+  final TextStyle? style;
+
+  @override
+  State<HMarqueeText> createState() => _HMarqueeTextState();
+}
+
+class _HMarqueeTextState extends State<HMarqueeText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = DefaultTextStyle.of(context).style.merge(widget.style);
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: style),
+          maxLines: 1,
+          textDirection: Directionality.of(context),
+        )..layout(maxWidth: double.infinity);
+        final distance = painter.width - constraints.maxWidth;
+        if (distance <= 1 || reduced) {
+          _controller.stop();
+          return Text(
+            widget.text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: widget.style,
+          );
+        }
+        if (!_controller.isAnimating) _controller.repeat(reverse: true);
+        return ClipRect(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (_, child) => Transform.translate(
+              offset: Offset(-distance * _controller.value, 0),
+              child: child,
+            ),
+            child: SizedBox(
+              width: painter.width,
+              child: Text(widget.text, maxLines: 1, style: widget.style),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class HyzenLogo extends ConsumerWidget {
   const HyzenLogo({super.key, this.size = 72, this.glow = true});
   final double size;
@@ -34,7 +98,16 @@ class HyzenLogo extends ConsumerWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          boxShadow: glow ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: .14), blurRadius: 24)] : null,
+          boxShadow: glow
+              ? [
+                  BoxShadow(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: .14),
+                    blurRadius: 24,
+                  ),
+                ]
+              : null,
         ),
         child: url.startsWith('https://')
             ? ClipOval(

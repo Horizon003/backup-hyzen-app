@@ -61,7 +61,7 @@ class HSpace {
   static const xl = 24.0;
   static const xxl = 32.0;
   static const xxxl = 48.0;
-  static const screen = 20.0;
+  static const screen = 16.0;
 }
 
 class HRadius {

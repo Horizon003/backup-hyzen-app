@@ -50,7 +50,10 @@ class HomeScreen extends ConsumerWidget {
     final libraryCount = kinds.isEmpty
         ? null
         : kinds
-              .map((k) => ref.watch(libraryProvider(k)).valueOrNull?.data.fileCount)
+              .map(
+                (k) =>
+                    ref.watch(libraryProvider(k)).valueOrNull?.data.fileCount,
+              )
               .whereType<int>()
               .fold<int>(0, (a, b) => a + b);
     final studioCount = ref.watch(pdfStudioHistoryProvider).length;
@@ -77,7 +80,9 @@ class HomeScreen extends ConsumerWidget {
                 child: _GreetingHero(
                   eyebrow: _greet(),
                   title: newAccount ? 'Welcome, $name' : 'Welcome back, $name',
-                  year: p == null ? null : ReferenceData.yearLabel(p.professionalYear),
+                  year: p == null
+                      ? null
+                      : ReferenceData.yearLabel(p.professionalYear),
                   onStudy: () => context.go('/study'),
                 ),
               ),
@@ -100,7 +105,7 @@ class HomeScreen extends ConsumerWidget {
                   mainAxisSpacing: HSpace.sm,
                   crossAxisSpacing: HSpace.sm,
                   mainAxisExtent:
-                      108 *
+                      88 *
                       MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
                 ),
                 children: [
@@ -108,14 +113,18 @@ class HomeScreen extends ConsumerWidget {
                     icon: Icons.local_library_rounded,
                     color: HColors.primary,
                     title: 'Study Library',
-                    sub: libraryCount == null ? 'Notes, MCQs, PPS' : '$libraryCount files',
+                    sub: libraryCount == null
+                        ? 'Notes, MCQs, PPS'
+                        : '$libraryCount files',
                     onTap: () => context.go('/study'),
                   ),
                   _QuickTile(
                     icon: Icons.document_scanner_rounded,
                     color: HColors.info,
                     title: 'PDF Studio',
-                    sub: studioCount == 0 ? 'Scan & create' : '$studioCount documents',
+                    sub: studioCount == 0
+                        ? 'Scan & create'
+                        : '$studioCount documents',
                     onTap: () => context.go('/pdf-studio'),
                   ),
                   _QuickTile(
@@ -130,7 +139,9 @@ class HomeScreen extends ConsumerWidget {
                       icon: Icons.storefront_rounded,
                       color: HColors.special,
                       title: 'Shop',
-                      sub: settings.shopComingSoon ? 'Coming soon' : 'Study essentials',
+                      sub: settings.shopComingSoon
+                          ? 'Coming soon'
+                          : 'Study essentials',
                       onTap: () => context.go('/shop'),
                     )
                   else
@@ -260,7 +271,10 @@ class _GreetingHero extends StatelessWidget {
                 if (year != null) ...[
                   const Gap(8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .12),
                       borderRadius: BorderRadius.circular(HRadius.pill),
@@ -400,18 +414,18 @@ class _QuickTile extends StatelessWidget {
     return HCard(
       onTap: onTap,
       semanticLabel: title,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
-              IconBadge(icon: icon, color: color, size: 40),
+              IconBadge(icon: icon, color: color, size: 32),
               const Spacer(),
               Icon(
                 Icons.arrow_outward_rounded,
-                size: 16,
+                size: 14,
                 color: t.colorScheme.onSurfaceVariant,
               ),
             ],
@@ -423,7 +437,7 @@ class _QuickTile extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: t.textTheme.titleMedium?.copyWith(
+                style: t.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -431,7 +445,7 @@ class _QuickTile extends StatelessWidget {
                 sub,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: t.textTheme.bodySmall,
+                style: t.textTheme.bodySmall?.copyWith(fontSize: 10.5),
               ),
             ],
           ),
