@@ -89,8 +89,10 @@ jobs:
           apk=build/app/outputs/flutter-apk/app-release.apk
           test -s "$apk"
           # Fail early if an architecture is missing from the universal APK.
+          # List once to avoid SIGPIPE from grep -q with pipefail.
+          unzip -Z1 "$apk" > apk-entries.txt
           for abi in armeabi-v7a arm64-v8a x86_64; do
-            unzip -Z1 "$apk" | grep -Fxq "lib/$abi/libflutter.so"
+            grep -Fxq "lib/$abi/libflutter.so" apk-entries.txt
           done
           sha256sum "$apk" > "$apk.sha256"
           grep -q 'version: 1.5.3+12' pubspec.yaml
