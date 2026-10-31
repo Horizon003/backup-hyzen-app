@@ -22,8 +22,9 @@ class HyzenMascot extends StatefulWidget {
 }
 
 class _HyzenMascotState extends State<HyzenMascot>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _idle;
+  late final AnimationController _blink;
 
   String get _asset => switch (widget.state) {
     HyzenMascotState.welcome => 'assets/mascot/mascot_idle_welcome.png',
@@ -33,41 +34,59 @@ class _HyzenMascotState extends State<HyzenMascot>
     HyzenMascotState.success => 'assets/mascot/mascot_success_wave.png',
   };
 
+  Duration get _idleDuration => switch (widget.state) {
+    HyzenMascotState.success => const Duration(milliseconds: 1500),
+    HyzenMascotState.downloading => const Duration(milliseconds: 1900),
+    _ => const Duration(milliseconds: 2800),
+  };
+
   @override
   void initState() {
     super.initState();
-    _idle = AnimationController(
+    _idle = AnimationController(vsync: this, duration: _idleDuration);
+    // Long cycle with a short dip: a restrained blink-like expression pulse.
+    _blink = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2600),
+      duration: const Duration(milliseconds: 4200),
     );
+  }
+
+  void _syncAnimations() {
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    if (reduced || !widget.loop) {
+      _idle.stop();
+      _blink.stop();
+      return;
+    }
+    if (!_idle.isAnimating) {
+      _idle
+        ..duration = _idleDuration
+        ..repeat(reverse: true);
+    }
+    if (!_blink.isAnimating) {
+      _blink.repeat();
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context) || !widget.loop) {
-      _idle.stop();
-    } else if (!_idle.isAnimating) {
-      _idle.forward(from: 0);
-    }
+    _syncAnimations();
   }
 
   @override
   void didUpdateWidget(covariant HyzenMascot oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.loop != widget.loop || oldWidget.state != widget.state) {
-      final reduced = MediaQuery.disableAnimationsOf(context);
-      if (reduced || !widget.loop) {
-        _idle.stop();
-      } else if (!_idle.isAnimating) {
-        _idle.forward(from: 0);
-      }
+      _idle.duration = _idleDuration;
+      _syncAnimations();
     }
   }
 
   @override
   void dispose() {
     _idle.dispose();
+    _blink.dispose();
     super.dispose();
   }
 
@@ -77,14 +96,18 @@ class _HyzenMascotState extends State<HyzenMascot>
     final transition = reduced
         ? const Duration(milliseconds: 80)
         : const Duration(milliseconds: 360);
-    final motion = reduced
+    final bob = reduced
         ? const AlwaysStoppedAnimation<double>(0)
-        : TweenSequence<double>([
-            TweenSequenceItem(tween: Tween(begin: -2.5, end: 2.5), weight: 55),
-            TweenSequenceItem(tween: Tween(begin: 2.5, end: 0), weight: 45),
-          ]).animate(
-            CurvedAnimation(parent: _idle, curve: Curves.easeInOutCubic),
+        : Tween<double>(begin: -2.5, end: 2.5).animate(
+            CurvedAnimation(parent: _idle, curve: Curves.easeInOutSine),
           );
+    final reaction = reduced
+        ? const AlwaysStoppedAnimation<double>(1)
+        : TweenSequence<double>([
+            TweenSequenceItem(tween: Tween(begin: 1, end: .992), weight: 7),
+            TweenSequenceItem(tween: Tween(begin: .992, end: 1), weight: 3),
+            TweenSequenceItem(tween: ConstantTween(1), weight: 90),
+          ]).animate(_blink);
 
     return Semantics(
       image: true,
@@ -93,10 +116,14 @@ class _HyzenMascotState extends State<HyzenMascot>
         width: widget.size,
         height: widget.size * 1.5,
         child: AnimatedBuilder(
-          animation: motion,
+          animation: Listenable.merge([_idle, _blink]),
           builder: (context, child) => Transform.translate(
-            offset: Offset(0, motion.value),
-            child: child,
+            offset: Offset(0, bob.value),
+            child: Transform.scale(
+              alignment: Alignment.bottomCenter,
+              scaleY: reaction.value,
+              child: child,
+            ),
           ),
           child: AnimatedSwitcher(
             duration: transition,
