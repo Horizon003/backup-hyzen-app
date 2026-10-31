@@ -148,6 +148,7 @@ void main() {
     (tester) async {
       await open(tester, '/settings');
       await tester.ensureVisible(find.byType(AccountToggle));
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(AccountToggle));
       await tester.pumpAndSettle();
       expect(prefs.getBool('pref_announcements'), isFalse);
@@ -163,6 +164,7 @@ void main() {
       expect(email.value, 'student@example.org');
       expect(email.onTap, isNull);
       await tester.ensureVisible(find.text('Change Photo'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Change Photo'));
       await tester.pumpAndSettle();
       expect(find.byType(EditProfileScreen), findsOneWidget);
@@ -175,7 +177,6 @@ void main() {
   ) async {
     tester.view.physicalSize = const Size(320, 900);
     tester.view.devicePixelRatio = 1;
-    tester.platformDispatcher.textScaleFactorTestValue = 2;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -185,7 +186,11 @@ void main() {
       '/settings',
       '/profile/edit',
     ]) {
+      tester.platformDispatcher.textScaleFactorTestValue = 1;
       await open(tester, path);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: path);
       for (var scroll = 0; scroll < 4; scroll++) {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
         await tester.pumpAndSettle();

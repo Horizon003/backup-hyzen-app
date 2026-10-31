@@ -22,7 +22,6 @@ void main() {
       ),
     );
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
     expect(
       tester.getSemantics(find.byType(AccountToggle)),
       matchesSemantics(
@@ -41,5 +40,6 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(enabled, isFalse);
+    semantics.dispose();
   });
 }

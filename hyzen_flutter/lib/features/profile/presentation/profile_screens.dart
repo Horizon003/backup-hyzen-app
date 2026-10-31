@@ -291,6 +291,7 @@ class AccountInfoScreen extends ConsumerWidget {
             ],
           ),
         ],
+        const SizedBox(height: 22),
         RoundedPrimaryButton(label: 'Edit profile', onPressed: edit),
         // Deletion is intentionally absent: there is no backend deletion flow.
       ],
