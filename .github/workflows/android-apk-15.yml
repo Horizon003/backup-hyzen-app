@@ -22,6 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # pdfrx ships large native binaries for every ABI. Remove unused
+      # preinstalled SDK images before Gradle expands those libraries.
+      - name: Free runner disk without removing Android build tools
+        run: |
+          set -euxo pipefail
+          sudo rm -rf /usr/local/lib/android/sdk/system-images/* || true
+          sudo rm -rf /usr/local/lib/android/sdk/ndk-bundle || true
+          sudo apt-get clean
+          df -h /
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -57,7 +67,7 @@ jobs:
         working-directory: hyzen_flutter
       - run: flutter test --no-pub --reporter expanded
         working-directory: hyzen_flutter
-      - run: flutter build apk --release --no-pub
+      - run: flutter build apk --release --no-pub --target-platform android-arm64
         working-directory: hyzen_flutter
 
       - name: Verify APK metadata and checksum
