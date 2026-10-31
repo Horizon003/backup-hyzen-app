@@ -73,7 +73,8 @@ class LibraryShortcuts extends ConsumerWidget {
 }
 
 class SubjectDiscovery extends ConsumerWidget {
-  const SubjectDiscovery({super.key});
+  const SubjectDiscovery({super.key, this.compact = false});
+  final bool compact;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final seen = <String>{};
@@ -105,9 +106,16 @@ class SubjectDiscovery extends ConsumerWidget {
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
             mainAxisExtent:
-                132 * MediaQuery.textScalerOf(context).scale(1).clamp(1, 2),
+                (compact ? 84 : 132) * MediaQuery.textScalerOf(context).scale(1).clamp(1, 2),
           ),
           itemBuilder: (context, i) {
+            if (compact) {
+              final h = subjects[i];
+              return HCard(radius: HRadius.lg, padding: const EdgeInsets.all(12), onTap: () => context.push(h.route),
+                child: Row(children: [Icon(Icons.science_outlined, size: 23, color: Theme.of(context).colorScheme.onSurfaceVariant), const SizedBox(width: 10),
+                  Expanded(child: Tooltip(message: h.title, child: Text(h.title, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.start, style: Theme.of(context).textTheme.titleMedium))),
+                ]));
+            }
             final colors = [
               HColors.notes,
               HColors.lectures,

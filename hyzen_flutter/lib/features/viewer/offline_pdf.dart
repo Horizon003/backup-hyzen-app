@@ -75,7 +75,9 @@ class OfflinePdf extends StatefulWidget {
     this.onTools,
     this.tools,
     this.initialPage = 1,
+    this.onOpened,
   });
+  final VoidCallback? onOpened;
   final String path;
   final Uri? uri;
   final Map<String, String> headers;
@@ -89,6 +91,15 @@ class OfflinePdf extends StatefulWidget {
 }
 
 class _OfflinePdfState extends State<OfflinePdf> {
+  bool _reportedOpen = false;
+  void _opened() {
+    if (_reportedOpen) return;
+    _reportedOpen = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onOpened?.call();
+    });
+  }
+
   final _controller = PdfViewerController();
   PdfTextSearcher? _searcher;
   PdfTextSearcher get searcher {
@@ -165,7 +176,7 @@ class _OfflinePdfState extends State<OfflinePdf> {
         path.endsWith('.pptx') ||
         path.endsWith('.xlsx') ||
         path.endsWith('.ppt')) {
-      return OfficeReader(path: path);
+      return OfficeReader(path: path, onOpened: _opened);
     }
     if (path.endsWith('.txt') ||
         path.endsWith('.md') ||
@@ -180,6 +191,7 @@ class _OfflinePdfState extends State<OfflinePdf> {
             return const Center(child: CircularProgressIndicator());
           }
           final text = utf8.decode(snapshot.data!, allowMalformed: true);
+          _opened();
           return SingleChildScrollView(
             padding: const EdgeInsets.all(22),
             child: SelectableText(
@@ -190,6 +202,7 @@ class _OfflinePdfState extends State<OfflinePdf> {
       );
     }
     if (path.endsWith('.jpg') ||
+        path.endsWith('.jpeg') ||
         path.endsWith('.png') ||
         path.endsWith('.webp')) {
       return FutureBuilder(
@@ -199,6 +212,10 @@ class _OfflinePdfState extends State<OfflinePdf> {
                 child: Center(
                   child: Image.memory(
                     s.data!,
+                    frameBuilder: (_, child, frame, synchronous) {
+                      if (frame != null || synchronous) _opened();
+                      return child;
+                    },
                     errorBuilder: (_, __, ___) => const Text(
                       'This saved image is damaged. Delete it and save again.',
                     ),
@@ -224,6 +241,7 @@ class _OfflinePdfState extends State<OfflinePdf> {
       margin: 4,
       maxImageBytesCachedOnMemory: 64 * 1024 * 1024,
       onViewerReady: (document, controller) {
+        _opened();
         if (mounted) {
           setState(() {
             _pages = document.pages.length;
@@ -374,13 +392,15 @@ class _OfflinePdfState extends State<OfflinePdf> {
 }
 
 class OfficeReader extends StatefulWidget {
-  const OfficeReader({super.key, required this.path});
+  final VoidCallback? onOpened;
+  const OfficeReader({super.key, required this.path, this.onOpened});
   final String path;
   @override
   State<OfficeReader> createState() => _OfficeReaderState();
 }
 
 class _OfficeReaderState extends State<OfficeReader> {
+  bool _reportedOpen = false;
   late final pages = documentBytes(
     widget.path,
   ).then((b) => compute(officePages, b));
@@ -397,6 +417,10 @@ class _OfficeReaderState extends State<OfficeReader> {
         );
       }
       if (!s.hasData) return const Center(child: CircularProgressIndicator());
+      if (!_reportedOpen) {
+        _reportedOpen = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) widget.onOpened?.call(); });
+      }
       return ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: s.data!.length + 1,

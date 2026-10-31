@@ -71,6 +71,7 @@ const fs = require('node:fs');
       // Allow the restrained selection animation and font glyphs to settle.
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       await page.waitForTimeout(700);
+      await page.mouse.move(0, 0);
       const filename = `${theme}-${name}.png`;
       await page.screenshot({path: `${output}/${filename}`});
       evidence.captures.push({filename, theme, path, width, height});
@@ -82,6 +83,42 @@ const fs = require('node:fs');
           evidence.navigation.push({theme, label, route, passed: true});
         }
       }
+      await page.close();
+    }
+  }
+  for (const theme of ['light', 'dark']) {
+    for (const scenario of [
+      {name: 'home', width: 390, height: 844},
+      {name: 'home-overview', width: 390, height: 1700},
+      {name: 'home-narrow', width: 320, height: 1000},
+      {name: 'home-large-text', width: 320, height: 1200, scale: 2},
+      {name: 'home-empty', width: 390, height: 844, empty: true},
+    ]) {
+      const page = await browser.newPage({viewport: {width: scenario.width, height: scenario.height}, deviceScaleFactor: 2, reducedMotion: 'reduce'});
+      page.on('pageerror', error => errors.push(String(error)));
+      page.on('console', message => { if (/overflowed by|Unhandled Exception/.test(message.text())) errors.push(message.text()); });
+      await page.goto(`http://127.0.0.1:8080/pharm-d-with-hyzen/ui-review/?theme=${theme}&textScale=${scenario.scale || 1}&scenario=${scenario.empty ? 'empty' : 'populated'}#/home`);
+      await page.waitForSelector('flutter-view', {timeout: 90000});
+      await page.waitForTimeout(2500);
+      const enable = page.getByRole('button', {name: 'Enable accessibility'});
+      if (await enable.count()) await enable.evaluate(button => button.click());
+      await page.getByRole('button', {name: 'Continue to Study', exact: true}).waitFor({timeout: 30000});
+      // Exercise real retained navigation before canvas readback.
+      await page.getByRole('button', {name: 'Study', exact: true}).click();
+      await page.waitForURL(url => url.hash === '#/study');
+      await page.getByRole('button', {name: 'Home', exact: true}).click();
+      await page.waitForURL(url => url.hash === '#/home');
+      await page.mouse.move(0, 0);
+      await page.waitForTimeout(1000);
+      const filename = `${theme}-${scenario.name}.png`;
+      await page.screenshot({path: `${output}/${filename}`});
+      if (scenario.name === 'home-overview') {
+        for (const label of ['2 Downloading', '3 Saved', '1 New', 'Continue studying', 'Popular subjects']) {
+          if (!await page.getByText(label, {exact: true}).count()) throw Error(`Missing Home fixture: ${label}`);
+        }
+        if (await page.getByText('More from Hyzen', {exact: true}).count()) throw Error('Removed Home group remains');
+      }
+      evidence.captures.push({filename, theme, path: '/home', ...scenario, sampleData: true});
       await page.close();
     }
   }

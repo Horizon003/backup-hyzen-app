@@ -1,4 +1,12 @@
 import 'dart:io';
+import 'package:hyzen_pharmd/features/home/presentation/home_screen.dart';
+import 'package:hyzen_pharmd/features/home/presentation/home_background.dart';
+import 'package:hyzen_pharmd/features/home/data/recent_controller.dart';
+import 'package:hyzen_pharmd/features/viewer/offline_pdf.dart';
+import 'package:hyzen_pharmd/features/academics/presentation/discovery_widgets.dart';
+import 'package:hyzen_pharmd/core/theme/tokens.dart';
+import 'package:hyzen_pharmd/core/widgets/surfaces.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
@@ -80,6 +88,7 @@ void main() {
     fixtureTree = tree;
     container = ProviderContainer(
       overrides: [
+        homeClockProvider.overrideWithValue(() => DateTime(2026, 1, 1, 18)),
         sharedPrefsProvider.overrideWithValue(prefs),
         authStateProvider.overrideWith((ref) => Stream.value(StudentUser())),
         profileProvider.overrideWith(
@@ -146,6 +155,113 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+
+  test('HOME-03 time greeting boundaries', () {
+    expect(homeGreeting(DateTime(2026, 1, 1, 6)), 'Good morning');
+    expect(homeGreeting(DateTime(2026, 1, 1, 12)), 'Good afternoon');
+    expect(homeGreeting(DateTime(2026, 1, 1, 17)), 'Good evening');
+  });
+  testWidgets('HOME-01/02/03/04/05/17 adaptive atmosphere, personalized monochrome greeting', (tester) async {
+    for (final mode in [ThemeMode.dark, ThemeMode.light]) {
+      container.read(themeModeProvider.notifier).set(mode);
+      await open(tester, '/home');
+      expect(find.byType(HomeAtmosphere), findsNWidgets(2));
+      final greeting = tester.widget<Text>(find.byKey(const ValueKey('home-greeting')));
+      expect(greeting.data, 'GOOD EVENING');
+      expect(greeting.style!.color, isNot(HColors.mint));
+      expect(find.text('Welcome back, Ali'), findsOneWidget);
+      expect(find.byType(HyzenRiveMascot), findsOneWidget);
+      expect(find.text('More from Hyzen'), findsNothing);
+      expect(find.text('About Hyzen'), findsNothing);
+      expect(find.text('Contact us'), findsNothing);
+      final search = find.text('Search subjects, topics or files');
+      expect(Theme.of(tester.element(search)).brightness, mode == ThemeMode.dark ? Brightness.dark : Brightness.light);
+      expect(tester.takeException(), isNull);
+    }
+  });
+  testWidgets('HOME-07/08 real search and Quick Access routes', (tester) async {
+    for (final entry in <String, String>{
+      'Search subjects, topics or files': '/search',
+      'Study Library': '/study',
+      'Office Workspace': '/pdf-studio',
+      'Downloads': '/downloads',
+      'Shop': '/shop',
+    }.entries) {
+      await open(tester, '/home');
+      final target = find.descendant(of: find.byType(HomeScreen), matching: find.text(entry.key)).first;
+      await tester.ensureVisible(target);
+      await tester.pumpAndSettle();
+      await tester.tap(target);
+      await tester.pumpAndSettle();
+      expect(container.read(routerProvider).routeInformationProvider.value.uri.path, entry.value);
+      expect(tester.takeException(), isNull);
+    }
+  });
+  testWidgets('HOME-09/15/16 real persisted download and recent providers feed Home', (tester) async {
+    await tester.runAsync(() async {
+      for (final entry in [
+        DownloadRecord(key: 'active', kind: LibraryKind.notes, title: 'Active', sourceUrl: 'https://example.org/active.pdf', status: DownloadStatus.downloading),
+        DownloadRecord(key: 'saved', kind: LibraryKind.notes, title: 'Saved', sourceUrl: 'https://example.org/saved.pdf', status: DownloadStatus.ready, localPath: '${temp.path}/saved.pdf', unopened: true),
+      ]) {
+        if (entry.localPath != null) await File(entry.localPath!).writeAsString('%PDF-');
+        await JsonBox(Boxes.downloads).put(entry.key, entry.toMap());
+      }
+      await container.read(recentProvider.notifier).touch(const FileRef(kind: LibraryKind.notes, title: 'Actual recent notes', url: 'https://example.org/recent.pdf'));
+    });
+    await open(tester, '/home');
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 40)));
+    await tester.pumpAndSettle();
+    expect(find.text('1 Saved'), findsOneWidget);
+    expect(find.text('1 New'), findsOneWidget);
+    expect(find.text('1 Downloading'), findsNothing, reason: 'Interrupted transfers restore as paused');
+    expect(find.text('Actual recent notes'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('HOME-06/13/14/16 responsive Home supports long content and reduced motion', (tester) async {
+    tester.view.physicalSize = const Size(320, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.runAsync(() => container.read(recentProvider.notifier).touch(const FileRef(kind: LibraryKind.notes, title: 'A very long pharmaceutical chemistry examination revision filename for the second professional year', url: 'https://example.org/long.pdf')));
+    await open(tester, '/home');
+    final subjects = tester.widget<SubjectDiscovery>(find.byType(SubjectDiscovery));
+    expect(subjects.compact, isTrue);
+    for (var i = 0; i < 8; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -450));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+    expect(find.byType(HCard), findsWidgets);
+  });
+  testWidgets('HOME-18 About, Contact and Blog routes remain available', (tester) async {
+    for (final path in ['/about', '/contact', '/blog']) {
+      await open(tester, path);
+      expect(container.read(routerProvider).routeInformationProvider.value.uri.path, path);
+      expect(find.text('This page could not be found'), findsNothing);
+      expect(tester.takeException(), isNull);
+    }
+  });
+  testWidgets('HOME-11 renderer reports success once and never for a failed open', (tester) async {
+    final file = File('${temp.path}/readable.txt');
+    await tester.runAsync(() => file.writeAsString('Readable saved academic notes'));
+    var opened = 0;
+    await tester.pumpWidget(MaterialApp(home: OfflinePdf(path: file.path, onOpened: () => opened++)));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 40)));
+    await tester.pumpAndSettle();
+    expect(find.text('Readable saved academic notes'), findsOneWidget);
+    expect(opened, 1);
+    await tester.pumpAndSettle();
+    expect(opened, 1);
+    await tester.pumpWidget(MaterialApp(home: OfflinePdf(key: const ValueKey('missing'), path: '${temp.path}/missing.txt', onOpened: () => opened++)));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 40)));
+    await tester.pumpAndSettle();
+    expect(find.text('Could not read this document.'), findsOneWidget);
+    expect(opened, 1);
+  });
   testWidgets(
     'announcement toggle persists between settings and account info',
     (tester) async {

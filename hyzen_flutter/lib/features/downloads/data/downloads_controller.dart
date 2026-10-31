@@ -47,6 +47,9 @@ class DownloadsController extends Notifier<Map<String, DownloadRecord>> {
     for (final r in map.values.where((r) => r.isReady)) {
       final exists = await store.exists(r.localPath!);
       if (_disposed) return;
+      if (exists && identical(state[r.key], r)) {
+        state = {...state, r.key: r.copyWith(availabilityVerified: true)};
+      }
       if (!exists &&
           identical(state[r.key], r) &&
           !_removing.contains(r.key) &&
@@ -65,6 +68,18 @@ class DownloadsController extends Notifier<Map<String, DownloadRecord>> {
     if (_disposed) return;
     state = {...state, r.key: r};
     await _box.put(r.key, r.toMap());
+  }
+
+  /// Called only after a renderer successfully opens this exact saved version.
+  Future<void> markOpened(String key, {required String path, required DateTime? savedAt}) async {
+    final initial = state[key];
+    if (initial == null || !initial.isReady || !initial.unopened || initial.localPath != path || initial.savedAt != savedAt) return;
+    if (!await _fs.exists(path) || _disposed) return;
+    final current = state[key];
+    if (current == null || !current.isReady || !current.unopened ||
+        current.localPath != path || current.savedAt != savedAt ||
+        _removing.contains(key) || _clearing) return;
+    await _set(current.copyWith(unopened: false, firstOpenedAt: DateTime.now(), availabilityVerified: true));
   }
 
   DownloadRecord? recordFor(String url) => state[DriveLinks.offlineKey(url)];
@@ -170,6 +185,8 @@ class DownloadsController extends Notifier<Map<String, DownloadRecord>> {
         sizeBytes: output.size,
         progress: 1,
         savedAt: DateTime.now(),
+        unopened: true,
+        availabilityVerified: true,
       );
       await _set(record);
     } catch (e) {

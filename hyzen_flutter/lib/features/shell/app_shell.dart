@@ -97,7 +97,13 @@ class TabPage extends StatelessWidget {
     this.onRefresh,
     this.subtitle,
     this.drawer,
+    this.homeBackground,
+    this.integratedHeader = false,
+    this.headerTheme,
   });
+  final Widget Function(Widget child)? homeBackground;
+  final bool integratedHeader;
+  final ThemeData? headerTheme;
   final Widget? drawer;
   final String title;
   final String? subtitle;
@@ -121,13 +127,17 @@ class TabPage extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       drawer: drawer,
-      appBar: _Bar(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Theme(data: headerTheme ?? Theme.of(context), child: _Bar(
+        integrated: integratedHeader,
         title: title,
         subtitle: subtitle,
         actions: actions,
         showMenu: drawer != null,
+      )),
       ),
-      body: HBackground(
+      body: homeBackground != null ? homeBackground!(onRefresh == null ? scroll : RefreshIndicator(onRefresh: onRefresh!, edgeOffset: 64, child: scroll)) : HBackground(
         child: onRefresh == null
             ? scroll
             : RefreshIndicator(
@@ -146,7 +156,9 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
     this.subtitle,
     this.actions = const [],
     this.showMenu = false,
+    this.integrated = false,
   });
+  final bool integrated;
   final bool showMenu;
   final String title;
   final String? subtitle;
@@ -156,9 +168,7 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return SurfacePanel(
-      radius: 0,
-      child: SafeArea(
+    final header = SafeArea(
         bottom: false,
         child: SizedBox(
           height: 64,
@@ -201,8 +211,8 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
                         children: [
                           Image.asset(
                             'assets/brand/hyzen_icon_square.png',
-                            width: 30,
-                            height: 30,
+                            width: integrated ? 24 : 30,
+                            height: integrated ? 24 : 30,
                           ),
                           const SizedBox(width: 10),
                           Flexible(
@@ -227,7 +237,7 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
                               overflow: TextOverflow.ellipsis,
                               style: t.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w800,
-                                fontSize: 17,
+                                fontSize: integrated ? 13 : 17,
                                 letterSpacing: -.2,
                               ),
                             ),
@@ -290,8 +300,8 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
+    return integrated ? ColoredBox(color: Colors.transparent, child: header) : SurfacePanel(radius: 0, child: header);
   }
 }
 

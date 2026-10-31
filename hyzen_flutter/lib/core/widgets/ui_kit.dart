@@ -67,7 +67,9 @@ class ResourceTile extends StatelessWidget {
     this.onTap,
     this.eyebrow,
     this.badge,
+    this.compact = false,
   });
+  final bool compact;
   final IconData icon;
   final Color color;
   final String title;
@@ -95,7 +97,7 @@ class ResourceTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: HSpace.sm, vertical: 9),
         child: Row(
           children: [
-            IconBadge(icon: icon, color: color, size: 36),
+            IconBadge(icon: icon, color: color, size: compact ? 28 : 36),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

@@ -423,7 +423,8 @@ class _Resolved {
 
 /// File row with live offline status (watches only its own record).
 class FileTile extends ConsumerWidget {
-  const FileTile({super.key, required this.file, required this.color});
+  const FileTile({super.key, required this.file, required this.color, this.compact = false});
+  final bool compact;
   final FileRef file;
   final Color color;
   @override
@@ -447,8 +448,9 @@ class FileTile extends ConsumerWidget {
       icon: documentIconForName(file.title),
       color: documentColorForName(file.title),
       title: file.title,
-      subtitle: file.trail.isNotEmpty ? file.trail.last : null,
-      badge: badge,
+      subtitle: !compact && file.trail.isNotEmpty ? file.trail.last : null,
+      badge: compact ? null : badge,
+      compact: compact,
       trailing: Icon(Icons.open_in_full_rounded, size: 20, color: color),
       onTap: () => context.push('/viewer', extra: file),
     );

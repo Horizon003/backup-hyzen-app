@@ -19,7 +19,16 @@ class DownloadRecord {
     this.error,
     this.totalBytes,
     this.startedAt,
+    this.unopened = false,
+    this.firstOpenedAt,
+    this.availabilityVerified = true,
   });
+
+  final bool unopened;
+  final DateTime? firstOpenedAt;
+  /// Runtime verification is deliberately not trusted from persisted metadata.
+  final bool availabilityVerified;
+  bool get isAvailableOffline => isReady && availabilityVerified;
 
   final String key;
   final LibraryKind kind;
@@ -69,6 +78,8 @@ class DownloadRecord {
     'error': error,
     'totalBytes': totalBytes,
     'startedAt': startedAt?.toIso8601String(),
+    'unopened': unopened,
+    'firstOpenedAt': firstOpenedAt?.toIso8601String(),
   };
 
   static DownloadRecord? fromMap(Map<String, dynamic> m) {
@@ -93,6 +104,9 @@ class DownloadRecord {
       error: m['error'] as String?,
       totalBytes: (m['totalBytes'] as num?)?.toInt(),
       startedAt: DateTime.tryParse('${m['startedAt']}'),
+      unopened: m['unopened'] == true,
+      firstOpenedAt: DateTime.tryParse('${m['firstOpenedAt']}'),
+      availabilityVerified: false,
     );
   }
 
@@ -105,6 +119,9 @@ class DownloadRecord {
     String? error,
     int? totalBytes,
     DateTime? startedAt,
+    bool? unopened,
+    DateTime? firstOpenedAt,
+    bool? availabilityVerified,
   }) => DownloadRecord(
     key: key,
     kind: kind,
@@ -119,6 +136,9 @@ class DownloadRecord {
     error: error,
     totalBytes: totalBytes ?? this.totalBytes,
     startedAt: startedAt ?? this.startedAt,
+    unopened: unopened ?? this.unopened,
+    firstOpenedAt: firstOpenedAt ?? this.firstOpenedAt,
+    availabilityVerified: availabilityVerified ?? this.availabilityVerified,
   );
 }
 
