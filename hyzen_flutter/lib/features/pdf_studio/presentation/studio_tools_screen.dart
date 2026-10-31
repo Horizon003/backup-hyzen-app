@@ -178,9 +178,10 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
         (widget.tool == StudioTool.merge || widget.tool == StudioTool.images)
         ? (replace ? picked : [..._sources, ...picked])
         : [picked.first];
-    final selected = {
-      for (final file in candidates) file.path: file,
-    }.values.toList();
+    // Do not key this list by path: adding the same PDF twice can be
+    // intentional in a merge (for example, to repeat a cover page). The
+    // visible source order is the authoritative merge order.
+    final selected = [...candidates];
     if (widget.tool == StudioTool.images) {
       if (selected.any(
         (f) => !RegExp(
@@ -440,6 +441,8 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
     final pageSelect = split || extract;
     final merge = widget.tool == StudioTool.merge;
     final organize = widget.tool == StudioTool.organize;
+    final hasDuplicateSources =
+        _sources.length != _sources.map((file) => file.path).toSet().length;
     final canSave =
         !_busy &&
         (split
@@ -510,8 +513,18 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        '${_sources.length} PDFs · ${_pages.length} pages',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_sources.length} PDFs · ${_pages.length} pages',
+                          ),
+                          if (hasDuplicateSources)
+                            Text(
+                              'A source is repeated intentionally; order is preserved.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                        ],
                       ),
                     ),
                     TextButton.icon(
