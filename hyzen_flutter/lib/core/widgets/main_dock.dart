@@ -157,20 +157,20 @@ class _DockItem extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                          office && compact ? 'Office' : destination.label,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            height: 1.15,
-                            color: Colors.white,
-                            fontWeight: selected
-                                ? FontWeight.w800
-                                : FontWeight.w600,
+                            office && compact ? 'Office' : destination.label,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              height: 1.15,
+                              color: Colors.white,
+                              fontWeight: selected
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                            ),
                           ),
-                        ),
                         ),
                       ),
                     ],
