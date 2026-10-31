@@ -30,9 +30,10 @@ const fs = require('node:fs');
       const enable = page.getByRole('button', {name: 'Enable accessibility'});
       if (await enable.count()) await enable.evaluate(button => button.click());
       try {
-        // Retained shell branches can expose hidden copies of a header label.
-        // Wait for a visible match rather than an arbitrary first DOM node.
-        await page.getByLabel(title, {exact: true}).filter({visible: true}).first().waitFor({timeout: 30000});
+        // Flutter emits some headings as text and others as aria-labels.
+        await page.getByText(title, {exact: true})
+          .or(page.getByLabel(title, {exact: true}))
+          .filter({visible: true}).first().waitFor({timeout: 30000});
       } catch (error) {
         await page.screenshot({path: `${output}/failure-${theme}-${name}.png`});
         fs.writeFileSync(`${output}/failure-${theme}-${name}.html`, await page.content());
@@ -42,9 +43,13 @@ const fs = require('node:fs');
       if (name.startsWith('office') || name === 'downloads') {
         // Verify all five actual accessible hit areas and their visual order.
         const bounds = [];
+        const active = name.startsWith('office') ? 'Office Workspace' : 'Downloads';
         for (const label of destinations) {
           const item = page.getByRole('button', {name: label, exact: true}).filter({visible: true});
           if (await item.count() !== 1) throw Error(`${theme}/${name}: expected one ${label}`);
+          if (await item.getAttribute('aria-current') !== String(label === active)) {
+            throw Error(`${theme}/${name}: incorrect selected state for ${label}`);
+          }
           const box = await item.boundingBox();
           if (!box || box.width < 48 || box.height < 48) throw Error(`Small target: ${label}`);
           bounds.push(box.x);
