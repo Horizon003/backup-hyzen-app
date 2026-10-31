@@ -104,11 +104,27 @@ class _ReviewAppState extends ConsumerState<_ReviewApp> {
     }
     return const Directionality(
       textDirection: TextDirection.ltr,
-      child: Banner(
-        message: 'SAMPLE DATA',
-        location: BannerLocation.bottomEnd,
-        color: Color(0xFF38383D),
-        child: HyzenApp(),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 22,
+            child: ColoredBox(
+              color: Color(0xFF38383D),
+              child: Center(
+                child: Text(
+                  'UI PREVIEW · SAMPLE DATA',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Manrope',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(child: HyzenApp()),
+        ],
       ),
     );
   }
