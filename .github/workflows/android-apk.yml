@@ -11,11 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract source
-        run: |
-          unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
-          cp -a lib/. hyzen_flutter/lib/
-          cp -a android/. hyzen_flutter/android/
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -54,7 +49,7 @@ jobs:
         run: sha256sum hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk > hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: PharmD_With_Hyzen_1.3.3_signed
+          name: PharmD_With_Hyzen_1.5.3_signed
           path: |
             hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk
             hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
@@ -67,7 +62,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: PharmD_With_Hyzen_1.3.3_signed
+          name: PharmD_With_Hyzen_1.5.3_signed
           path: apk
       - name: Enable KVM
         run: |
