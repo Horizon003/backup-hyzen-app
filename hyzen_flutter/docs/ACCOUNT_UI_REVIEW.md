@@ -25,8 +25,8 @@ APK workflow, version number, signing or release settings are changed.
 Open the **Account UI validation and browser preview** workflow for
 `fix/mascot-motion-apk`. Its artifact is named `account-ui-review-<full commit SHA>`.
 The job runs Flutter analysis, the test suite, two Flutter web builds and browser
-screenshots. It never invokes an Android build or publishes a release. After validation, it
-updates the existing GitHub Pages browser preview (including `/ui-review/`).
+screenshots. It never invokes an Android build or publishes a release. Automatic branch pushes produce a downloadable browser preview. Manual runs
+also attempt deployment to the existing GitHub Pages preview environment.
 
 Download and unzip the artifact, then from its `build/serve` folder run:
 
@@ -52,11 +52,16 @@ package metadata. Gallery upload and device downloads still require Android.
 Screenshots are in `qa/account-redesign/` inside the artifact. The existing Pages
 workflow now builds checked-out Flutter source directly instead of an older ZIP.
 Its own main/manual triggers remain unchanged; the account review workflow
-updates the same preview from the requested review branch.
+can update the same preview from the requested review branch on manual runs,
+subject to the repository’s existing Pages environment policy. The first automatic
+deployment attempt was rejected before a runner was allocated; validation and
+all browser builds/screenshots succeeded. No environment/security policy was changed.
 
 ## Hosted browser preview
 
-Use the deployment URL on the workflow run. For the default GitHub Pages domain:
+A hosted link is available only after a successful manual deployment. Check the
+deploy job before using these URLs; the downloadable preview above works without
+Pages deployment. For the default GitHub Pages domain:
 
 - `https://horizon003.github.io/pharm-d-with-hyzen/ui-review/#/profile`
 - `https://horizon003.github.io/pharm-d-with-hyzen/ui-review/#/profile/info`

@@ -78,11 +78,14 @@ jobs:
             hyzen_flutter/pubspec.lock
           if-no-files-found: error
       - uses: actions/configure-pages@v5
+        if: github.event_name == 'workflow_dispatch'
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'workflow_dispatch'
         with:
           path: hyzen_flutter/build/serve/pharm-d-with-hyzen
 
   deploy-preview:
+    if: github.event_name == 'workflow_dispatch'
     needs: validate-preview
     runs-on: ubuntu-latest
     concurrency:
