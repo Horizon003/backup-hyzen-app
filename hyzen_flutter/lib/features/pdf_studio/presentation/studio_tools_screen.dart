@@ -10,7 +10,7 @@ import '../data/studio_pdf_engine.dart';
 import 'studio_page_thumbnail.dart';
 import 'page_grid.dart';
 
-enum StudioTool { open, merge, split, organize, images, document }
+enum StudioTool { open, merge, split, extract, organize, images, document }
 
 class StudioToolsScreen extends ConsumerStatefulWidget {
   const StudioToolsScreen({super.key, required this.tool, this.initialFile});
@@ -33,7 +33,8 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
   String get _heading => switch (widget.tool) {
     StudioTool.open => 'Open PDF or document',
     StudioTool.merge => 'Merge PDFs',
-    StudioTool.split => 'Split or extract pages',
+    StudioTool.split => 'Split PDF by range',
+    StudioTool.extract => 'Extract selected pages',
     StudioTool.organize => 'Organize pages',
     StudioTool.images => 'Images to PDF',
     StudioTool.document => 'Document writer',
@@ -355,6 +356,19 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
           'SPLIT',
         );
         break;
+      case StudioTool.extract:
+        if (_pages.isEmpty || _splitSelected.isEmpty) {
+          throw const FormatException('Select one or more pages to extract.');
+        }
+        final selectedPages = _splitSelected.toList()..sort();
+        await _finish(
+          await StudioPdfEngine.compose([
+            for (final i in selectedPages) _pages[i],
+          ]),
+          '$name.pdf',
+          'EXTRACTED',
+        );
+        break;
       case StudioTool.images:
         if (_sources.isEmpty) {
           throw const FormatException('Choose images first.');
@@ -422,12 +436,16 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
   @override
   Widget build(BuildContext context) {
     final split = widget.tool == StudioTool.split;
+    final extract = widget.tool == StudioTool.extract;
+    final pageSelect = split || extract;
     final merge = widget.tool == StudioTool.merge;
     final organize = widget.tool == StudioTool.organize;
     final canSave =
         !_busy &&
         (split
             ? _splitSelected.isNotEmpty || _range.text.trim().isNotEmpty
+            : extract
+            ? _splitSelected.isNotEmpty
             : merge
             ? _sources.length >= 2
             : widget.tool == StudioTool.document
@@ -437,9 +455,11 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
       canPop: !_busy,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(split ? '${_splitSelected.length} Selected' : _heading),
+          title: Text(
+            pageSelect ? '${_splitSelected.length} Selected' : _heading,
+          ),
           actions: [
-            if (split && _pages.isNotEmpty)
+            if (pageSelect && _pages.isNotEmpty)
               TextButton(
                 onPressed: _busy
                     ? null
@@ -595,7 +615,7 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
                           ? const Icon(Icons.description_outlined)
                           : StudioPageThumbnail(page: _pages[i]),
                       selected: _splitSelected,
-                      onSelect: split
+                      onSelect: pageSelect
                           ? (i) => setState(() {
                               if (!_splitSelected.add(i)) {
                                 _splitSelected.remove(i);
@@ -623,8 +643,10 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
               onPressed: canSave ? _create : null,
               icon: const Icon(Icons.save_alt_rounded, size: 20),
               label: Text(
-                split
-                    ? 'Extract & save PDF'
+                extract
+                    ? 'Extract selected pages'
+                    : split
+                    ? 'Split & save PDF'
                     : merge
                     ? 'Merge & save PDF'
                     : 'Save PDF',

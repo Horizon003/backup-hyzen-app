@@ -479,7 +479,7 @@ class _PdfStudioFileViewerScreenState
           ReaderAction(
             'Extract from PDF',
             Icons.call_split_rounded,
-            () => _tool(StudioTool.split, active),
+            () => _tool(StudioTool.extract, active),
             group: 'File actions',
           ),
           ReaderAction(

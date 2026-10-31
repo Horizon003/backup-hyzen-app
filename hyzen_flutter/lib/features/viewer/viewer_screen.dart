@@ -261,7 +261,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
           ReaderAction(
             'Extract from PDF',
             Icons.call_split_rounded,
-            () => _editCopy(f, rec, StudioTool.split),
+            () => _editCopy(f, rec, StudioTool.extract),
             group: 'File actions',
           ),
           ReaderAction(
