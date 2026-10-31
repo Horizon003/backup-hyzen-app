@@ -90,12 +90,22 @@ class StudioPdfEngine {
   static Future<String> compress(String path, String preset) async =>
       await _pdf.invokeMethod<String>('compress', {'path': path, 'preset': preset}) ?? '';
 
-  static Future<({String path, String text})> ocr(String path) async {
+  static Future<({String path, String text, List<String> pages})> ocr(
+    String path,
+  ) async {
     final result = await _pdf.invokeMapMethod<String, dynamic>('ocr', {'path': path});
     if (result == null || result['path'] is! String || result['text'] is! String) {
       throw const FormatException('Recognition did not finish.');
     }
-    return (path: result['path'] as String, text: result['text'] as String);
+    final pages = [
+      for (final page in result['pages'] is List ? result['pages'] as List : const [])
+        if (page is String) page,
+    ];
+    return (
+      path: result['path'] as String,
+      text: result['text'] as String,
+      pages: pages,
+    );
   }
 
   static Future<String> imagesToPdf(List<String> paths) async =>

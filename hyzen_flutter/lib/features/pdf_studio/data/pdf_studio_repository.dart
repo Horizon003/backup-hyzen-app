@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/storage/local_store.dart';
 import 'studio_file_item.dart';
 import 'studio_storage.dart';
+import '../../search/data/ocr_index.dart';
 
 final studioStorageProvider = Provider<StudioStorage>(
   (_) => createStudioStorage(),
@@ -18,6 +19,16 @@ final pdfStudioHistoryProvider =
 class PdfStudioRepository extends Notifier<List<StudioFileItem>> {
   JsonBox get _box => JsonBox(Boxes.pdfStudioHistory);
   StudioStorage get _storage => ref.read(studioStorageProvider);
+
+  Future<void> _syncOcr(Future<void> Function(OcrIndexNotifier index) action) async {
+    try {
+      ref.read(ocrIndexProvider);
+      await action(ref.read(ocrIndexProvider.notifier));
+    } on UnimplementedError {
+      // Some repository tests intentionally use a minimal provider container;
+      // OCR metadata is additive and must not block core file operations.
+    }
+  }
 
   @override
   List<StudioFileItem> build() => _sorted(
@@ -97,6 +108,7 @@ class PdfStudioRepository extends Notifier<List<StudioFileItem>> {
     }
     final updated = item.copyWith(displayName: cleaned, updatedAt: DateTime.now());
     await _save(updated);
+    await _syncOcr((index) => index.rename(id, cleaned));
   }
 
   Future<void> setStarred(String id, bool starred) async {
@@ -124,6 +136,9 @@ class PdfStudioRepository extends Notifier<List<StudioFileItem>> {
   Future<void> updatePageCount(String id, int pageCount) async {
     final item = _find(id);
     if (item == null || pageCount < 0) return;
+    if (item.pageCount != pageCount) {
+      await _syncOcr((index) => index.invalidate(id));
+    }
     await _save(item.copyWith(pageCount: pageCount));
   }
 
@@ -135,6 +150,7 @@ class PdfStudioRepository extends Notifier<List<StudioFileItem>> {
       editStatePath: item.editStateJsonPath,
     );
     await _box.delete(id);
+    await _syncOcr((index) => index.invalidate(id));
     state = state.where((file) => file.id != id).toList(growable: false);
   }
 

@@ -17,6 +17,8 @@ class SearchHit {
     this.kind,
     this.url,
     this.trail = const [],
+    this.studioFileId,
+    this.page,
   }) : _hay = '${title.toLowerCase()} ${subtitle.toLowerCase()}';
   final HitType type;
   final String title;
@@ -25,6 +27,8 @@ class SearchHit {
   final LibraryKind? kind;
   final String? url;
   final List<String> trail;
+  final String? studioFileId;
+  final int? page;
   final String _hay;
 
   int score(List<String> terms) {

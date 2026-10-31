@@ -335,8 +335,13 @@ class _StudioHistoryTile extends ConsumerWidget {
 }
 
 class PdfStudioFileViewerScreen extends ConsumerStatefulWidget {
-  const PdfStudioFileViewerScreen({super.key, required this.fileId});
+  const PdfStudioFileViewerScreen({
+    super.key,
+    required this.fileId,
+    this.initialPage = 1,
+  });
   final String fileId;
+  final int initialPage;
 
   @override
   ConsumerState<PdfStudioFileViewerScreen> createState() =>
@@ -514,7 +519,11 @@ class _PdfStudioFileViewerScreenState
           group: 'Support',
         ),
       ],
-      child: OfflinePdf(path: active.internalFilePath, tools: _tools),
+      child: OfflinePdf(
+        path: active.internalFilePath,
+        tools: _tools,
+        initialPage: widget.initialPage,
+      ),
     );
   }
 }

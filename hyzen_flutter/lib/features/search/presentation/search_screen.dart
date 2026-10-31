@@ -15,6 +15,7 @@ import '../../content/data/content_source.dart';
 import '../../downloads/domain/download_record.dart';
 import '../../shell/app_shell.dart';
 import '../data/search_index.dart';
+import '../data/ocr_index.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key, this.focusSearch = false});
@@ -50,7 +51,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final index = ref.watch(searchIndexProvider);
-    final hits = runSearch(index, _q, only: _only);
+    ref.watch(ocrIndexProvider);
+    final hits = [
+      ...runSearch(index, _q, only: _only),
+      if (_q.trim().isNotEmpty && (_only == null || _only == HitType.file))
+        for (final result in ref.read(ocrIndexProvider.notifier).search(_q))
+          SearchHit(
+            type: HitType.file,
+            title: result.documentName,
+            subtitle: 'Page ${result.page} · OCR · ${result.snippet}',
+            route: '/pdf-studio/viewer/${result.documentId}',
+            studioFileId: result.documentId,
+            page: result.page,
+          ),
+    ];
     final settings = ref.watch(siteSettingsProvider);
     final keys = [
       for (final k in LibraryKind.values)
@@ -170,7 +184,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   title: h.title,
                   subtitle: h.subtitle,
                   onTap: () {
-                    if (h.type == HitType.file &&
+                    if (h.studioFileId != null) {
+                      final page = h.page;
+                      c.push(
+                        '/pdf-studio/viewer/${h.studioFileId}'
+                        '${page != null ? '?page=$page' : ''}',
+                      );
+                    } else if (h.type == HitType.file &&
                         h.url != null &&
                         h.kind != null) {
                       c.push(

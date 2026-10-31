@@ -74,6 +74,7 @@ class OfflinePdf extends StatefulWidget {
     this.onOnlinePreview,
     this.onTools,
     this.tools,
+    this.initialPage = 1,
   });
   final String path;
   final Uri? uri;
@@ -81,6 +82,7 @@ class OfflinePdf extends StatefulWidget {
   final VoidCallback? onOnlinePreview;
   final VoidCallback? onTools;
   final ReaderTools? tools;
+  final int initialPage;
 
   @override
   State<OfflinePdf> createState() => _OfflinePdfState();
@@ -227,6 +229,10 @@ class _OfflinePdfState extends State<OfflinePdf> {
             _pages = document.pages.length;
             _ready = true;
           });
+          final target = widget.initialPage.clamp(1, document.pages.length);
+          if (target > 1) {
+            controller.goToPage(pageNumber: target.toInt());
+          }
         }
       },
       pagePaintCallbacks: [searcher.pageTextMatchPaintCallback],

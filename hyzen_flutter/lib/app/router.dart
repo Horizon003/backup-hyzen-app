@@ -160,6 +160,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'viewer/:fileId',
                     builder: (_, state) => PdfStudioFileViewerScreen(
                       fileId: state.pathParameters['fileId']!,
+                      initialPage: int.tryParse(state.uri.queryParameters['page'] ?? '') ?? 1,
                     ),
                   ),
                 ],

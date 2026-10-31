@@ -222,6 +222,7 @@ class StudioDocumentOps(private val context: Context) {
     fun ocr(path: String): Map<String, Any> {
         val target = output()
         val text = StringBuilder()
+        val pages = mutableListOf<String>()
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         try {
             PDDocument.load(File(path)).use { document ->
@@ -237,6 +238,7 @@ class StudioDocumentOps(private val context: Context) {
                                 try {
                                     bitmap.eraseColor(Color.WHITE); page.render(bitmap,null,null,PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                                     val result = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap,0)),45,TimeUnit.SECONDS)
+                                    pages.add(result.text)
                                     text.append(result.text).append("\n\n")
                                     val pdfPage = document.getPage(index)
                                     // Avoid duplicate invisible text on a page which already has text.
@@ -264,7 +266,7 @@ class StudioDocumentOps(private val context: Context) {
                 }
                 document.save(target)
             }
-            return mapOf("path" to target.absolutePath, "text" to text.toString())
+            return mapOf("path" to target.absolutePath, "text" to text.toString(), "pages" to pages)
         } catch(e: Exception) { target.delete(); throw e }
         finally { recognizer.close() }
     }

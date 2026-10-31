@@ -7,6 +7,7 @@ import '../data/pdf_studio_repository.dart';
 import '../data/studio_file_item.dart';
 import '../data/studio_pdf_engine.dart';
 import '../data/studio_text_export.dart';
+import '../../search/data/ocr_index.dart';
 
 enum _Format {
   original,
@@ -194,6 +195,13 @@ Future<void> showStudioExportSheet(
       if (result.text.trim().isEmpty) {
         throw const FormatException('No readable Latin text was found.');
       }
+      await ProviderScope.containerOf(context, listen: false)
+          .read(ocrIndexProvider.notifier)
+          .save(
+            documentId: file.id,
+            documentName: file.displayName,
+            pages: result.pages.isEmpty ? [result.text] : result.pages,
+          );
       path = format == _Format.ocrPdf
           ? result.path
           : await StudioPdfEngine.textFile(result.text);
