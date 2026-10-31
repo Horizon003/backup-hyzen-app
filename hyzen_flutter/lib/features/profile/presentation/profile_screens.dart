@@ -42,7 +42,9 @@ Future<void> logout(BuildContext context, WidgetRef ref) async {
     ref.read(lastCreatedProfileProvider.notifier).state = null;
     if (context.mounted) context.go('/welcome');
   } catch (_) {
-    if (context.mounted) showHSnack(context, 'Could not log out. Please retry.', error: true);
+    if (context.mounted) {
+      showHSnack(context, 'Could not log out. Please retry.', error: true);
+    }
   }
 }
 
@@ -64,8 +66,10 @@ class ProfileScreen extends ConsumerWidget {
         context.push(path);
       }
     }
+
     return AccountPage(
-      title: 'Account', close: true,
+      title: 'Account',
+      close: true,
       onBack: onClose ?? () => _accountBack(context),
       onRefresh: () async {
         ref.invalidate(profileProvider);
@@ -75,44 +79,63 @@ class ProfileScreen extends ConsumerWidget {
         AccountProfileCard(
           name: name,
           subtitle: p?.rollNumber?.isNotEmpty == true
-            ? 'Account info · ${p!.rollNumber}' : 'Account info',
+              ? 'Account info · ${p!.rollNumber}'
+              : 'Account info',
           photoUrl: p?.photoUrl ?? user?.photoURL,
           onTap: () => go('/profile/info'),
         ),
         const SizedBox(height: 22),
-        SettingsCard(raised: true, children: [
-          SettingsRow(title: 'Settings', onTap: () => go('/settings')),
-        ]),
+        SettingsCard(
+          raised: true,
+          children: [
+            SettingsRow(title: 'Settings', onTap: () => go('/settings')),
+          ],
+        ),
         const SizedBox(height: 20),
-        SettingsCard(raised: true, children: [
-          SettingsRow(title: 'My orders', onTap: () => go('/orders')),
-          SettingsRow(title: 'Downloads', onTap: () => go('/downloads')),
-        ]),
+        SettingsCard(
+          raised: true,
+          children: [
+            SettingsRow(title: 'My orders', onTap: () => go('/orders')),
+            SettingsRow(title: 'Downloads', onTap: () => go('/downloads')),
+          ],
+        ),
         if (admin) ...[
           const SizedBox(height: 20),
-          SettingsCard(raised: true, children: [SettingsRow(
-            title: 'Admin dashboard', onTap: () => go('/admin'),
-          )]),
+          SettingsCard(
+            raised: true,
+            children: [
+              SettingsRow(title: 'Admin dashboard', onTap: () => go('/admin')),
+            ],
+          ),
         ],
         const SizedBox(height: 20),
-        SettingsCard(raised: true, children: [
-          SettingsRow(title: 'Contact us', onTap: () => go('/contact')),
-          SettingsRow(title: 'About',
-            value: ref.watch(appVersionProvider).valueOrNull,
-            onTap: () => go('/about')),
-        ]),
+        SettingsCard(
+          raised: true,
+          children: [
+            SettingsRow(title: 'Contact us', onTap: () => go('/contact')),
+            SettingsRow(
+              title: 'About',
+              value: ref.watch(appVersionProvider).valueOrNull,
+              onTap: () => go('/about'),
+            ),
+          ],
+        ),
         const SizedBox(height: 22),
-        RoundedPrimaryButton(label: 'Edit profile',
-          onPressed: () => go('/profile/edit')),
+        RoundedPrimaryButton(
+          label: 'Edit profile',
+          onPressed: () => go('/profile/edit'),
+        ),
         const SizedBox(height: 22),
         // Keep the existing admin-managed promotions and shop/offline links.
         const ProfilePromotions(),
         const SizedBox(height: 22),
-        DestructiveActionButton(label: 'Log out',
+        DestructiveActionButton(
+          label: 'Log out',
           onPressed: () async {
             // The dialog and route change use the sheet's still-mounted context.
             await logout(context, ref);
-          }),
+          },
+        ),
       ],
     );
   }
@@ -144,61 +167,129 @@ class AccountInfoScreen extends ConsumerWidget {
     final announcements = ref.watch(boolPrefProvider('pref_announcements'));
     void edit() => context.push('/profile/edit');
     return AccountPage(
-      title: 'Account info', onBack: () => _accountBack(context),
+      title: 'Account info',
+      onBack: () => _accountBack(context),
       children: [
         const SizedBox(height: 8),
-        Center(child: ProfileAvatar(
-          photoUrl: p?.photoUrl ?? user?.photoURL,
-          fallback: name, radius: 46,
-        )),
-        const SizedBox(height: 16),
-        Center(child: TextButton(
-          onPressed: edit,
-          child: const Text('Change Photo', style: TextStyle(
-            color: AccountStyle.link, fontWeight: FontWeight.w700, fontSize: 15,
-          )),
-        )),
-        const SizedBox(height: 32),
-        if (state.isLoading && p == null) const Padding(
-          padding: EdgeInsets.all(16), child: LinearProgressIndicator(),
+        Center(
+          child: ProfileAvatar(
+            photoUrl: p?.photoUrl ?? user?.photoURL,
+            fallback: name,
+            radius: 46,
+          ),
         ),
-        if (state.hasError && p == null) SettingsCard(children: [SettingsRow(
-          title: 'Retry profile', subtitle: 'Your account details could not load.',
-          onTap: () => ref.invalidate(profileProvider),
-        )]),
-        SettingsCard(children: [
-          SettingsRow(title: 'Name', value: name, onTap: edit),
-          // Username is not a field in the current students schema.
-          SettingsRow(title: 'Email', value: p?.email ?? user?.email ?? '—'),
-          if (p != null) SettingsRow(title: 'Phone Number',
-            value: p.mobile.isEmpty ? 'Add' : PkPhone.pretty(p.mobile), onTap: edit),
-        ]),
+        const SizedBox(height: 16),
+        Center(
+          child: TextButton(
+            onPressed: edit,
+            child: const Text(
+              'Change Photo',
+              style: TextStyle(
+                color: AccountStyle.link,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+        if (state.isLoading && p == null)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: LinearProgressIndicator(),
+          ),
+        if (state.hasError && p == null)
+          SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'Retry profile',
+                subtitle: 'Your account details could not load.',
+                onTap: () => ref.invalidate(profileProvider),
+              ),
+            ],
+          ),
+        SettingsCard(
+          children: [
+            SettingsRow(title: 'Name', value: name, onTap: edit),
+            // Username is not a field in the current students schema.
+            SettingsRow(title: 'Email', value: p?.email ?? user?.email ?? '—'),
+            if (p != null)
+              SettingsRow(
+                title: 'Phone Number',
+                value: p.mobile.isEmpty ? 'Add' : PkPhone.pretty(p.mobile),
+                onTap: edit,
+              ),
+          ],
+        ),
         if (p != null) ...[
           const AccountSectionHeader('Academic details'),
-          SettingsCard(children: [
-            SettingsRow(title: 'Professional year',
-              value: ReferenceData.yearLabel(p.professionalYear), onTap: edit),
-            SettingsRow(title: 'Institution', value: p.institutionName, onTap: edit),
-            SettingsRow(title: 'Roll number', value: p.rollNumber ?? 'Add', onTap: edit),
-            SettingsRow(title: 'Affiliation',
-              value: p.affiliationDisplay ?? 'Non-affiliated', onTap: edit),
-            SettingsRow(title: 'City', value: p.city, onTap: edit),
-            SettingsRow(title: 'Gender', value: ReferenceData.genders[p.gender] ?? p.gender),
-          ]),
+          SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'Professional year',
+                value: ReferenceData.yearLabel(p.professionalYear),
+                onTap: edit,
+              ),
+              SettingsRow(
+                title: 'Institution',
+                value: p.institutionName,
+                onTap: edit,
+              ),
+              SettingsRow(
+                title: 'Roll number',
+                value: p.rollNumber ?? 'Add',
+                onTap: edit,
+              ),
+              SettingsRow(
+                title: 'Affiliation',
+                value: p.affiliationDisplay ?? 'Non-affiliated',
+                onTap: edit,
+              ),
+              SettingsRow(title: 'City', value: p.city, onTap: edit),
+              SettingsRow(
+                title: 'Gender',
+                value: ReferenceData.genders[p.gender] ?? p.gender,
+              ),
+            ],
+          ),
         ],
         const SizedBox(height: 22),
-        SettingsCard(children: [SettingsRow(title: 'Notifications',
-          onTap: () => context.push('/notifications'))]),
+        SettingsCard(
+          children: [
+            SettingsRow(
+              title: 'Notifications',
+              onTap: () => context.push('/notifications'),
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
-        SettingsCard(children: [SettingsRow(title: 'Show announcements',
-          trailing: AccountToggle(label: 'Show announcements', value: announcements,
-            onChanged: (v) => ref.read(boolPrefProvider('pref_announcements').notifier).set(v)),
-        )]),
+        SettingsCard(
+          children: [
+            SettingsRow(
+              title: 'Show announcements',
+              trailing: AccountToggle(
+                label: 'Show announcements',
+                value: announcements,
+                onChanged: (v) => ref
+                    .read(boolPrefProvider('pref_announcements').notifier)
+                    .set(v),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
-        SettingsCard(children: [
-          SettingsRow(title: 'Security', onTap: () => context.push('/settings')),
-          SettingsRow(title: 'Privacy', onTap: () => context.push('/legal/privacy')),
-        ]),
+        SettingsCard(
+          children: [
+            SettingsRow(
+              title: 'Security',
+              onTap: () => context.push('/settings'),
+            ),
+            SettingsRow(
+              title: 'Privacy',
+              onTap: () => context.push('/legal/privacy'),
+            ),
+          ],
+        ),
         const SizedBox(height: 22),
         RoundedPrimaryButton(label: 'Edit profile', onPressed: edit),
         // Deletion is intentionally absent: there is no backend deletion flow.
@@ -342,16 +433,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
     }
     final t = AccountStyle.theme(context);
-    return AccountTheme(child: Scaffold(
-      backgroundColor: AccountStyle.background,
-      appBar: AppBar(
+    return AccountTheme(
+      child: Scaffold(
         backgroundColor: AccountStyle.background,
-        leadingWidth: 72,
-        leading: Padding(padding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
-          child: CircularNavigationButton(onPressed: () => _accountBack(context))),
-        title: const Text('Edit profile', style: TextStyle(fontWeight: FontWeight.w800)),
-      ),
-      body: SafeArea(
+        appBar: AppBar(
+          backgroundColor: AccountStyle.background,
+          leadingWidth: 72,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
+            child: CircularNavigationButton(
+              onPressed: () => _accountBack(context),
+            ),
+          ),
+          title: const Text(
+            'Edit profile',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+        body: SafeArea(
           child: Form(
             key: _form,
             onChanged: () {
@@ -621,13 +720,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 const Gap(HSpace.lg),
                 RoundedPrimaryButton(
                   label: _saved ? 'Changes saved ✓' : 'Save changes',
-                  loading: _busy, onPressed: _save,
+                  loading: _busy,
+                  onPressed: _save,
                 ),
               ],
             ),
           ),
         ),
-    ));
+      ),
+    );
   }
 }
 
@@ -635,9 +736,9 @@ class _EditCard extends StatelessWidget {
   const _EditCard({required this.child});
   final Widget child;
   @override
-  Widget build(BuildContext context) => SettingsCard(children: [
-    Padding(padding: const EdgeInsets.all(18), child: child),
-  ]);
+  Widget build(BuildContext context) => SettingsCard(
+    children: [Padding(padding: const EdgeInsets.all(18), child: child)],
+  );
 }
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -649,7 +750,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _search = TextEditingController();
   bool _resetBusy = false;
-  bool _matches(String value) => _search.text.trim().isEmpty ||
+  bool _matches(String value) =>
+      _search.text.trim().isEmpty ||
       value.toLowerCase().contains(_search.text.trim().toLowerCase());
 
   @override
@@ -659,18 +761,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _resetPassword(String email) async {
-    if (_resetBusy || !await confirmDialog(context,
-      title: 'Reset password?',
-      message: 'Send a password reset link to $email?',
-      confirm: 'Send link',
-    )) return;
+    if (_resetBusy ||
+        !await confirmDialog(
+          context,
+          title: 'Reset password?',
+          message: 'Send a password reset link to $email?',
+          confirm: 'Send link',
+        )) {
+      return;
+    }
     if (!mounted) return;
     setState(() => _resetBusy = true);
     try {
       await ref.read(authRepositoryProvider).sendReset(email);
       if (mounted) showHSnack(context, 'Password reset email sent');
     } catch (_) {
-      if (mounted) showHSnack(context, 'Could not send the email. Please retry.', error: true);
+      if (mounted) {
+        showHSnack(
+          context,
+          'Could not send the email. Please retry.',
+          error: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _resetBusy = false);
     }
@@ -682,119 +794,219 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final user = ref.watch(authStateProvider).valueOrNull;
     final mode = ref.watch(themeModeProvider);
     final notif = ref.watch(boolPrefProvider('pref_announcements'));
-    final used = ref.watch(downloadsProvider).values
-      .where((r) => r.isReady).fold(0, (s, r) => s + r.sizeBytes);
+    final used = ref
+        .watch(downloadsProvider)
+        .values
+        .where((r) => r.isReady)
+        .fold(0, (s, r) => s + r.sizeBytes);
     final email = user?.email;
     return AccountPage(
-      title: 'Settings', onBack: () => _accountBack(context),
+      title: 'Settings',
+      onBack: () => _accountBack(context),
       children: [
         AccountProfileCard(
           name: _accountName(p, user?.displayName, ref.watch(isAdminProvider)),
-          subtitle: 'Account info', photoUrl: p?.photoUrl ?? user?.photoURL,
+          subtitle: 'Account info',
+          photoUrl: p?.photoUrl ?? user?.photoURL,
           onTap: () => context.push('/profile/info'),
         ),
         const SizedBox(height: 20),
         TextField(
-          controller: _search, onChanged: (_) => setState(() {}),
+          controller: _search,
+          onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
-            hintText: 'Search settings', prefixIcon: const Icon(Icons.search_rounded),
-            suffixIcon: _search.text.isEmpty ? null : IconButton(
-              tooltip: 'Clear search', icon: const Icon(Icons.close_rounded),
-              onPressed: () => setState(_search.clear),
-            ),
+            hintText: 'Search settings',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: _search.text.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear search',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => setState(_search.clear),
+                  ),
           ),
         ),
-        if (_matches('personal academic professional year profile app updates release')) ...[
+        if (_matches(
+          'personal academic professional year profile app updates release',
+        )) ...[
           const AccountSectionHeader('Personal & academic'),
-          SettingsCard(children: [
-            if (_matches('professional year profile academic')) SettingsRow(
-              title: 'Professional year & profile',
-              value: ReferenceData.yearLabel(ref.watch(professionalYearProvider)),
-              onTap: () => context.push('/profile/edit'),
-            ),
-            if (_matches('app updates release')) SettingsRow(title: 'App updates',
-              onTap: () => checkForUpdate(context, ref.read(siteSettingsProvider).raw)),
-          ]),
+          SettingsCard(
+            children: [
+              if (_matches('professional year profile academic'))
+                SettingsRow(
+                  title: 'Professional year & profile',
+                  value: ReferenceData.yearLabel(
+                    ref.watch(professionalYearProvider),
+                  ),
+                  onTap: () => context.push('/profile/edit'),
+                ),
+              if (_matches('app updates release'))
+                SettingsRow(
+                  title: 'App updates',
+                  onTap: () => checkForUpdate(
+                    context,
+                    ref.read(siteSettingsProvider).raw,
+                  ),
+                ),
+            ],
+          ),
         ],
         if (_matches('appearance theme light dark auto')) ...[
           const AccountSectionHeader('Appearance'),
-          SettingsCard(children: [
-            SettingsRow(title: 'App theme', value: switch (mode) {
-              ThemeMode.light => 'Light', ThemeMode.dark => 'Dark',
-              ThemeMode.system => 'Auto',
-            }, onTap: () => _chooseTheme(context, ref, mode)),
-          ]),
+          SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'App theme',
+                value: switch (mode) {
+                  ThemeMode.light => 'Light',
+                  ThemeMode.dark => 'Dark',
+                  ThemeMode.system => 'Auto',
+                },
+                onTap: () => _chooseTheme(context, ref, mode),
+              ),
+            ],
+          ),
         ],
         if (_matches('notifications announcements')) ...[
           const AccountSectionHeader('Notifications'),
-          SettingsCard(children: [
-            SettingsRow(title: 'Show announcements', trailing: AccountToggle(
-              label: 'Show announcements', value: notif,
-              onChanged: (v) => ref.read(boolPrefProvider('pref_announcements').notifier).set(v),
-            )),
-            SettingsRow(title: 'Notification inbox', onTap: () => context.push('/notifications')),
-          ]),
+          SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'Show announcements',
+                trailing: AccountToggle(
+                  label: 'Show announcements',
+                  value: notif,
+                  onChanged: (v) => ref
+                      .read(boolPrefProvider('pref_announcements').notifier)
+                      .set(v),
+                ),
+              ),
+              SettingsRow(
+                title: 'Notification inbox',
+                onTap: () => context.push('/notifications'),
+              ),
+            ],
+          ),
         ],
         if (_matches('security password privacy terms')) ...[
           const AccountSectionHeader('Security & privacy'),
-          SettingsCard(children: [
-            if (email != null && email.isNotEmpty && _matches('security password'))
-              SettingsRow(title: 'Reset password',
-                value: _resetBusy ? 'Sending…' : null,
-                onTap: _resetBusy ? null : () => _resetPassword(email)),
-            if (_matches('privacy')) SettingsRow(title: 'Privacy Policy',
-              onTap: () => context.push('/legal/privacy')),
-            if (_matches('terms')) SettingsRow(title: 'Terms of Use',
-              onTap: () => context.push('/legal/terms')),
-          ]),
+          SettingsCard(
+            children: [
+              if (email != null &&
+                  email.isNotEmpty &&
+                  _matches('security password'))
+                SettingsRow(
+                  title: 'Reset password',
+                  value: _resetBusy ? 'Sending…' : null,
+                  onTap: _resetBusy ? null : () => _resetPassword(email),
+                ),
+              if (_matches('privacy'))
+                SettingsRow(
+                  title: 'Privacy Policy',
+                  onTap: () => context.push('/legal/privacy'),
+                ),
+              if (_matches('terms'))
+                SettingsRow(
+                  title: 'Terms of Use',
+                  onTap: () => context.push('/legal/terms'),
+                ),
+            ],
+          ),
         ],
         if (_matches('storage downloads cache history')) ...[
           const AccountSectionHeader('Storage'),
-          SettingsCard(children: [
-            SettingsRow(title: 'Offline files', value: formatBytes(used),
-              subtitle: kIsWeb ? 'Save Offline is available in the Android app.' : null),
-            SettingsRow(title: 'Manage downloads', onTap: () => context.go('/downloads')),
-            SettingsRow(title: 'Clear content cache', onTap: () async {
-              await JsonBox(Boxes.contentCache).clear();
-              for (final key in publicContentKeys) {
-                forcedRefresh.add(key);
-                ref.invalidate(contentProvider(key));
-              }
-              if (context.mounted) showHSnack(context, 'Cache cleared. Content will reload.');
-            }),
-            SettingsRow(title: 'Clear history', onTap: () async {
-              await ref.read(recentProvider.notifier).clear();
-              if (context.mounted) showHSnack(context, 'History cleared');
-            }),
-          ]),
+          SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'Offline files',
+                value: formatBytes(used),
+                subtitle: kIsWeb
+                    ? 'Save Offline is available in the Android app.'
+                    : null,
+              ),
+              SettingsRow(
+                title: 'Manage downloads',
+                onTap: () => context.go('/downloads'),
+              ),
+              SettingsRow(
+                title: 'Clear content cache',
+                onTap: () async {
+                  await JsonBox(Boxes.contentCache).clear();
+                  for (final key in publicContentKeys) {
+                    forcedRefresh.add(key);
+                    ref.invalidate(contentProvider(key));
+                  }
+                  if (context.mounted) {
+                    showHSnack(context, 'Cache cleared. Content will reload.');
+                  }
+                },
+              ),
+              SettingsRow(
+                title: 'Clear history',
+                onTap: () async {
+                  await ref.read(recentProvider.notifier).clear();
+                  if (context.mounted) showHSnack(context, 'History cleared');
+                },
+              ),
+            ],
+          ),
         ],
         if (_matches('about version')) ...[
           const SizedBox(height: 22),
-          SettingsCard(children: [SettingsRow(title: 'About ${Brand.shortName}',
-            value: ref.watch(appVersionProvider).valueOrNull,
-            onTap: () => context.push('/about'))]),
+          SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'About ${Brand.shortName}',
+                value: ref.watch(appVersionProvider).valueOrNull,
+                onTap: () => context.push('/about'),
+              ),
+            ],
+          ),
         ],
         const SizedBox(height: 22),
-        DestructiveActionButton(label: 'Log out', onPressed: () => logout(context, ref)),
+        DestructiveActionButton(
+          label: 'Log out',
+          onPressed: () => logout(context, ref),
+        ),
       ],
     );
   }
 }
 
-Future<void> _chooseTheme(BuildContext context, WidgetRef ref, ThemeMode mode) async {
+Future<void> _chooseTheme(
+  BuildContext context,
+  WidgetRef ref,
+  ThemeMode mode,
+) async {
   final next = await showModalBottomSheet<ThemeMode>(
-    context: context, backgroundColor: AccountStyle.card, showDragHandle: true,
-    builder: (context) => SafeArea(child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const AccountSectionHeader('App theme'),
-        for (final item in const [(ThemeMode.light, 'Light'), (ThemeMode.dark, 'Dark'),
-          (ThemeMode.system, 'Auto')])
-          SettingsRow(title: item.$2,
-            trailing: mode == item.$1 ? const Icon(Icons.check_rounded, color: AccountStyle.link) : null,
-            onTap: () => Navigator.pop(context, item.$1)),
-      ]),
-    )),
+    context: context,
+    backgroundColor: AccountStyle.card,
+    showDragHandle: true,
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AccountSectionHeader('App theme'),
+            for (final item in const [
+              (ThemeMode.light, 'Light'),
+              (ThemeMode.dark, 'Dark'),
+              (ThemeMode.system, 'Auto'),
+            ])
+              SettingsRow(
+                title: item.$2,
+                trailing: mode == item.$1
+                    ? const Icon(Icons.check_rounded, color: AccountStyle.link)
+                    : null,
+                onTap: () => Navigator.pop(context, item.$1),
+              ),
+          ],
+        ),
+      ),
+    ),
   );
-  if (next != null && context.mounted) ref.read(themeModeProvider.notifier).set(next);
+  if (next != null && context.mounted) {
+    ref.read(themeModeProvider.notifier).set(next);
+  }
 }

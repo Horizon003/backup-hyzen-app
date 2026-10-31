@@ -143,34 +143,48 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('announcement toggle persists between settings and account info', (tester) async {
-    await open(tester, '/settings');
-    await tester.ensureVisible(find.byType(AccountToggle));
-    await tester.tap(find.byType(AccountToggle));
-    await tester.pumpAndSettle();
-    expect(prefs.getBool('pref_announcements'), isFalse);
-    container.read(routerProvider).go('/profile/info');
-    await tester.pumpAndSettle();
-    expect(tester.widget<AccountToggle>(find.byType(AccountToggle)).value, isFalse);
-    final email = tester.widget<SettingsRow>(find.byWidgetPredicate(
-      (w) => w is SettingsRow && w.title == 'Email'));
-    expect(email.value, 'student@example.org');
-    expect(email.onTap, isNull);
-    await tester.ensureVisible(find.text('Change Photo'));
-    await tester.tap(find.text('Change Photo'));
-    await tester.pumpAndSettle();
-    expect(find.byType(EditProfileScreen), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'announcement toggle persists between settings and account info',
+    (tester) async {
+      await open(tester, '/settings');
+      await tester.ensureVisible(find.byType(AccountToggle));
+      await tester.tap(find.byType(AccountToggle));
+      await tester.pumpAndSettle();
+      expect(prefs.getBool('pref_announcements'), isFalse);
+      container.read(routerProvider).go('/profile/info');
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<AccountToggle>(find.byType(AccountToggle)).value,
+        isFalse,
+      );
+      final email = tester.widget<SettingsRow>(
+        find.byWidgetPredicate((w) => w is SettingsRow && w.title == 'Email'),
+      );
+      expect(email.value, 'student@example.org');
+      expect(email.onTap, isNull);
+      await tester.ensureVisible(find.text('Change Photo'));
+      await tester.tap(find.text('Change Photo'));
+      await tester.pumpAndSettle();
+      expect(find.byType(EditProfileScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('account surfaces fit narrow screens at large text sizes', (tester) async {
+  testWidgets('account surfaces fit narrow screens at large text sizes', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 900);
     tester.view.devicePixelRatio = 1;
     tester.platformDispatcher.textScaleFactorTestValue = 2;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    for (final path in ['/profile', '/profile/info', '/settings', '/profile/edit']) {
+    for (final path in [
+      '/profile',
+      '/profile/info',
+      '/settings',
+      '/profile/edit',
+    ]) {
       await open(tester, path);
       for (var scroll = 0; scroll < 4; scroll++) {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
@@ -647,4 +661,3 @@ void main() {
     });
   }
 }
-

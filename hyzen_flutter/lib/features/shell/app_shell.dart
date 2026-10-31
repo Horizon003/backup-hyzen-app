@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/widgets/profile_avatar.dart';
 import '../profile/presentation/profile_screens.dart';
+import '../profile/presentation/widgets/account_widgets.dart';
 
 /// Authenticated shell: Material navigation with Android back handling.
 class AppShell extends StatelessWidget {
@@ -327,13 +328,13 @@ Future<void> showAccountMenu(BuildContext context) {
     ),
     builder: (sheetContext) => FractionallySizedBox(
       heightFactor: .96,
-      child: ProfileScreen(
+      child: AccountTheme(child: ProfileScreen(
         onClose: () => Navigator.pop(sheetContext),
         onNavigate: (path) {
           Navigator.pop(sheetContext);
           router.push(path);
         },
-      ),
+      )),
     ),
   );
 }

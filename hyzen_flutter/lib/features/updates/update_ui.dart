@@ -51,7 +51,13 @@ Future<void> checkForUpdate(
       }
       return;
     }
-    if (silent && (ProviderScope.containerOf(context).read(documentHandoffProvider) || GoRouter.of(context).routeInformationProvider.value.uri.path.contains('viewer'))) return;
+    if (silent &&
+        (ProviderScope.containerOf(context).read(documentHandoffProvider) ||
+            GoRouter.of(
+              context,
+            ).routeInformationProvider.value.uri.path.contains('viewer'))) {
+      return;
+    }
     await showDialog<void>(
       context: context,
       barrierDismissible: !manifest.requiredFor(code),
@@ -85,7 +91,12 @@ class _UpdateGateState extends ConsumerState<UpdateGate> {
     final raw = ref.watch(siteSettingsProvider).raw;
     final update = UpdateManifest.parse(raw);
     final path = GoRouter.of(context).routeInformationProvider.value.uri.path;
-    final documentFlow = ref.watch(documentHandoffProvider) || path.startsWith('/pdf-studio') || path == '/viewer' || path == '/imported-viewer' || path == '/create-pdf';
+    final documentFlow =
+        ref.watch(documentHandoffProvider) ||
+        path.startsWith('/pdf-studio') ||
+        path == '/viewer' ||
+        path == '/imported-viewer' ||
+        path == '/create-pdf';
     if (!documentFlow && update != null && _checked != update.code) {
       _checked = update.code;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -206,4 +217,3 @@ class _UpdateDialogState extends State<_UpdateDialog> {
     ),
   );
 }
-

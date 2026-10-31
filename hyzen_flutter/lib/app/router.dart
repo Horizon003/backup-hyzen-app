@@ -21,6 +21,7 @@ import '../features/home/presentation/home_screen.dart';
 import '../features/notifications/notice_host.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/profile/presentation/profile_screens.dart';
+import '../features/profile/presentation/widgets/account_widgets.dart';
 import '../features/pdf_studio/presentation/pdf_studio_screen.dart';
 import '../features/pdf_studio/presentation/scan_pdf_screen.dart';
 import '../features/search/presentation/search_screen.dart';
@@ -71,7 +72,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       // Device documents are local, read-only imports, not protected academic
       // content. Opening one must not wait for Firebase or lose its route.
-      if (loc == '/imported-viewer' || loc == '/create-pdf' || loc.startsWith('/pdf-studio/viewer/')) return null;
+      if (loc == '/imported-viewer' ||
+          loc == '/create-pdf' ||
+          loc.startsWith('/pdf-studio/viewer/')) {
+        return null;
+      }
       if (auth.isLoading && !auth.hasValue) {
         return loc == '/splash' ? null : '/splash';
       }
@@ -160,7 +165,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'viewer/:fileId',
                     builder: (_, state) => PdfStudioFileViewerScreen(
                       fileId: state.pathParameters['fileId']!,
-                      initialPage: int.tryParse(state.uri.queryParameters['page'] ?? '') ?? 1,
+                      initialPage:
+                          int.tryParse(
+                            state.uri.queryParameters['page'] ?? '',
+                          ) ??
+                          1,
                     ),
                   ),
                 ],
@@ -179,15 +188,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/profile',
-                builder: (_, __) => const ProfileScreen(),
+                builder: (_, __) => const AccountTheme(child: ProfileScreen()),
                 routes: [
                   GoRoute(
                     path: 'info',
-                    builder: (_, __) => const AccountInfoScreen(),
+                    builder: (_, __) => const AccountTheme(child: AccountInfoScreen()),
                   ),
                   GoRoute(
                     path: 'edit',
-                    builder: (_, __) => const EditProfileScreen(),
+                    builder: (_, __) => const AccountTheme(child: EditProfileScreen()),
                   ),
                 ],
               ),
@@ -212,7 +221,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/settings',
-                builder: (_, __) => const SettingsScreen(),
+                builder: (_, __) => const AccountTheme(child: SettingsScreen()),
               ),
             ],
           ),
@@ -333,4 +342,3 @@ class _RouteError extends StatelessWidget {
     ),
   );
 }
-
