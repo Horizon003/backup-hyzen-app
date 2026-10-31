@@ -18,6 +18,7 @@ import 'package:hyzen_pharmd/features/content/data/content_providers.dart';
 import 'package:hyzen_pharmd/features/academics/domain/models.dart';
 import 'package:hyzen_pharmd/features/viewer/external_files.dart';
 import 'package:hyzen_pharmd/core/widgets/rive_mascot.dart';
+import 'package:hyzen_pharmd/features/auth/presentation/splash_welcome_screens.dart';
 
 class StudentUser extends Fake implements User {
   @override
@@ -344,6 +345,26 @@ void main() {
       tester.getRect(image).top,
       lessThan(tester.getRect(greeting).bottom + 35),
     );
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('splash uses the dedicated loading mascot state', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: SplashScreen()));
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is HyzenRiveMascot && w.state == HyzenRiveState.loading,
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('onboarding mounts a semantic mascot state for every page', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: WelcomeScreen()));
+    expect(find.byType(HyzenRiveMascot), findsOneWidget);
+    await tester.drag(find.byType(PageView), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(find.byType(HyzenRiveMascot), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   test(

@@ -25,9 +25,9 @@ class SplashScreen extends StatelessWidget {
             const Text('WITH HYZEN · Your pharmacy journey'),
             const SizedBox(height: 20),
             const HyzenRiveMascot(
-              state: HyzenRiveState.welcome,
+              state: HyzenRiveState.loading,
               size: 180,
-              semanticLabel: 'Hyzen panda preparing your study space',
+              semanticLabel: 'Hyzen panda loading your study space',
             ),
             const SizedBox(height: 24),
             const SizedBox(
@@ -170,6 +170,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           : Column(
                               children: [
                                 HyzenRiveMascot(
+                                  key: ValueKey('onboarding-mascot-$i'),
                                   state: i == 1
                                       ? HyzenRiveState.studying
                                       : HyzenRiveState.downloading,

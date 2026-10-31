@@ -11,6 +11,7 @@ import 'mascot_motion.dart';
 /// used as a safe visual fallback.
 enum HyzenRiveState {
   welcome('welcome'),
+  loading('loading'),
   peeking('peeking'),
   studying('studying'),
   downloading('downloading'),
@@ -22,6 +23,7 @@ enum HyzenRiveState {
 
   HyzenMascotState get fallback => switch (this) {
     HyzenRiveState.welcome => HyzenMascotState.welcome,
+    HyzenRiveState.loading => HyzenMascotState.downloading,
     HyzenRiveState.peeking => HyzenMascotState.peeking,
     HyzenRiveState.studying => HyzenMascotState.studying,
     HyzenRiveState.downloading => HyzenMascotState.downloading,
