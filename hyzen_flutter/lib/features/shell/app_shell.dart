@@ -44,10 +44,16 @@ class AppShell extends StatelessWidget {
           context: context,
           builder: (c) => AlertDialog(
             title: const Text('Close PHARM D WITH HYZEN?'),
-            content: const Column(mainAxisSize: MainAxisSize.min, children: [
-              ProfileAvatar(photoUrl: 'avatar:male_1', radius: 44),
-              SizedBox(height: 16), Text('Ready to take a break? Your study progress and downloads are saved.'),
-            ]),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ProfileAvatar(photoUrl: 'avatar:male_1', radius: 44),
+                SizedBox(height: 16),
+                Text(
+                  'Ready to take a break? Your study progress and downloads are saved.',
+                ),
+              ],
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(c, false),
@@ -159,7 +165,7 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
                     'PHARM D',
                     'Study',
                     'Search',
-                    'PDF Studio',
+                    'Office Workspace',
                     'Downloads',
                     'Profile',
                     'Settings',
@@ -305,7 +311,6 @@ class OfflineHint extends StatelessWidget {
   );
 }
 
-
 /// Account sheet behind the top-right avatar (Q03 / Q15): Profile, Settings,
 /// Downloads, Orders and Notifications without adding bottom tabs.
 Future<void> showAccountMenu(BuildContext context) {
@@ -319,7 +324,9 @@ Future<void> showAccountMenu(BuildContext context) {
         final p = ref.watch(profileProvider).valueOrNull;
         void go(String path) {
           Navigator.pop(c);
-          if (path == '/profile' || path == '/settings' || path == '/downloads') {
+          if (path == '/profile' ||
+              path == '/settings' ||
+              path == '/downloads') {
             router.go(path);
           } else {
             router.push(path);
@@ -388,7 +395,11 @@ Future<void> showAccountMenu(BuildContext context) {
                 const SizedBox(height: 8),
                 row(Icons.settings_outlined, 'Settings', '/settings'),
                 row(Icons.download_done_rounded, 'Downloads', '/downloads'),
-                row(Icons.notifications_none_rounded, 'Notifications', '/notifications'),
+                row(
+                  Icons.notifications_none_rounded,
+                  'Notifications',
+                  '/notifications',
+                ),
                 row(Icons.receipt_long_outlined, 'My orders', '/orders'),
               ],
             ),

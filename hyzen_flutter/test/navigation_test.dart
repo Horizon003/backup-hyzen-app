@@ -17,7 +17,7 @@ import 'package:hyzen_pharmd/features/content/data/content_source.dart';
 import 'package:hyzen_pharmd/features/content/data/content_providers.dart';
 import 'package:hyzen_pharmd/features/academics/domain/models.dart';
 import 'package:hyzen_pharmd/features/viewer/external_files.dart';
-import 'package:hyzen_pharmd/core/widgets/mascot_motion.dart';
+import 'package:hyzen_pharmd/core/widgets/rive_mascot.dart';
 
 class StudentUser extends Fake implements User {
   @override
@@ -332,7 +332,7 @@ void main() {
     await open(tester, '/home');
     final greeting = find.text('Welcome back, Ali');
     final image = find.byWidgetPredicate(
-      (w) => w is HyzenMascot && w.state == HyzenMascotState.peeking,
+      (w) => w is HyzenRiveMascot && w.state == HyzenRiveState.peeking,
     );
     expect(greeting, findsOneWidget);
     expect(image, findsOneWidget);

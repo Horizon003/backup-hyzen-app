@@ -97,7 +97,7 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
     final theme = Theme.of(context);
 
     return TabPage(
-      title: 'PDF Studio',
+      title: 'Office Workspace',
       subtitle: 'Read · Edit · Study · Succeed',
       slivers: [
         SliverPadding(
@@ -196,7 +196,7 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
                     subtitle:
                         'Opened ${file.openedAt.toLocal().toString().split('.').first}',
                     trailing: IconButton(
-                      tooltip: 'Save to PDF Studio workspace',
+                      tooltip: 'Save to Office Workspace workspace',
                       icon: const Icon(Icons.save_alt_rounded),
                       onPressed: () async {
                         try {
@@ -212,7 +212,7 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
                               .read(sharedPrefsProvider)
                               .setString('external_studio_${file.id}', item.id);
                           if (context.mounted) {
-                            showHSnack(context, 'Saved to PDF Studio');
+                            showHSnack(context, 'Saved to Office Workspace');
                             context.push('/pdf-studio/viewer/${item.id}');
                           }
                         } catch (_) {
@@ -389,7 +389,7 @@ class _PdfStudioFileViewerScreenState
     }
     if (found == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('PDF Studio')),
+        appBar: AppBar(title: const Text('Office Workspace')),
         body: const EmptyState(
           icon: Icons.error_outline_rounded,
           title: 'Document not found',

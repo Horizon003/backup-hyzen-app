@@ -8,7 +8,7 @@ import '../../../core/utils/links.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/surfaces.dart';
 import '../../../core/widgets/ui_kit.dart';
-import '../../../core/widgets/mascot_motion.dart';
+import '../../../core/widgets/rive_mascot.dart';
 import '../../academics/domain/models.dart';
 import '../../academics/presentation/library_screens.dart';
 import '../../academics/presentation/discovery_widgets.dart';
@@ -121,7 +121,7 @@ class HomeScreen extends ConsumerWidget {
                   _QuickTile(
                     icon: Icons.document_scanner_rounded,
                     color: HColors.info,
-                    title: 'PDF Studio',
+                    title: 'Office Workspace',
                     sub: studioCount == 0
                         ? 'Scan & create'
                         : '$studioCount documents',
@@ -243,8 +243,8 @@ class _GreetingHero extends StatelessWidget {
             const Positioned(
               right: -24,
               bottom: -28,
-              child: HyzenMascot(
-                state: HyzenMascotState.peeking,
+              child: HyzenRiveMascot(
+                state: HyzenRiveState.peeking,
                 size: 150,
                 semanticLabel: 'Hyzen panda welcoming you home',
               ),

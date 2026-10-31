@@ -7,7 +7,7 @@ import '../theme/tokens.dart';
 
 /// Opaque floating dock matching the supplied five-destination reference.
 /// No blurred glass, no stacked system/navigation padding, no tiny hit areas.
-/// Approved compact four-tab dock (Q03): Home / Study / PDF Studio / Shop.
+/// Approved compact four-tab dock (Q03): Home / Study / Office Workspace / Shop.
 /// Profile and Settings live behind the top-right avatar, never as a tab.
 class MainDock extends StatelessWidget {
   const MainDock({super.key, required this.path});
@@ -57,7 +57,7 @@ class MainDock extends StatelessWidget {
                   onTap: () => showStudyMenu(context),
                 ),
                 _DockItem(
-                  label: 'PDF Studio',
+                  label: 'Office Workspace',
                   icon: Icons.picture_as_pdf_outlined,
                   selectedIcon: Icons.picture_as_pdf_rounded,
                   selected: path.startsWith('/pdf-studio'),
@@ -106,7 +106,9 @@ class _DockItem extends StatelessWidget {
             onTap: onTap,
             borderRadius: BorderRadius.circular(18),
             child: AnimatedContainer(
-              duration: reduce ? Duration.zero : const Duration(milliseconds: 220),
+              duration: reduce
+                  ? Duration.zero
+                  : const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               margin: const EdgeInsets.symmetric(horizontal: 2),
               decoration: BoxDecoration(

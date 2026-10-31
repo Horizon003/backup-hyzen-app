@@ -77,7 +77,9 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
       if (mounted) {
         showHSnack(
           context,
-          e is FormatException ? e.message : 'Could not complete this operation. Please retry.',
+          e is FormatException
+              ? e.message
+              : 'Could not complete this operation. Please retry.',
           error: true,
         );
       }
@@ -102,7 +104,7 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
             height: MediaQuery.sizeOf(c).height * .7,
             child: Column(
               children: [
-                const ListTile(title: Text('Choose from PDF Studio')),
+                const ListTile(title: Text('Choose from Office Workspace')),
                 Expanded(
                   child: available.isEmpty
                       ? const Center(
@@ -175,7 +177,9 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
         (widget.tool == StudioTool.merge || widget.tool == StudioTool.images)
         ? (replace ? picked : [..._sources, ...picked])
         : [picked.first];
-    final selected = {for (final file in candidates) file.path: file}.values.toList();
+    final selected = {
+      for (final file in candidates) file.path: file,
+    }.values.toList();
     if (widget.tool == StudioTool.images) {
       if (selected.any(
         (f) => !RegExp(
@@ -230,7 +234,9 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
   Future<void> _finish(String path, String name, String badge) async {
     final pdf = name.toLowerCase().endsWith('.pdf');
     final count = pdf ? await StudioPdfEngine.pageCount(path) : 0;
-    if (pdf && count < 1) throw const FormatException('The PDF could not be saved. Please retry.');
+    if (pdf && count < 1) {
+      throw const FormatException('The PDF could not be saved. Please retry.');
+    }
     final item = await _save(path, name, badge);
     if (pdf) {
       await ref
@@ -239,17 +245,51 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
     }
     if (!mounted) return;
     final destination = await showModalBottomSheet<String>(
-      context: context, showDragHandle: true,
-      builder: (c) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(leading: const Icon(Icons.check_circle_rounded), title: Text('Saved: ${item.displayName}'), subtitle: const Text('Your new PDF is in Recent Files')),
-        ListTile(leading: const Icon(Icons.save_alt_rounded), title: const Text('Save As on device'), onTap: () => Navigator.pop(c, 'device')),
-        ListTile(leading: const Icon(Icons.ios_share_rounded), title: const Text('Share PDF'), onTap: () => Navigator.pop(c, 'share')),
-        ListTile(leading: const Icon(Icons.menu_book_rounded), title: const Text('Open PDF'), onTap: () => Navigator.pop(c, 'open')),
-      ])),
+      context: context,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.check_circle_rounded),
+              title: Text('Saved: ${item.displayName}'),
+              subtitle: const Text('Your new PDF is in Recent Files'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.save_alt_rounded),
+              title: const Text('Save As on device'),
+              onTap: () => Navigator.pop(c, 'device'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.ios_share_rounded),
+              title: const Text('Share PDF'),
+              onTap: () => Navigator.pop(c, 'share'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.menu_book_rounded),
+              title: const Text('Open PDF'),
+              onTap: () => Navigator.pop(c, 'open'),
+            ),
+          ],
+        ),
+      ),
     );
     if (!mounted) return;
-    if (destination == 'device') await MediaUpload.exportDocument(item.internalFilePath, item.displayName, pdf ? 'application/pdf' : 'text/plain');
-    if (destination == 'share') await MediaUpload.shareDocument(item.internalFilePath, item.displayName, pdf ? 'application/pdf' : 'text/plain');
+    if (destination == 'device') {
+      await MediaUpload.exportDocument(
+        item.internalFilePath,
+        item.displayName,
+        pdf ? 'application/pdf' : 'text/plain',
+      );
+    }
+    if (destination == 'share') {
+      await MediaUpload.shareDocument(
+        item.internalFilePath,
+        item.displayName,
+        pdf ? 'application/pdf' : 'text/plain',
+      );
+    }
     if (mounted) _openSaved(item.id);
   }
 
@@ -338,12 +378,28 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
   });
 
   Future<void> _addSource() async {
-    final choice = await showModalBottomSheet<String>(context: context, showDragHandle: true,
-      builder: (c) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const ListTile(title: Text('Add PDFs')),
-        ListTile(leading: const Icon(Icons.history_rounded), title: const Text('Recent files'), onTap: () => Navigator.pop(c, 'recent')),
-        ListTile(leading: const Icon(Icons.folder_open_rounded), title: const Text('From device'), onTap: () => Navigator.pop(c, 'device')),
-      ])));
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(title: Text('Add PDFs')),
+            ListTile(
+              leading: const Icon(Icons.history_rounded),
+              title: const Text('Recent files'),
+              onTap: () => Navigator.pop(c, 'recent'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open_rounded),
+              title: const Text('From device'),
+              onTap: () => Navigator.pop(c, 'device'),
+            ),
+          ],
+        ),
+      ),
+    );
     if (!mounted) return;
     if (choice == 'recent') await _chooseHistory();
     if (choice == 'device') await _pick();
@@ -351,12 +407,15 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
 
   void _movePage(int from, int to) {
     setState(() {
-      final selectedIds = { for (final i in _splitSelected) _pages[i].id };
+      final selectedIds = {for (final i in _splitSelected) _pages[i].id};
       final page = _pages.removeAt(from);
       _pages.insert(to, page);
       _splitSelected
         ..clear()
-        ..addAll([for (var i = 0; i < _pages.length; i++) if (selectedIds.contains(_pages[i].id)) i]);
+        ..addAll([
+          for (var i = 0; i < _pages.length; i++)
+            if (selectedIds.contains(_pages[i].id)) i,
+        ]);
     });
   }
 
@@ -365,85 +424,223 @@ class _StudioToolsScreenState extends ConsumerState<StudioToolsScreen> {
     final split = widget.tool == StudioTool.split;
     final merge = widget.tool == StudioTool.merge;
     final organize = widget.tool == StudioTool.organize;
-    final canSave = !_busy && (split ? _splitSelected.isNotEmpty || _range.text.trim().isNotEmpty
-      : merge ? _sources.length >= 2 : widget.tool == StudioTool.document ? _text.text.trim().isNotEmpty
-      : _pages.isNotEmpty || _sources.isNotEmpty);
+    final canSave =
+        !_busy &&
+        (split
+            ? _splitSelected.isNotEmpty || _range.text.trim().isNotEmpty
+            : merge
+            ? _sources.length >= 2
+            : widget.tool == StudioTool.document
+            ? _text.text.trim().isNotEmpty
+            : _pages.isNotEmpty || _sources.isNotEmpty);
     return PopScope(
       canPop: !_busy,
       child: Scaffold(
         appBar: AppBar(
           title: Text(split ? '${_splitSelected.length} Selected' : _heading),
           actions: [
-            if (split && _pages.isNotEmpty) TextButton(
-              onPressed: _busy ? null : () => setState(() {
-                if (_splitSelected.length == _pages.length) { _splitSelected.clear(); }
-                else { _splitSelected.addAll(List.generate(_pages.length, (i) => i)); }
-              }), child: Text(_splitSelected.length == _pages.length ? 'Clear' : 'Select all')),
-            if (merge || _pages.isEmpty) IconButton(tooltip: 'Add PDFs', onPressed: _busy ? null : _addSource, icon: const Icon(Icons.add_rounded)),
+            if (split && _pages.isNotEmpty)
+              TextButton(
+                onPressed: _busy
+                    ? null
+                    : () => setState(() {
+                        if (_splitSelected.length == _pages.length) {
+                          _splitSelected.clear();
+                        } else {
+                          _splitSelected.addAll(
+                            List.generate(_pages.length, (i) => i),
+                          );
+                        }
+                      }),
+                child: Text(
+                  _splitSelected.length == _pages.length
+                      ? 'Clear'
+                      : 'Select all',
+                ),
+              ),
+            if (merge || _pages.isEmpty)
+              IconButton(
+                tooltip: 'Add PDFs',
+                onPressed: _busy ? null : _addSource,
+                icon: const Icon(Icons.add_rounded),
+              ),
           ],
         ),
-        body: Column(children: [
-          if (_busy) const LinearProgressIndicator(minHeight: 2),
-          Padding(padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-            child: TextField(controller: _title, maxLength: 100,
-              decoration: const InputDecoration(labelText: 'PDF name', counterText: '', isDense: true))),
-          if (merge) Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(children: [
-              Expanded(child: Text('${_sources.length} PDFs · ${_pages.length} pages')),
-              TextButton.icon(onPressed: _busy ? null : _addSource, icon: const Icon(Icons.add_rounded), label: const Text('Add PDFs')),
-            ])),
-          if (split && _pages.isNotEmpty) Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(controller: _range, onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(hintText: 'Optional page range, e.g. 1-3, 5', isDense: true))),
-          Expanded(child: merge
-            ? _sources.isEmpty ? _empty() : ReorderableListView.builder(
-                padding: const EdgeInsets.all(16), itemCount: _sources.length,
-                onReorder: (from, to) => setState(() {
-                  if (to > from) to--;
-                  final moved = _sources.removeAt(from); _sources.insert(to, moved);
-                  final groups = {for (final f in _sources) f.path: _pages.where((p) => p.path == f.path).toList()};
-                  _pages..clear()..addAll([for (final f in _sources) ...?groups[f.path]]);
-                }),
-                itemBuilder: (_, i) => Card(key: ValueKey('${_sources[i].path}-$i'),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(leading: const Icon(Icons.picture_as_pdf_rounded),
-                    title: Text(_sources[i].name, maxLines: 2),
-                    subtitle: const Text('Hold to change merge order'),
-                    trailing: IconButton(tooltip: 'Remove file', icon: const Icon(Icons.close_rounded),
-                      onPressed: _busy ? null : () => _work(() async {
-                        final next = [..._sources]..removeAt(i);
-                        if (next.isEmpty) { setState(() { _sources.clear(); _pages.clear(); }); }
-                        else { await _addPaths(next, replace: true); }
-                      })))) )
-            : widget.tool == StudioTool.document
-              ? Padding(padding: const EdgeInsets.all(16), child: TextField(controller: _text,
-                  onChanged: (_) => setState(() {}), expands: true, maxLines: null, minLines: null,
-                  decoration: const InputDecoration(hintText: 'Write your document')))
-              : _pages.isEmpty ? _empty() : PageGrid(
-                  count: _pages.length, identity: (i) => _pages[i].id,
-                  image: (i) => _pages[i].blank ? const Icon(Icons.description_outlined) : StudioPageThumbnail(page: _pages[i]),
-                  selected: _splitSelected,
-                  onSelect: split ? (i) => setState(() { if (!_splitSelected.add(i)) _splitSelected.remove(i); }) : null,
-                  onMove: _busy ? (_, __) {} : _movePage,
-                  onRotate: organize ? (i) => setState(() => _pages[i] = _pages[i].rotate()) : null,
-                  onRemove: organize ? (i) => setState(() => _pages.removeAt(i)) : null,
-                )),
-        ]),
-        bottomNavigationBar: SafeArea(top: false, child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton.icon(
-            key: const ValueKey('save-page-operation'),
-            onPressed: canSave ? _create : null,
-            icon: const Icon(Icons.save_alt_rounded, size: 20),
-            label: Text(split ? 'Extract & save PDF' : merge ? 'Merge & save PDF' : 'Save PDF'),
+        body: Column(
+          children: [
+            if (_busy) const LinearProgressIndicator(minHeight: 2),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+              child: TextField(
+                controller: _title,
+                maxLength: 100,
+                decoration: const InputDecoration(
+                  labelText: 'PDF name',
+                  counterText: '',
+                  isDense: true,
+                ),
+              ),
+            ),
+            if (merge)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${_sources.length} PDFs · ${_pages.length} pages',
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _busy ? null : _addSource,
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Add PDFs'),
+                    ),
+                  ],
+                ),
+              ),
+            if (split && _pages.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _range,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    hintText: 'Optional page range, e.g. 1-3, 5',
+                    isDense: true,
+                  ),
+                ),
+              ),
+            Expanded(
+              child: merge
+                  ? _sources.isEmpty
+                        ? _empty()
+                        : ReorderableListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _sources.length,
+                            onReorder: (from, to) => setState(() {
+                              if (to > from) to--;
+                              final moved = _sources.removeAt(from);
+                              _sources.insert(to, moved);
+                              final groups = {
+                                for (final f in _sources)
+                                  f.path: _pages
+                                      .where((p) => p.path == f.path)
+                                      .toList(),
+                              };
+                              _pages
+                                ..clear()
+                                ..addAll([
+                                  for (final f in _sources) ...?groups[f.path],
+                                ]);
+                            }),
+                            itemBuilder: (_, i) => Card(
+                              key: ValueKey('${_sources[i].path}-$i'),
+                              margin: const EdgeInsets.only(bottom: 10),
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.picture_as_pdf_rounded,
+                                ),
+                                title: Text(_sources[i].name, maxLines: 2),
+                                subtitle: const Text(
+                                  'Hold to change merge order',
+                                ),
+                                trailing: IconButton(
+                                  tooltip: 'Remove file',
+                                  icon: const Icon(Icons.close_rounded),
+                                  onPressed: _busy
+                                      ? null
+                                      : () => _work(() async {
+                                          final next = [..._sources]
+                                            ..removeAt(i);
+                                          if (next.isEmpty) {
+                                            setState(() {
+                                              _sources.clear();
+                                              _pages.clear();
+                                            });
+                                          } else {
+                                            await _addPaths(
+                                              next,
+                                              replace: true,
+                                            );
+                                          }
+                                        }),
+                                ),
+                              ),
+                            ),
+                          )
+                  : widget.tool == StudioTool.document
+                  ? Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextField(
+                        controller: _text,
+                        onChanged: (_) => setState(() {}),
+                        expands: true,
+                        maxLines: null,
+                        minLines: null,
+                        decoration: const InputDecoration(
+                          hintText: 'Write your document',
+                        ),
+                      ),
+                    )
+                  : _pages.isEmpty
+                  ? _empty()
+                  : PageGrid(
+                      count: _pages.length,
+                      identity: (i) => _pages[i].id,
+                      image: (i) => _pages[i].blank
+                          ? const Icon(Icons.description_outlined)
+                          : StudioPageThumbnail(page: _pages[i]),
+                      selected: _splitSelected,
+                      onSelect: split
+                          ? (i) => setState(() {
+                              if (!_splitSelected.add(i)) {
+                                _splitSelected.remove(i);
+                              }
+                            })
+                          : null,
+                      onMove: _busy ? (_, __) {} : _movePage,
+                      onRotate: organize
+                          ? (i) =>
+                                setState(() => _pages[i] = _pages[i].rotate())
+                          : null,
+                      onRemove: organize
+                          ? (i) => setState(() => _pages.removeAt(i))
+                          : null,
+                    ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: FilledButton.icon(
+              key: const ValueKey('save-page-operation'),
+              onPressed: canSave ? _create : null,
+              icon: const Icon(Icons.save_alt_rounded, size: 20),
+              label: Text(
+                split
+                    ? 'Extract & save PDF'
+                    : merge
+                    ? 'Merge & save PDF'
+                    : 'Save PDF',
+              ),
+            ),
           ),
-        )),
+        ),
       ),
     );
   }
 
-  Widget _empty() => Center(child: FilledButton.tonalIcon(
-    onPressed: _busy ? null : _addSource,
-    icon: const Icon(Icons.folder_open_rounded), label: const Text('Choose PDF')));
+  Widget _empty() => Center(
+    child: FilledButton.tonalIcon(
+      onPressed: _busy ? null : _addSource,
+      icon: const Icon(Icons.folder_open_rounded),
+      label: const Text('Choose PDF'),
+    ),
+  );
 }

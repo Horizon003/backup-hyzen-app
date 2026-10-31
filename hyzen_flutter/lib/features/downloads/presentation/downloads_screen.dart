@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/ui_kit.dart';
-import '../../../core/widgets/mascot_motion.dart';
+import '../../../core/widgets/rive_mascot.dart';
 import '../../academics/domain/models.dart';
 import '../../academics/presentation/library_screens.dart';
 import '../../shell/app_shell.dart';
@@ -112,8 +112,8 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
               ),
               const Gap(HSpace.md),
               if (list.isEmpty && all.isEmpty) ...[
-                const HyzenMascot(
-                  state: HyzenMascotState.downloading,
+                const HyzenRiveMascot(
+                  state: HyzenRiveState.downloading,
                   size: 150,
                   semanticLabel: 'Hyzen panda ready to save study files',
                 ),

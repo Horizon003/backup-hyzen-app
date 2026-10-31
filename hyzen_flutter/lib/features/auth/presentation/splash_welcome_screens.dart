@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/config/brand.dart';
-import '../../../core/widgets/mascot_motion.dart';
+import '../../../core/widgets/rive_mascot.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -24,8 +24,8 @@ class SplashScreen extends StatelessWidget {
             ),
             const Text('WITH HYZEN · Your pharmacy journey'),
             const SizedBox(height: 20),
-            const HyzenMascot(
-              state: HyzenMascotState.welcome,
+            const HyzenRiveMascot(
+              state: HyzenRiveState.welcome,
               size: 180,
               semanticLabel: 'Hyzen panda preparing your study space',
             ),
@@ -130,8 +130,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                         ? const Color(0xFF302846)
                                         : const Color(0xFFE4F4EB),
                                   ),
-                                  child: const HyzenMascot(
-                                    state: HyzenMascotState.welcome,
+                                  child: const HyzenRiveMascot(
+                                    state: HyzenRiveState.welcome,
                                     size: 210,
                                     semanticLabel: 'Hyzen panda welcoming you',
                                   ),
@@ -169,10 +169,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             )
                           : Column(
                               children: [
-                                HyzenMascot(
+                                HyzenRiveMascot(
                                   state: i == 1
-                                      ? HyzenMascotState.studying
-                                      : HyzenMascotState.downloading,
+                                      ? HyzenRiveState.studying
+                                      : HyzenRiveState.downloading,
                                   size: (c.maxHeight * .42).clamp(180, 280),
                                   semanticLabel: i == 1
                                       ? 'Hyzen panda studying with a pharmacy notebook'
