@@ -40,8 +40,21 @@ class _Atmosphere extends CustomPainter {
     final base = dark ? const Color(0xFF353538) : const Color(0xFFF6F6F4);
     if (!content && !dark) {
       canvas.drawRect(rect, Paint()..color = base);
-      final hero = Rect.fromLTWH(0, 0, size.width, math.min(size.height, heroExtent));
-      canvas.drawRect(hero, Paint()..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black, Color(0xFF202022)]).createShader(hero));
+      final hero = Rect.fromLTWH(
+        0,
+        0,
+        size.width,
+        math.min(size.height, heroExtent),
+      );
+      canvas.drawRect(
+        hero,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.black, Color(0xFF202022)],
+          ).createShader(hero),
+      );
     } else if (content && !dark) {
       canvas.drawRect(rect, Paint()..color = base);
       canvas.drawRect(
@@ -83,5 +96,7 @@ class _Atmosphere extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _Atmosphere old) =>
-      dark != old.dark || content != old.content || heroExtent != old.heroExtent;
+      dark != old.dark ||
+      content != old.content ||
+      heroExtent != old.heroExtent;
 }

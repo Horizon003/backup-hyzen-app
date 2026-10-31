@@ -103,7 +103,11 @@ Future<void> main() async {
                   : key == 'pw_notes_tree'
                   ? tree
                   : key == 'pw_announcement' && !emptyHome
-                  ? {'enabled': true, 'text': 'Sample announcement · Your revision workspace is ready.'}
+                  ? {
+                      'enabled': true,
+                      'text':
+                          'Sample announcement · Your revision workspace is ready.',
+                    }
                   : [],
               fromCache: false,
             ),
@@ -203,9 +207,12 @@ class _ReviewScaledApp extends StatelessWidget {
       view: View.of(context),
       child: Builder(
         builder: (context) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(scale), disableAnimations: Uri.base.queryParameters['reduceMotion'] == 'true' || MediaQuery.disableAnimationsOf(context)),
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(scale),
+            disableAnimations:
+                Uri.base.queryParameters['reduceMotion'] == 'true' ||
+                MediaQuery.disableAnimationsOf(context),
+          ),
           child: const HyzenApp(),
         ),
       ),

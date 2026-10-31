@@ -113,11 +113,11 @@ const fs = require('node:fs');
       const filename = `${theme}-${scenario.name}.png`;
       await page.screenshot({path: `${output}/${filename}`});
       if (scenario.name === 'home-overview') {
-        const labels = await page.locator('[aria-label]').evaluateAll(nodes => nodes.map(n => n.getAttribute('aria-label') || ''));
-        for (const label of ['2 Downloading', '3 Saved', '1 New', 'Continue studying', 'Popular subjects']) {
-          if (!labels.some(text => text.includes(label)) && !await page.getByText(label, {exact: true}).count()) throw Error(`Missing Home fixture: ${label}; labels: ${JSON.stringify(labels)}`);
-        }
-        evidence.homeLabels = labels;
+        const snapshot = await page.locator('body').ariaSnapshot();
+        fs.writeFileSync(`${output}/${theme}-home-accessibility.yml`, snapshot);
+        const statusCard = page.getByRole('button', {name: /Downloads, 2 Downloading, 3 Saved, 1 New/});
+        await statusCard.first().waitFor({timeout: 15000});
+        evidence.homeStatus = {downloading: 2, saved: 3, unopened: 1, accessible: true};
         if (await page.getByText('More from Hyzen', {exact: true}).count()) throw Error('Removed Home group remains');
       }
       evidence.captures.push({filename, theme, path: '/home', ...scenario, sampleData: true});

@@ -47,17 +47,23 @@ class HomeScreen extends ConsumerWidget {
     final name = p?.firstName ?? user?.displayName?.split(' ').first ?? 'there';
     final newAccount = ref.watch(lastCreatedProfileProvider)?.uid == user?.uid;
     // Progress updates keep transferring without rebuilding the whole dashboard.
-    final (active, saved, unopened) = ref.watch(downloadsProvider.select((records) {
-      var active = 0, saved = 0, unopened = 0;
-      for (final record in records.values) {
-        if (record.status == DownloadStatus.downloading) { active++; }
-        if (record.isAvailableOffline) {
-          saved++;
-          if (record.unopened) { unopened++; }
+    final (active, saved, unopened) = ref.watch(
+      downloadsProvider.select((records) {
+        var active = 0, saved = 0, unopened = 0;
+        for (final record in records.values) {
+          if (record.status == DownloadStatus.downloading) {
+            active++;
+          }
+          if (record.isAvailableOffline) {
+            saved++;
+            if (record.unopened) {
+              unopened++;
+            }
+          }
         }
-      }
-      return (active, saved, unopened);
-    }));
+        return (active, saved, unopened);
+      }),
+    );
     final scale = MediaQuery.textScalerOf(context).scale(1);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -383,7 +389,7 @@ class _QuickTile extends StatelessWidget {
     return HCard(
       radius: HRadius.xl,
       color: prominent ? (dark ? const Color(0xFF414145) : HColors.ink) : null,
-      semanticLabel: title,
+      semanticLabel: [title, ...badges].join(', '),
       padding: const EdgeInsets.all(14),
       onTap: onTap,
       child: Column(
@@ -463,9 +469,7 @@ class _AnnouncementBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(HRadius.md),
       ),
       child: Row(
