@@ -122,10 +122,12 @@ class AppTheme {
               : Color.alphaBlend(seed.withValues(alpha: .14), Colors.white));
     final scheme = generated.copyWith(
       primary: primary,
-      onPrimary: dark ? const Color(0xFF00201D) : Colors.white,
+      onPrimary: dark ? HColors.ink : Colors.white,
       primaryContainer: container,
       onPrimaryContainer: dark ? HColors.darkInk : HColors.slate,
-      secondary: dark ? const Color(0xFF8FB4BC) : HColors.slate,
+      secondary: dark ? HColors.darkInk2 : HColors.slate,
+      secondaryContainer: container,
+      onSecondaryContainer: ink,
       onSecondary: dark ? HColors.slateDeep : Colors.white,
       surface: surface,
       onSurface: ink,
@@ -133,14 +135,14 @@ class AppTheme {
       surfaceContainerLowest: dark ? HColors.darkSurface : Colors.white,
       surfaceContainerLow: dark ? HColors.darkSurfaceAlt : HColors.surfaceAlt,
       surfaceContainer: dark
-          ? const Color(0xFF223D48)
-          : const Color(0xFFE4EFED),
+          ? HColors.darkSurfaceAlt
+          : HColors.surfaceAlt,
       surfaceContainerHigh: dark
-          ? const Color(0xFF284652)
-          : const Color(0xFFDCE9E7),
+          ? const Color(0xFF323232)
+          : const Color(0xFFE6E6E4),
       surfaceContainerHighest: dark
-          ? const Color(0xFF2E4E5B)
-          : const Color(0xFFD3E3E0),
+          ? const Color(0xFF3B3B3B)
+          : const Color(0xFFDCDCD9),
       error: HColors.error,
       outline: dark ? const Color(0x33FFFFFF) : HColors.outlineStrong,
       outlineVariant: dark ? const Color(0x1FFFFFFF) : HColors.outline,

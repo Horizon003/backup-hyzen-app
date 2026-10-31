@@ -88,6 +88,8 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
             onPageChanged: (value) => setState(() => _page = value),
             itemBuilder: (context, index) {
               final slide = slides[index];
+              final overlay = theme.brightness == Brightness.dark ||
+                  (slide.image != null && slide.image!.isNotEmpty);
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 child: Card(
@@ -119,8 +121,8 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: .78),
+                                overlay ? Colors.transparent : Colors.white,
+                                overlay ? Colors.black.withValues(alpha: .78) : const Color(0xFFF0F2F3),
                               ],
                             ),
                           ),
@@ -147,7 +149,7 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
+                                  color: overlay ? Colors.white : theme.colorScheme.onSurface,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -157,7 +159,7 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Colors.white70,
+                                    color: overlay ? Colors.white70 : theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                             ],
@@ -170,15 +172,15 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                             child: Icon(
                               slide.icon,
                               size: 42,
-                              color: theme.colorScheme.primary,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
-                        const Positioned(
+                        Positioned(
                           right: 14,
                           bottom: 14,
                           child: Icon(
                             Icons.arrow_forward_rounded,
-                            color: Colors.white,
+                            color: overlay ? Colors.white : theme.colorScheme.onSurface,
                             size: 20,
                           ),
                         ),

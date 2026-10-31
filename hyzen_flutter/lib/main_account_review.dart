@@ -30,6 +30,11 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   await Boxes.init();
+  // Review-only URL overrides use the same persisted theme preference as the app.
+  final reviewTheme = Uri.base.queryParameters['theme'];
+  if (reviewTheme == 'light' || reviewTheme == 'dark') {
+    await prefs.setString('theme_mode', reviewTheme!);
+  }
   final requestedPath = Uri.base.fragment;
   final initialPath =
       const [
@@ -37,6 +42,16 @@ Future<void> main() async {
         '/profile/info',
         '/profile/edit',
         '/settings',
+        '/home',
+        '/study',
+        '/study/notes',
+        '/study/special',
+        '/study/mcqs',
+        '/study/papers',
+        '/pdf-studio',
+        '/shop',
+        '/downloads',
+        '/search',
       ].contains(requestedPath)
       ? requestedPath
       : '/profile';

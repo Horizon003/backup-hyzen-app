@@ -73,7 +73,13 @@ class AppShell extends StatelessWidget {
       child: Scaffold(
         extendBody: true,
         body: UpdateGate(child: navigationShell),
-        bottomNavigationBar: reader || account ? null : MainDock(path: path),
+        bottomNavigationBar: reader || account ? null : MainDock(
+          path: path,
+          onSelected: (destination) => navigationShell.goBranch(
+            destination.branchIndex,
+            initialLocation: idx == destination.branchIndex,
+          ),
+        ),
       ),
     );
   }
@@ -105,7 +111,7 @@ class TabPage extends StatelessWidget {
           child: SizedBox(height: MediaQuery.paddingOf(context).top + 64 + 8),
         ),
         ...slivers,
-        const SliverToBoxAdapter(child: SizedBox(height: 92)),
+        SliverToBoxAdapter(child: SizedBox(height: MainDock.contentInset(context))),
       ],
     );
     return Scaffold(
@@ -319,7 +325,7 @@ Future<void> showAccountMenu(BuildContext context) {
   final router = GoRouter.of(context);
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: Colors.black,
+    backgroundColor: AccountStyle.theme(context).scaffoldBackgroundColor,
     isScrollControlled: true,
     useSafeArea: true,
     clipBehavior: Clip.antiAlias,

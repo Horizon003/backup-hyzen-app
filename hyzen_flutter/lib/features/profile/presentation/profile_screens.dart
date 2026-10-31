@@ -182,10 +182,10 @@ class AccountInfoScreen extends ConsumerWidget {
         Center(
           child: TextButton(
             onPressed: edit,
-            child: const Text(
+            child: Text(
               'Change Photo',
               style: TextStyle(
-                color: AccountStyle.link,
+                color: AccountStyle.linkOf(context),
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
@@ -436,9 +436,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final t = AccountStyle.theme(context);
     return AccountTheme(
       child: Scaffold(
-        backgroundColor: AccountStyle.background,
+        backgroundColor: AccountStyle.backgroundOf(context),
         appBar: AppBar(
-          backgroundColor: AccountStyle.background,
+          backgroundColor: AccountStyle.backgroundOf(context),
           leadingWidth: 72,
           leading: Padding(
             padding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
@@ -981,7 +981,7 @@ Future<void> _chooseTheme(
 ) async {
   final next = await showModalBottomSheet<ThemeMode>(
     context: context,
-    backgroundColor: AccountStyle.card,
+    backgroundColor: AccountStyle.cardOf(context),
     showDragHandle: true,
     builder: (context) => SafeArea(
       child: Padding(
@@ -998,7 +998,7 @@ Future<void> _chooseTheme(
               SettingsRow(
                 title: item.$2,
                 trailing: mode == item.$1
-                    ? const Icon(Icons.check_rounded, color: AccountStyle.link)
+                    ? Icon(Icons.check_rounded, color: AccountStyle.linkOf(context))
                     : null,
                 onTap: () => Navigator.pop(context, item.$1),
               ),

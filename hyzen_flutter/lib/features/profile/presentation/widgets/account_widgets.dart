@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/widgets/profile_avatar.dart';
+import '../../../../core/theme/tokens.dart';
 
-/// The approved account surfaces are always dark, independently of study theme.
+/// Approved account geometry, with colors following the existing app theme.
+/// Dark constants remain unchanged; light surfaces use the supplied white UI.
 abstract final class AccountStyle {
   static const background = Color(0xFF000000);
   static const card = Color(0xFF29292D);
@@ -13,61 +15,72 @@ abstract final class AccountStyle {
   static const link = Color(0xFF72BEF1);
   static const divider = Color(0xFF454549);
 
+  static bool isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
+  static Color backgroundOf(BuildContext context) => isDark(context) ? background : const Color(0xFFFAFAFC);
+  static Color cardOf(BuildContext context, {bool elevated = false}) => isDark(context) ? (elevated ? raised : card) : Colors.white;
+  static Color secondaryOf(BuildContext context) => isDark(context) ? secondary : const Color(0xFF626269);
+  static Color linkOf(BuildContext context) => isDark(context) ? link : const Color(0xFF1976C9);
+  static Color avatarOf(BuildContext context) => isDark(context) ? const Color(0xFF1D1D20) : const Color(0xFFE9EAED);
+
   static ThemeData theme(BuildContext context) {
     final base = Theme.of(context);
-    const scheme = ColorScheme.dark(
-      primary: link,
-      onPrimary: Colors.black,
-      surface: card,
-      onSurface: Colors.white,
-      onSurfaceVariant: secondary,
-      outlineVariant: divider,
-      primaryContainer: Color(0xFF1D1D20),
-      onPrimaryContainer: secondary,
-      error: destructive,
+    final dark = base.brightness == Brightness.dark;
+    final ink = dark ? Colors.white : HColors.ink;
+    final muted = secondaryOf(context);
+    final surface = cardOf(context);
+    final line = dark ? divider : const Color(0xFFE6E6E8);
+    final action = linkOf(context);
+    final scheme = base.colorScheme.copyWith(
+      primary: action,
+      onPrimary: dark ? Colors.black : Colors.white,
+      surface: surface,
+      onSurface: ink,
+      onSurfaceVariant: muted,
+      outlineVariant: line,
+      primaryContainer: avatarOf(context),
+      onPrimaryContainer: muted,
+      error: dark ? destructive : const Color(0xFFD94339),
     );
     return base.copyWith(
-      brightness: Brightness.dark,
       colorScheme: scheme,
-      scaffoldBackgroundColor: background,
-      textTheme: base.textTheme.apply(
-        bodyColor: Colors.white,
-        displayColor: Colors.white,
-      ),
-      dividerColor: divider,
-      dividerTheme: const DividerThemeData(color: divider, thickness: .7, space: 1),
-      iconTheme: const IconThemeData(color: secondary),
+      scaffoldBackgroundColor: backgroundOf(context),
+      textTheme: base.textTheme.apply(bodyColor: ink, displayColor: ink),
+      dividerColor: line,
+      dividerTheme: DividerThemeData(color: line, thickness: .7, space: 1),
+      iconTheme: IconThemeData(color: muted),
       iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(
-        backgroundColor: Colors.transparent, foregroundColor: secondary,
+        backgroundColor: Colors.transparent, foregroundColor: muted,
       )),
       appBarTheme: base.appBarTheme.copyWith(
-        backgroundColor: background, foregroundColor: Colors.white,
+        backgroundColor: backgroundOf(context), foregroundColor: ink,
         surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       ),
       dialogTheme: base.dialogTheme.copyWith(
-        backgroundColor: card, surfaceTintColor: Colors.transparent,
+        backgroundColor: surface, surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
       bottomSheetTheme: base.bottomSheetTheme.copyWith(
-        backgroundColor: card, modalBackgroundColor: card,
+        backgroundColor: surface, modalBackgroundColor: surface,
       ),
-      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: link)),
+      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: action)),
       filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
-        backgroundColor: Colors.white, foregroundColor: Colors.black,
+        backgroundColor: ink, foregroundColor: dark ? Colors.black : Colors.white,
       )),
-      cardTheme: const CardThemeData(
-        color: card,
+      cardTheme: CardThemeData(
+        color: surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(30)),
+          borderRadius: const BorderRadius.all(Radius.circular(30)),
+          side: dark ? BorderSide.none : BorderSide(color: line),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: card,
-        prefixIconColor: secondary,
-        suffixIconColor: secondary,
-        hintStyle: const TextStyle(color: secondary),
-        labelStyle: const TextStyle(color: secondary),
+        fillColor: dark ? card : const Color(0xFFF0F0F2),
+        prefixIconColor: muted,
+        suffixIconColor: muted,
+        hintStyle: TextStyle(color: muted),
+        labelStyle: TextStyle(color: muted),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
           borderSide: BorderSide.none,
@@ -134,12 +147,12 @@ class AccountPage extends StatelessWidget {
           ],
         );
         return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light.copyWith(
-            statusBarColor: Colors.black,
-            systemNavigationBarColor: Colors.black,
+          value: (AccountStyle.isDark(context) ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
+            statusBarColor: AccountStyle.backgroundOf(context),
+            systemNavigationBarColor: AccountStyle.backgroundOf(context),
           ),
           child: Scaffold(
-            backgroundColor: AccountStyle.background,
+            backgroundColor: AccountStyle.backgroundOf(context),
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -172,17 +185,19 @@ class CircularNavigationButton extends StatelessWidget {
     height: 48,
     decoration: BoxDecoration(
       shape: BoxShape.circle,
-      gradient: const LinearGradient(
+      gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [AccountStyle.raised, Color(0xFF1D1D20)],
+        colors: AccountStyle.isDark(context)
+            ? [AccountStyle.raised, const Color(0xFF1D1D20)]
+            : [const Color(0xFFF0F0F2), const Color(0xFFF0F0F2)],
       ),
-      border: Border.all(color: const Color(0xFF464649)),
+      border: AccountStyle.isDark(context) ? Border.all(color: const Color(0xFF464649)) : null,
     ),
     child: IconButton(
       tooltip: close ? 'Close account' : 'Back',
       onPressed: onPressed,
-      color: const Color(0xFFE5E5E8),
+      color: Theme.of(context).colorScheme.onSurface,
       style: IconButton.styleFrom(backgroundColor: Colors.transparent),
       icon: Icon(
         close ? Icons.close_rounded : Icons.chevron_left_rounded,
@@ -198,8 +213,13 @@ class SettingsCard extends StatelessWidget {
   final bool raised;
   @override
   Widget build(BuildContext context) => Material(
-    color: raised ? AccountStyle.raised : AccountStyle.card,
-    borderRadius: BorderRadius.circular(30),
+    color: AccountStyle.cardOf(context, elevated: raised),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(30),
+      side: AccountStyle.isDark(context) ? BorderSide.none : const BorderSide(color: Color(0xFFE6E6E8)),
+    ),
+    elevation: AccountStyle.isDark(context) ? 0 : 2,
+    shadowColor: const Color(0x141C1C1E),
     clipBehavior: Clip.antiAlias,
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -250,8 +270,8 @@ class SettingsRow extends StatelessWidget {
                     title,
                     style: TextStyle(
                       color: destructive
-                          ? AccountStyle.destructive
-                          : Colors.white,
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                     ),
@@ -260,8 +280,8 @@ class SettingsRow extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle!,
-                      style: const TextStyle(
-                        color: AccountStyle.secondary,
+                      style: TextStyle(
+                        color: AccountStyle.secondaryOf(context),
                         fontSize: 12,
                         height: 1.5,
                       ),
@@ -279,8 +299,8 @@ class SettingsRow extends StatelessWidget {
                   textAlign: TextAlign.end,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AccountStyle.secondary,
+                  style: TextStyle(
+                    color: AccountStyle.secondaryOf(context),
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
@@ -317,9 +337,9 @@ class AccountAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: radius, foregroundImage: image,
       onForegroundImageError: image == null ? null : (_, __) {},
-      backgroundColor: const Color(0xFF1D1D20),
+      backgroundColor: AccountStyle.avatarOf(context),
       child: Text(fallback.isEmpty ? 'H' : fallback[0].toUpperCase(),
-        style: const TextStyle(fontSize: 16, color: AccountStyle.secondary,
+        style: TextStyle(fontSize: 16, color: AccountStyle.secondaryOf(context),
           fontWeight: FontWeight.w600)),
     );
   }
@@ -366,8 +386,8 @@ class AccountProfileCard extends StatelessWidget {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AccountStyle.secondary,
+                      style: TextStyle(
+                        color: AccountStyle.secondaryOf(context),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -397,8 +417,8 @@ class AccountSectionHeader extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(18, 24, 18, 10),
     child: Text(
       title,
-      style: const TextStyle(
-        color: AccountStyle.secondary,
+      style: TextStyle(
+        color: AccountStyle.secondaryOf(context),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
@@ -420,8 +440,8 @@ class RoundedPrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) => FilledButton(
     style: FilledButton.styleFrom(
       minimumSize: const Size(double.infinity, 58),
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+      backgroundColor: AccountStyle.isDark(context) ? Colors.white : HColors.ink,
+      foregroundColor: AccountStyle.isDark(context) ? Colors.black : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
     ),
@@ -511,10 +531,10 @@ class AccountToggle extends StatelessWidget {
                     height: 34,
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: AccountStyle.raised,
+                      color: AccountStyle.isDark(context) ? AccountStyle.raised : const Color(0xFFE1E1E5),
                       borderRadius: BorderRadius.circular(22),
                       border: Focus.of(context).hasFocus
-                          ? Border.all(color: AccountStyle.link, width: 2)
+                          ? Border.all(color: AccountStyle.linkOf(context), width: 2)
                           : null,
                     ),
                     child: Stack(
@@ -524,12 +544,12 @@ class AccountToggle extends StatelessWidget {
                           left: value ? 7 : null,
                           right: value ? null : 6,
                           child: value
-                              ? const SizedBox(
+                              ? SizedBox(
                                   height: 14,
                                   child: VerticalDivider(
                                     width: 3,
                                     thickness: 2,
-                                    color: AccountStyle.secondary,
+                                    color: AccountStyle.secondaryOf(context),
                                   ),
                                 )
                               : Container(
@@ -538,7 +558,7 @@ class AccountToggle extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: AccountStyle.secondary,
+                                      color: AccountStyle.secondaryOf(context),
                                     ),
                                   ),
                                 ),

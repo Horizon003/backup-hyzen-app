@@ -5,72 +5,78 @@ import 'package:go_router/go_router.dart';
 import '../../features/content/data/content_providers.dart';
 import '../theme/tokens.dart';
 
-/// Opaque floating dock matching the supplied five-destination reference.
-/// No blurred glass, no stacked system/navigation padding, no tiny hit areas.
-/// Approved compact four-tab dock (Q03): Home / Study / Office Workspace / Shop.
-/// Profile and Settings live behind the top-right avatar, never as a tab.
+/// Visible destinations map to the existing shell branches. Auxiliary branches
+/// keep their original indexes; they are intentionally absent from this list.
+enum DockDestination {
+  home('Home', '/home', 0, Icons.home_outlined),
+  study('Study', '/study', 1, Icons.menu_book_outlined),
+  office('Office Workspace', '/pdf-studio', 3, Icons.description_outlined),
+  shop('Shop', '/shop', 6, Icons.storefront_outlined),
+  downloads('Downloads', '/downloads', 4, Icons.file_download_outlined);
+
+  const DockDestination(this.label, this.route, this.branchIndex, this.icon);
+  final String label, route;
+  final int branchIndex;
+  final IconData icon;
+  bool matches(String path) => path == route || path.startsWith('$route/');
+}
+
+/// One opaque, five-destination dock. The shell owns navigation and restores
+/// each branch's existing stack; the current route alone determines selection.
 class MainDock extends StatelessWidget {
-  const MainDock({super.key, required this.path});
+  const MainDock({super.key, required this.path, required this.onSelected});
   final String path;
+  final ValueChanged<DockDestination> onSelected;
+
+  static double height(BuildContext context) =>
+      48.0 + math.max(22.0, MediaQuery.textScalerOf(context).scale(11) * 2.4);
+  static double contentInset(BuildContext context) =>
+      height(context) + 26 + MediaQuery.viewPaddingOf(context).bottom;
+
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
-    if (keyboard) return const SizedBox.shrink();
-    final dark = t.brightness == Brightness.dark;
+    if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+      return const SizedBox.shrink();
+    }
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: Center(
         heightFactor: 1,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Container(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Material(
             key: const ValueKey('main-dock'),
-            height: 66,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            decoration: BoxDecoration(
-              color: dark ? const Color(0xFF10232B) : const Color(0xFF1A3440),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x331A3440),
-                  blurRadius: 24,
-                  offset: Offset(0, 8),
-                ),
-              ],
+            color: Colors.black,
+            elevation: 3,
+            shadowColor: Colors.black26,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(HRadius.pill),
+              side: const BorderSide(color: Color(0xFF29292D)),
             ),
-            child: Row(
-              children: [
-                _DockItem(
-                  label: 'Home',
-                  icon: Icons.home_outlined,
-                  selectedIcon: Icons.home_rounded,
-                  selected: path == '/home',
-                  onTap: () => context.go('/home'),
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              height: height(context),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth / 5 < 116 ||
+                        MediaQuery.textScalerOf(context).scale(11) > 13;
+                    return Row(
+                      children: [
+                        for (final destination in DockDestination.values)
+                          _DockItem(
+                            destination: destination,
+                            compact: compact,
+                            selected: destination.matches(path),
+                            onTap: () => onSelected(destination),
+                          ),
+                      ],
+                    );
+                  },
                 ),
-                _DockItem(
-                  label: 'Study',
-                  icon: Icons.menu_book_outlined,
-                  selectedIcon: Icons.menu_book_rounded,
-                  selected: path.startsWith('/study') || path == '/downloads',
-                  onTap: () => showStudyMenu(context),
-                ),
-                _DockItem(
-                  label: 'Office Workspace',
-                  icon: Icons.picture_as_pdf_outlined,
-                  selectedIcon: Icons.picture_as_pdf_rounded,
-                  selected: path.startsWith('/pdf-studio'),
-                  onTap: () => context.go('/pdf-studio'),
-                ),
-                _DockItem(
-                  label: 'Shop',
-                  icon: Icons.storefront_outlined,
-                  selectedIcon: Icons.storefront_rounded,
-                  selected: path.startsWith('/shop'),
-                  onTap: () => context.go('/shop'),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -81,63 +87,76 @@ class MainDock extends StatelessWidget {
 
 class _DockItem extends StatelessWidget {
   const _DockItem({
-    required this.label,
-    required this.icon,
-    required this.selectedIcon,
+    required this.destination,
     required this.selected,
+    required this.compact,
     required this.onTap,
   });
-  final String label;
-  final IconData icon, selectedIcon;
-  final bool selected;
+  final DockDestination destination;
+  final bool selected, compact;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
-    const active = Color(0xFF5FD1C1);
     final reduce = MediaQuery.disableAnimationsOf(context);
+    final duration = reduce ? Duration.zero : HMotion.medium;
+    final office = destination == DockDestination.office;
     return Expanded(
       child: Tooltip(
-        message: label,
+        message: destination.label,
+        excludeFromSemantics: true,
         child: Semantics(
+          key: ValueKey('dock-${destination.name}'),
           selected: selected,
           button: true,
-          label: label,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(18),
-            child: AnimatedContainer(
-              duration: reduce
-                  ? Duration.zero
-                  : const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: selected
-                    ? Colors.white.withValues(alpha: .10)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    selected ? selectedIcon : icon,
-                    color: selected ? active : Colors.white70,
-                    size: 23,
+          label: destination.label,
+          onTap: onTap,
+          child: ExcludeSemantics(
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(HRadius.pill),
+              child: AnimatedContainer(
+                duration: duration,
+                curve: HMotion.curve,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? (office ? const Color(0xFF38383D) : const Color(0xFF29292D))
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(HRadius.pill),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSlide(
+                        offset: !reduce && selected ? const Offset(0, -.07) : Offset.zero,
+                        duration: duration,
+                        curve: HMotion.curve,
+                        child: AnimatedScale(
+                          scale: !reduce && selected ? (office ? 1.10 : 1.05) : 1,
+                          duration: duration,
+                          curve: HMotion.curve,
+                          child: Icon(destination.icon, color: Colors.white, size: 23),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Text(
+                          office && compact ? 'Office' : destination.label,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            height: 1.15,
+                            color: Colors.white,
+                            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                    softWrap: false,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: selected ? Colors.white : Colors.white60,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -268,16 +287,6 @@ Future<void> showStudyMenu(BuildContext context) {
                                   router.go('/study/papers');
                                 },
                               ),
-                            const Divider(height: 9),
-                            _StudyRow(
-                              'Downloads',
-                              Icons.download_rounded,
-                              t.colorScheme.primary,
-                              () {
-                                Navigator.pop(c);
-                                router.go('/downloads');
-                              },
-                            ),
                           ],
                         ),
                       ),

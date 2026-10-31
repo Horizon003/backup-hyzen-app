@@ -8,6 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hyzen_pharmd/app/app.dart';
+import 'package:hyzen_pharmd/core/widgets/main_dock.dart';
+import 'package:hyzen_pharmd/features/downloads/data/downloads_controller.dart';
+import 'package:hyzen_pharmd/features/downloads/domain/download_record.dart';
 import 'package:hyzen_pharmd/features/profile/presentation/profile_screens.dart';
 import 'package:hyzen_pharmd/features/profile/presentation/widgets/account_widgets.dart';
 import 'package:hyzen_pharmd/app/providers.dart';
@@ -213,23 +216,130 @@ void main() {
       expect(find.textContaining('Screen coming soon'), findsNothing);
     }
   });
-  testWidgets('reference dock opens the Study popover and Downloads', (
-    tester,
-  ) async {
+  testWidgets('NAV-01/02 five equal destinations in the requested order', (tester) async {
     await open(tester, '/home');
+    final dock = find.byKey(const ValueKey('main-dock'));
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byKey(const ValueKey('main-dock')), findsOneWidget);
+    final buttons = find.descendant(of: dock, matching: find.byType(InkWell));
+    expect(buttons, findsNWidgets(5));
+    expect(DockDestination.values.map((d) => d.label).toList(),
+      ['Home', 'Study', 'Office Workspace', 'Shop', 'Downloads']);
+    double previous = -1;
+    for (final destination in DockDestination.values) {
+      final target = find.byKey(ValueKey('dock-${destination.name}'));
+      final rect = tester.getRect(target);
+      expect(rect.left, greaterThan(previous));
+      expect(rect.width, greaterThanOrEqualTo(48));
+      expect(rect.height, greaterThanOrEqualTo(48));
+      previous = rect.left;
+    }
+    expect(tester.widget<Material>(dock).color, Colors.black);
+  });
+
+  testWidgets('NAV-03/04/05 Study hub, independent Downloads and center workspace', (tester) async {
+    await open(tester, '/home');
+    for (final destination in [DockDestination.study, DockDestination.downloads, DockDestination.office]) {
+      await tester.tap(find.byTooltip(destination.label));
+      await tester.pumpAndSettle();
+      expect(container.read(routerProvider).routeInformationProvider.value.uri.path, destination.route);
+      for (final item in DockDestination.values) {
+        expect(tester.widget<Semantics>(find.byKey(ValueKey('dock-${item.name}'))).properties.selected,
+          item == destination);
+      }
+      expect(tester.takeException(), isNull);
+    }
     await tester.tap(find.byTooltip('Study'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Downloads').last);
+    expect(find.text('Notes'), findsWidgets);
+    expect(find.text('MCQs'), findsWidgets);
+  });
+
+  testWidgets('NAV-06 Study child stack and Downloads filters survive tab switches', (tester) async {
+    const child = '/study/notes/id-0/id-1/id-2/id-3/id-4';
+    await open(tester, child);
+    expect(tester.widget<Semantics>(find.byKey(const ValueKey('dock-study'))).properties.selected, isTrue);
+    final record = DownloadRecord(key: 'retained', kind: LibraryKind.notes,
+      title: 'Retained download', sourceUrl: 'https://example.org/retained.pdf',
+      status: DownloadStatus.paused, progress: .4, sizeBytes: 400, totalBytes: 1000);
+    await tester.runAsync(() => JsonBox(Boxes.downloads).put(record.key, record.toMap()));
+    await tester.tap(find.byTooltip('Downloads'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Downloads').last);
+    final controller = container.read(downloadsProvider.notifier);
+    expect(container.read(downloadsProvider)['retained']?.progress, .4);
+    await tester.enterText(find.byType(TextField).first, 'Retained');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip('Study'));
     await tester.pumpAndSettle();
-    expect(
-      container.read(routerProvider).routeInformationProvider.value.uri.path,
-      '/downloads',
-    );
+    expect(container.read(routerProvider).routeInformationProvider.value.uri.path, child);
+    expect(find.text('Insulin Notes'), findsOneWidget);
+    await tester.tap(find.byTooltip('Downloads'));
+    await tester.pumpAndSettle();
+    expect(identical(controller, container.read(downloadsProvider.notifier)), isTrue);
+    expect(container.read(downloadsProvider)['retained']?.progress, .4);
+    expect(tester.widget<TextField>(find.byType(TextField).first).controller?.text, 'Retained');
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('NAV-07 auxiliary routes retain access and account hides the dock', (tester) async {
+    for (final path in ['/search', '/profile', '/profile/info', '/profile/edit', '/settings']) {
+      await open(tester, path);
+      expect(container.read(routerProvider).routeInformationProvider.value.uri.path, path);
+      expect(find.byType(MainDock), path.startsWith('/profile') || path == '/settings'
+          ? findsNothing : findsOneWidget);
+      expect(tester.takeException(), isNull, reason: path);
+    }
+  });
+
+  testWidgets('NAV-08/09 narrow dock, large text, safe area and reduced motion', (tester) async {
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    DockDestination selected = DockDestination.home;
+    for (final reduce in [false, true]) {
+      await tester.pumpWidget(MaterialApp(home: MediaQuery(
+        data: MediaQueryData(size: const Size(320, 900), textScaler: TextScaler.linear(2),
+          padding: const EdgeInsets.only(bottom: 24), disableAnimations: reduce),
+        child: StatefulBuilder(builder: (context, setState) => Scaffold(
+          bottomNavigationBar: MainDock(path: selected.route,
+            onSelected: (value) => setState(() => selected = value)),
+        )),
+      )));
+      await tester.pumpAndSettle();
+      for (final destination in [DockDestination.office, DockDestination.downloads]) {
+        await tester.tap(find.byTooltip(destination.label));
+        await tester.pump(const Duration(milliseconds: 10));
+        expect(selected, destination, reason: 'Animation must not delay navigation');
+      }
+      if (reduce) {
+        for (final scale in tester.widgetList<AnimatedScale>(find.byType(AnimatedScale))) {
+          expect(scale.duration, Duration.zero);
+          expect(scale.scale, 1);
+        }
+      }
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byKey(const ValueKey('main-dock'))).bottom, 876);
+      for (final destination in DockDestination.values) {
+        expect(tester.getSize(find.byKey(ValueKey('dock-${destination.name}'))).width, greaterThanOrEqualTo(48));
+      }
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('account surfaces follow persisted Light and Dark without changing layout', (tester) async {
+    for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+      container.read(themeModeProvider.notifier).set(mode);
+      for (final path in ['/profile', '/profile/info', '/settings']) {
+        await open(tester, path);
+        final context = tester.element(find.byType(AccountPage));
+        expect(Theme.of(context).brightness, mode == ThemeMode.dark ? Brightness.dark : Brightness.light);
+        final cards = find.descendant(of: find.byType(SettingsCard).first, matching: find.byType(Material));
+        expect(tester.widget<Material>(cards.first).color,
+          mode == ThemeMode.dark ? (path == '/profile' || path == '/settings' ? AccountStyle.raised : AccountStyle.card) : Colors.white);
+        expect(prefs.getString('theme_mode'), mode.name);
+        expect(tester.takeException(), isNull);
+      }
+    }
   });
   testWidgets('narrow phone layouts and large text remain usable', (
     tester,
