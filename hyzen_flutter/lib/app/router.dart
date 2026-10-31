@@ -182,6 +182,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (_, __) => const ProfileScreen(),
                 routes: [
                   GoRoute(
+                    path: 'info',
+                    builder: (_, __) => const AccountInfoScreen(),
+                  ),
+                  GoRoute(
                     path: 'edit',
                     builder: (_, __) => const EditProfileScreen(),
                   ),
@@ -329,3 +333,4 @@ class _RouteError extends StatelessWidget {
     ),
   );
 }
+

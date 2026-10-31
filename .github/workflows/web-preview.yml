@@ -6,8 +6,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/web-preview.yml'
-      - 'PharmD_With_Hyzen_Source_1.3.3.zip'
-      - 'lib/**'
+      - 'hyzen_flutter/**'
 
 permissions:
   contents: read
@@ -23,10 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract source
-        run: |
-          unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
-          cp -a lib/. hyzen_flutter/lib/
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.4'
@@ -35,7 +30,9 @@ jobs:
       - run: flutter pub get
         working-directory: hyzen_flutter
       - name: Build browser preview
-        run: flutter build web --release --no-pub --base-href "/pharm-d-with-hyzen/"
+        run: |
+          version=$(sed -n 's/^version: //p' pubspec.yaml)
+          flutter build web --release --no-pub --base-href "/pharm-d-with-hyzen/" --dart-define=HYZEN_APP_VERSION="$version"
         working-directory: hyzen_flutter
       - name: Add SPA fallback
         run: cp hyzen_flutter/build/web/index.html hyzen_flutter/build/web/404.html
@@ -54,3 +51,4 @@ jobs:
       - name: Deploy preview
         id: deployment
         uses: actions/deploy-pages@v4
+

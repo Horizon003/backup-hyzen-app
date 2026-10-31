@@ -14,7 +14,6 @@ import '../../../core/utils/media_upload.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/common.dart';
-import '../../../core/widgets/surfaces.dart';
 import '../../../core/widgets/searchable_picker.dart';
 import '../../../core/widgets/profile_avatar.dart';
 import '../../../core/widgets/ui_kit.dart';
@@ -26,7 +25,7 @@ import '../../downloads/data/downloads_controller.dart';
 import '../../downloads/domain/download_record.dart';
 import '../../home/data/recent_controller.dart';
 import '../../content/data/content_source.dart';
-import '../../shell/app_shell.dart';
+import 'widgets/account_widgets.dart';
 
 Future<void> logout(BuildContext context, WidgetRef ref) async {
   if (!await confirmDialog(
@@ -37,208 +36,172 @@ Future<void> logout(BuildContext context, WidgetRef ref) async {
   )) {
     return;
   }
-  await DriveGateway.instance.disconnect();
-  await ref.read(authRepositoryProvider).signOut();
-  ref.read(lastCreatedProfileProvider.notifier).state = null;
-  if (context.mounted) context.go('/welcome');
+  try {
+    await DriveGateway.instance.disconnect();
+    await ref.read(authRepositoryProvider).signOut();
+    ref.read(lastCreatedProfileProvider.notifier).state = null;
+    if (context.mounted) context.go('/welcome');
+  } catch (_) {
+    if (context.mounted) showHSnack(context, 'Could not log out. Please retry.', error: true);
+  }
 }
 
 class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.onClose, this.onNavigate});
+  final VoidCallback? onClose;
+  final ValueChanged<String>? onNavigate;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t = Theme.of(context);
     final user = ref.watch(authStateProvider).valueOrNull;
+    final p = ref.watch(profileProvider).valueOrNull;
     final admin = ref.watch(isAdminProvider);
-    final pa = ref.watch(profileProvider);
-    final p = pa.valueOrNull;
-    Widget row(IconData i, String k, String? v) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(i, size: 20, color: t.colorScheme.primary),
-          const SizedBox(width: 12),
-          SizedBox(width: 110, child: Text(k, style: t.textTheme.bodySmall)),
-          Expanded(
-            child: Text(
-              (v ?? '').isEmpty ? '\u2014' : v!,
-              style: t.textTheme.titleSmall,
-            ),
-          ),
-        ],
-      ),
-    );
-    final display = admin
-        ? 'Administrator'
-        : (p?.fullName ?? user?.displayName ?? 'Student');
-    return TabPage(
-      title: 'Profile',
+    final name = _accountName(p, user?.displayName, admin);
+    void go(String path) {
+      if (onNavigate != null) {
+        onNavigate!(path);
+      } else {
+        context.push(path);
+      }
+    }
+    return AccountPage(
+      title: 'Account', close: true,
+      onBack: onClose ?? () => _accountBack(context),
       onRefresh: () async {
         ref.invalidate(profileProvider);
-
         await ref.read(profileProvider.future);
       },
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: HSpace.screen),
-          sliver: SliverList.list(
-            children: [
-              SurfacePanel(
-                tint: t.brightness == Brightness.light
-                    ? t.colorScheme.primaryContainer.withValues(alpha: .4)
-                    : t.colorScheme.surfaceContainerHigh,
-                radius: HRadius.xl,
-                padding: const EdgeInsets.all(HSpace.lg),
-                child: Row(
-                  children: [
-                    ProfileAvatar(
-                      photoUrl: p?.photoUrl ?? user?.photoURL,
-                      fallback: display,
-                    ),
-                    const SizedBox(width: HSpace.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            display,
-                            style: t.textTheme.titleLarge,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            user?.email ?? '',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: t.textTheme.bodySmall,
-                          ),
-                          const SizedBox(height: 6),
-                          StatusPill(
-                            label: admin ? 'Admin' : 'Student',
-                            color: HColors.primary,
-                            icon: admin
-                                ? Icons.verified_user_rounded
-                                : Icons.school_rounded,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(HSpace.md),
-              const ProfilePromotions(),
-              const Gap(HSpace.md),
-              if (admin)
-                ResourceTile(
-                  icon: Icons.admin_panel_settings_rounded,
-                  color: HColors.primary,
-                  title: 'Admin dashboard',
-                  subtitle: 'Orders, messages and content status',
-                  onTap: () => context.push('/admin'),
-                ),
-              if (!admin)
-                PanelBlock(
-                  child: pa.isLoading && p == null
-                      ? const SkeletonList(count: 3, height: 28)
-                      : p == null
-                      ? TextButton.icon(
-                          onPressed: () => context.push('/profile/edit'),
-                          icon: const Icon(Icons.edit_rounded),
-                          label: const Text('Complete your profile'),
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Academic details',
-                                    style: t.textTheme.titleMedium,
-                                  ),
-                                ),
-                                TextButton.icon(
-                                  onPressed: () =>
-                                      context.push('/profile/edit'),
-                                  icon: const Icon(
-                                    Icons.edit_rounded,
-                                    size: 18,
-                                  ),
-                                  label: const Text('Edit'),
-                                ),
-                              ],
-                            ),
-                            row(
-                              Icons.workspace_premium_rounded,
-                              'Year',
-                              ReferenceData.yearLabel(p.professionalYear),
-                            ),
-                            row(
-                              Icons.apartment_rounded,
-                              'Institution',
-                              p.institutionName,
-                            ),
-                            row(
-                              Icons.account_balance_rounded,
-                              'Affiliation',
-                              p.affiliationDisplay ?? 'Non-affiliated',
-                            ),
-                            row(Icons.badge_rounded, 'Roll no.', p.rollNumber),
-                            const Divider(),
-                            row(
-                              Icons.phone_rounded,
-                              'Mobile',
-                              p.mobile.isEmpty
-                                  ? null
-                                  : PkPhone.pretty(p.mobile),
-                            ),
-                            row(Icons.location_city_rounded, 'City', p.city),
-                            row(
-                              Icons.person_rounded,
-                              'Gender',
-                              ReferenceData.genders[p.gender] ?? p.gender,
-                            ),
-                          ],
-                        ),
-                ),
-              const Gap(HSpace.md),
-              ResourceTile(
-                icon: Icons.receipt_long_rounded,
-                color: HColors.info,
-                title: 'My orders',
-                subtitle: 'Orders placed from this device',
-                onTap: () => context.push('/orders'),
-              ),
-              ResourceTile(
-                icon: Icons.tune_rounded,
-                color: HColors.teal,
-                title: 'Settings',
-                subtitle: 'Theme, storage, notifications',
-                onTap: () => context.push('/settings'),
-              ),
-              ResourceTile(
-                icon: Icons.mail_rounded,
-                color: HColors.primary,
-                title: 'Contact us',
-                onTap: () => context.push('/contact'),
-              ),
-              ResourceTile(
-                icon: Icons.favorite_rounded,
-                color: HColors.lectures,
-                title: 'About PHARM D WITH HYZEN',
-                onTap: () => context.push('/about'),
-              ),
-              const Gap(HSpace.sm),
-              HButton(
-                label: 'Log out',
-                icon: Icons.logout_rounded,
-                outlined: true,
-                onPressed: () => logout(context, ref),
-              ),
-            ],
-          ),
+      children: [
+        AccountProfileCard(
+          name: name,
+          subtitle: p?.rollNumber?.isNotEmpty == true
+            ? 'Account info · ${p!.rollNumber}' : 'Account info',
+          photoUrl: p?.photoUrl ?? user?.photoURL,
+          onTap: () => go('/profile/info'),
         ),
+        const SizedBox(height: 22),
+        SettingsCard(raised: true, children: [
+          SettingsRow(title: 'Settings', onTap: () => go('/settings')),
+        ]),
+        const SizedBox(height: 20),
+        SettingsCard(raised: true, children: [
+          SettingsRow(title: 'My orders', onTap: () => go('/orders')),
+          SettingsRow(title: 'Downloads', onTap: () => go('/downloads')),
+        ]),
+        if (admin) ...[
+          const SizedBox(height: 20),
+          SettingsCard(raised: true, children: [SettingsRow(
+            title: 'Admin dashboard', onTap: () => go('/admin'),
+          )]),
+        ],
+        const SizedBox(height: 20),
+        SettingsCard(raised: true, children: [
+          SettingsRow(title: 'Contact us', onTap: () => go('/contact')),
+          SettingsRow(title: 'About',
+            value: ref.watch(appVersionProvider).valueOrNull,
+            onTap: () => go('/about')),
+        ]),
+        const SizedBox(height: 22),
+        RoundedPrimaryButton(label: 'Edit profile',
+          onPressed: () => go('/profile/edit')),
+        const SizedBox(height: 22),
+        // Keep the existing admin-managed promotions and shop/offline links.
+        const ProfilePromotions(),
+        const SizedBox(height: 22),
+        DestructiveActionButton(label: 'Log out',
+          onPressed: () async {
+            // The dialog and route change use the sheet's still-mounted context.
+            await logout(context, ref);
+          }),
+      ],
+    );
+  }
+}
+
+String _accountName(StudentProfile? p, String? authName, bool admin) {
+  if (p?.fullName.trim().isNotEmpty == true) return p!.fullName;
+  if (authName?.trim().isNotEmpty == true) return authName!;
+  return admin ? 'Administrator' : 'Student';
+}
+
+void _accountBack(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go('/home');
+  }
+}
+
+class AccountInfoScreen extends ConsumerWidget {
+  const AccountInfoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(profileProvider);
+    final p = state.valueOrNull;
+    final user = ref.watch(authStateProvider).valueOrNull;
+    final name = _accountName(p, user?.displayName, ref.watch(isAdminProvider));
+    final announcements = ref.watch(boolPrefProvider('pref_announcements'));
+    void edit() => context.push('/profile/edit');
+    return AccountPage(
+      title: 'Account info', onBack: () => _accountBack(context),
+      children: [
+        const SizedBox(height: 8),
+        Center(child: ProfileAvatar(
+          photoUrl: p?.photoUrl ?? user?.photoURL,
+          fallback: name, radius: 46,
+        )),
+        const SizedBox(height: 16),
+        Center(child: TextButton(
+          onPressed: edit,
+          child: const Text('Change Photo', style: TextStyle(
+            color: AccountStyle.link, fontWeight: FontWeight.w700, fontSize: 15,
+          )),
+        )),
+        const SizedBox(height: 32),
+        if (state.isLoading && p == null) const Padding(
+          padding: EdgeInsets.all(16), child: LinearProgressIndicator(),
+        ),
+        if (state.hasError && p == null) SettingsCard(children: [SettingsRow(
+          title: 'Retry profile', subtitle: 'Your account details could not load.',
+          onTap: () => ref.invalidate(profileProvider),
+        )]),
+        SettingsCard(children: [
+          SettingsRow(title: 'Name', value: name, onTap: edit),
+          // Username is not a field in the current students schema.
+          SettingsRow(title: 'Email', value: p?.email ?? user?.email ?? '—'),
+          if (p != null) SettingsRow(title: 'Phone Number',
+            value: p.mobile.isEmpty ? 'Add' : PkPhone.pretty(p.mobile), onTap: edit),
+        ]),
+        if (p != null) ...[
+          const AccountSectionHeader('Academic details'),
+          SettingsCard(children: [
+            SettingsRow(title: 'Professional year',
+              value: ReferenceData.yearLabel(p.professionalYear), onTap: edit),
+            SettingsRow(title: 'Institution', value: p.institutionName, onTap: edit),
+            SettingsRow(title: 'Roll number', value: p.rollNumber ?? 'Add', onTap: edit),
+            SettingsRow(title: 'Affiliation',
+              value: p.affiliationDisplay ?? 'Non-affiliated', onTap: edit),
+            SettingsRow(title: 'City', value: p.city, onTap: edit),
+            SettingsRow(title: 'Gender', value: ReferenceData.genders[p.gender] ?? p.gender),
+          ]),
+        ],
+        const SizedBox(height: 22),
+        SettingsCard(children: [SettingsRow(title: 'Notifications',
+          onTap: () => context.push('/notifications'))]),
+        const SizedBox(height: 20),
+        SettingsCard(children: [SettingsRow(title: 'Show announcements',
+          trailing: AccountToggle(label: 'Show announcements', value: announcements,
+            onChanged: (v) => ref.read(boolPrefProvider('pref_announcements').notifier).set(v)),
+        )]),
+        const SizedBox(height: 20),
+        SettingsCard(children: [
+          SettingsRow(title: 'Security', onTap: () => context.push('/settings')),
+          SettingsRow(title: 'Privacy', onTap: () => context.push('/legal/privacy')),
+        ]),
+        const SizedBox(height: 22),
+        RoundedPrimaryButton(label: 'Edit profile', onPressed: edit),
+        // Deletion is intentionally absent: there is no backend deletion flow.
       ],
     );
   }
@@ -378,12 +341,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ),
       );
     }
-    final t = Theme.of(context);
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: const HTopBar(title: 'Edit profile'),
-      body: HBackground(
-        child: SafeArea(
+    final t = AccountStyle.theme(context);
+    return AccountTheme(child: Scaffold(
+      backgroundColor: AccountStyle.background,
+      appBar: AppBar(
+        backgroundColor: AccountStyle.background,
+        leadingWidth: 72,
+        leading: Padding(padding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
+          child: CircularNavigationButton(onPressed: () => _accountBack(context))),
+        title: const Text('Edit profile', style: TextStyle(fontWeight: FontWeight.w800)),
+      ),
+      body: SafeArea(
           child: Form(
             key: _form,
             onChanged: () {
@@ -392,7 +360,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 HSpace.screen,
-                80,
+                20,
                 HSpace.screen,
                 HSpace.xxl,
               ),
@@ -472,7 +440,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                 ),
                 const Gap(HSpace.md),
-                PanelBlock(
+                _EditCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -558,7 +526,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                 ),
                 const Gap(HSpace.md),
-                PanelBlock(
+                _EditCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -651,319 +619,182 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                 ),
                 const Gap(HSpace.lg),
-                HButton(
+                RoundedPrimaryButton(
                   label: _saved ? 'Changes saved ✓' : 'Save changes',
-                  loading: _busy,
-                  onPressed: _save,
+                  loading: _busy, onPressed: _save,
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
+    ));
   }
+}
+
+class _EditCard extends StatelessWidget {
+  const _EditCard({required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => SettingsCard(children: [
+    Padding(padding: const EdgeInsets.all(18), child: child),
+  ]);
 }
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
-
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  String _query = '';
+  final _search = TextEditingController();
+  bool _resetBusy = false;
+  bool _matches(String value) => _search.text.trim().isEmpty ||
+      value.toLowerCase().contains(_search.text.trim().toLowerCase());
 
-  bool _matches(String value) =>
-      _query.trim().isEmpty ||
-      value.toLowerCase().contains(_query.toLowerCase());
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _resetPassword(String email) async {
+    if (_resetBusy || !await confirmDialog(context,
+      title: 'Reset password?',
+      message: 'Send a password reset link to $email?',
+      confirm: 'Send link',
+    )) return;
+    if (!mounted) return;
+    setState(() => _resetBusy = true);
+    try {
+      await ref.read(authRepositoryProvider).sendReset(email);
+      if (mounted) showHSnack(context, 'Password reset email sent');
+    } catch (_) {
+      if (mounted) showHSnack(context, 'Could not send the email. Please retry.', error: true);
+    } finally {
+      if (mounted) setState(() => _resetBusy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
+    final p = ref.watch(profileProvider).valueOrNull;
+    final user = ref.watch(authStateProvider).valueOrNull;
     final mode = ref.watch(themeModeProvider);
     final notif = ref.watch(boolPrefProvider('pref_announcements'));
-    final downloads = ref.watch(downloadsProvider);
-    final used = downloads.values
-        .where((r) => r.isReady)
-        .fold(0, (s, r) => s + r.sizeBytes);
-    return TabPage(
-      title: 'Settings',
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: HSpace.screen),
-          sliver: SliverList.list(
-            children: [
-              SurfacePanel(
-                tint: t.brightness == Brightness.dark
-                    ? t.colorScheme.surfaceContainerHigh
-                    : const Color(0xff27313b),
-                radius: HRadius.xl,
-                padding: const EdgeInsets.all(HSpace.md),
-                child: Row(
-                  children: [
-                    ProfileAvatar(
-                      photoUrl: ref
-                          .watch(profileProvider)
-                          .valueOrNull
-                          ?.photoUrl,
-                      fallback:
-                          ref.watch(profileProvider).valueOrNull?.fullName ??
-                          '',
-                      radius: 27,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ref.watch(profileProvider).valueOrNull?.fullName ??
-                                'Your account',
-                            style: t.textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const Gap(3),
-                          Text(
-                            'Personal workspace · study preferences',
-                            style: t.textTheme.bodySmall?.copyWith(
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Edit profile',
-                      onPressed: () => context.push('/profile/edit'),
-                      icon: const Icon(Icons.edit_outlined),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(HSpace.sm),
-              TextField(
-                onChanged: (value) => setState(() => _query = value),
-                decoration: InputDecoration(
-                  hintText: 'Search settings',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Clear search',
-                          onPressed: () => setState(() => _query = ''),
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                  isDense: true,
-                ),
-              ),
-              const Gap(HSpace.sm),
-              Wrap(
-                spacing: 6,
-                children: [
-                  for (final category in const [
-                    ('Personal', Icons.person_outline_rounded),
-                    ('Academic', Icons.school_outlined),
-                    ('Security', Icons.shield_outlined),
-                  ])
-                    Chip(
-                      avatar: Icon(category.$2, size: 16),
-                      label: Text(category.$1),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                ],
-              ),
-              const Gap(HSpace.sm),
-              if (_matches('personal academic profile updates'))
-                Text('Personal & academic', style: t.textTheme.titleSmall),
-              const Gap(4),
-              if (_matches('app updates release'))
-                ResourceTile(
-                  icon: Icons.system_update_rounded,
-                  color: HColors.primary,
-                  title: 'App updates',
-                  subtitle: 'Check the latest PHARM D WITH HYZEN release',
-                  onTap: () => checkForUpdate(
-                    context,
-                    ref.read(siteSettingsProvider).raw,
-                  ),
-                ),
-              if (_matches('professional year profile academic'))
-                ResourceTile(
-                  icon: Icons.school_rounded,
-                  color: HColors.primary,
-                  title: 'Professional year & profile',
-                  subtitle: ReferenceData.yearLabel(
-                    ref.watch(professionalYearProvider),
-                  ),
-                  onTap: () => context.push('/profile/edit'),
-                ),
-              const Gap(HSpace.md),
-              if (_matches('appearance theme graphite light dark'))
-                PanelBlock(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text('Appearance', style: t.textTheme.titleMedium),
-                      const Gap(HSpace.md),
-                      Row(
-                        children: [
-                          IconBadge(
-                            icon: Icons.contrast_rounded,
-                            color: HColors.primary,
-                            size: 32,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'General graphite palette',
-                              style: t.textTheme.bodyMedium,
-                            ),
-                          ),
-                          const Icon(Icons.check_circle_rounded, size: 20),
-                        ],
-                      ),
-                      const Gap(16),
-                      SegmentedButton<ThemeMode>(
-                        segments: const [
-                          ButtonSegment(
-                            value: ThemeMode.light,
-                            icon: Icon(Icons.light_mode_rounded),
-                            label: Text('Light'),
-                          ),
-                          ButtonSegment(
-                            value: ThemeMode.dark,
-                            icon: Icon(Icons.dark_mode_rounded),
-                            label: Text('Dark'),
-                          ),
-                          ButtonSegment(
-                            value: ThemeMode.system,
-                            icon: Icon(Icons.phone_android_rounded),
-                            label: Text('Auto'),
-                          ),
-                        ],
-                        selected: {mode},
-                        onSelectionChanged: (s) =>
-                            ref.read(themeModeProvider.notifier).set(s.first),
-                      ),
-                    ],
-                  ),
-                ),
-              const Gap(HSpace.md),
-              if (_matches('notifications announcements'))
-                PanelBlock(
-                  padding: const EdgeInsets.symmetric(vertical: HSpace.sm),
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        value: notif,
-                        onChanged: (v) => ref
-                            .read(
-                              boolPrefProvider('pref_announcements').notifier,
-                            )
-                            .set(v),
-                        title: const Text('Show announcements'),
-                        subtitle: const Text(
-                          'Pop-up notices published by PHARM D WITH HYZEN',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              const Gap(HSpace.md),
-              if (_matches('storage downloads cache history'))
-                PanelBlock(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text('Storage', style: t.textTheme.titleMedium),
-                      const Gap(HSpace.sm),
-                      Text(
-                        'Offline files: ${formatBytes(used)}',
-                        style: t.textTheme.bodyMedium,
-                      ),
-                      if (kIsWeb)
-                        Text(
-                          'Save Offline is available in the Android app.',
-                          style: t.textTheme.bodySmall,
-                        ),
-                      const Gap(HSpace.sm),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          OutlinedButton.icon(
-                            icon: const Icon(Icons.cleaning_services_rounded),
-                            label: const Text('Clear content cache'),
-                            onPressed: () async {
-                              await JsonBox(Boxes.contentCache).clear();
-                              for (final key in publicContentKeys) {
-                                forcedRefresh.add(key);
-                                ref.invalidate(contentProvider(key));
-                              }
-                              if (context.mounted) {
-                                showHSnack(
-                                  context,
-                                  'Cache cleared. Content will reload.',
-                                );
-                              }
-                            },
-                          ),
-                          OutlinedButton.icon(
-                            icon: const Icon(Icons.history_rounded),
-                            label: const Text('Clear history'),
-                            onPressed: () async {
-                              await ref.read(recentProvider.notifier).clear();
-                              if (context.mounted) {
-                                showHSnack(context, 'History cleared');
-                              }
-                            },
-                          ),
-                          OutlinedButton.icon(
-                            icon: const Icon(Icons.folder_open_rounded),
-                            label: const Text('Manage downloads'),
-                            onPressed: () => context.go('/downloads'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              const Gap(HSpace.md),
-              ResourceTile(
-                icon: Icons.description_rounded,
-                color: HColors.ink2,
-                title: 'Terms of Use',
-                onTap: () => context.push('/legal/terms'),
-              ),
-              ResourceTile(
-                icon: Icons.privacy_tip_rounded,
-                color: HColors.ink2,
-                title: 'Privacy Policy',
-                onTap: () => context.push('/legal/privacy'),
-              ),
-              ResourceTile(
-                icon: Icons.info_rounded,
-                color: HColors.primary,
-                title: 'About ${Brand.shortName}',
-                subtitle:
-                    '${Brand.appName} · v${ref.watch(appVersionProvider).valueOrNull ?? '1.3.3'}',
-                onTap: () => context.push('/about'),
-              ),
-              const Gap(HSpace.sm),
-              HButton(
-                label: 'Log out',
-                icon: Icons.logout_rounded,
-                outlined: true,
-                onPressed: () => logout(context, ref),
-              ),
-            ],
+    final used = ref.watch(downloadsProvider).values
+      .where((r) => r.isReady).fold(0, (s, r) => s + r.sizeBytes);
+    final email = user?.email;
+    return AccountPage(
+      title: 'Settings', onBack: () => _accountBack(context),
+      children: [
+        AccountProfileCard(
+          name: _accountName(p, user?.displayName, ref.watch(isAdminProvider)),
+          subtitle: 'Account info', photoUrl: p?.photoUrl ?? user?.photoURL,
+          onTap: () => context.push('/profile/info'),
+        ),
+        const SizedBox(height: 20),
+        TextField(
+          controller: _search, onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: 'Search settings', prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: _search.text.isEmpty ? null : IconButton(
+              tooltip: 'Clear search', icon: const Icon(Icons.close_rounded),
+              onPressed: () => setState(_search.clear),
+            ),
           ),
         ),
+        if (_matches('personal academic professional year profile app updates release')) ...[
+          const AccountSectionHeader('Personal & academic'),
+          SettingsCard(children: [
+            if (_matches('professional year profile academic')) SettingsRow(
+              title: 'Professional year & profile',
+              value: ReferenceData.yearLabel(ref.watch(professionalYearProvider)),
+              onTap: () => context.push('/profile/edit'),
+            ),
+            if (_matches('app updates release')) SettingsRow(title: 'App updates',
+              onTap: () => checkForUpdate(context, ref.read(siteSettingsProvider).raw)),
+          ]),
+        ],
+        if (_matches('appearance theme light dark auto')) ...[
+          const AccountSectionHeader('Appearance'),
+          SettingsCard(children: [
+            SettingsRow(title: 'App theme', value: switch (mode) {
+              ThemeMode.light => 'Light', ThemeMode.dark => 'Dark',
+              ThemeMode.system => 'Auto',
+            }, onTap: () => _chooseTheme(context, ref, mode)),
+          ]),
+        ],
+        if (_matches('notifications announcements')) ...[
+          const AccountSectionHeader('Notifications'),
+          SettingsCard(children: [
+            SettingsRow(title: 'Show announcements', trailing: AccountToggle(
+              label: 'Show announcements', value: notif,
+              onChanged: (v) => ref.read(boolPrefProvider('pref_announcements').notifier).set(v),
+            )),
+            SettingsRow(title: 'Notification inbox', onTap: () => context.push('/notifications')),
+          ]),
+        ],
+        if (_matches('security password privacy terms')) ...[
+          const AccountSectionHeader('Security & privacy'),
+          SettingsCard(children: [
+            if (email != null && email.isNotEmpty && _matches('security password'))
+              SettingsRow(title: 'Reset password',
+                value: _resetBusy ? 'Sending…' : null,
+                onTap: _resetBusy ? null : () => _resetPassword(email)),
+            if (_matches('privacy')) SettingsRow(title: 'Privacy Policy',
+              onTap: () => context.push('/legal/privacy')),
+            if (_matches('terms')) SettingsRow(title: 'Terms of Use',
+              onTap: () => context.push('/legal/terms')),
+          ]),
+        ],
+        if (_matches('storage downloads cache history')) ...[
+          const AccountSectionHeader('Storage'),
+          SettingsCard(children: [
+            SettingsRow(title: 'Offline files', value: formatBytes(used),
+              subtitle: kIsWeb ? 'Save Offline is available in the Android app.' : null),
+            SettingsRow(title: 'Manage downloads', onTap: () => context.go('/downloads')),
+            SettingsRow(title: 'Clear content cache', onTap: () async {
+              await JsonBox(Boxes.contentCache).clear();
+              for (final key in publicContentKeys) {
+                forcedRefresh.add(key);
+                ref.invalidate(contentProvider(key));
+              }
+              if (context.mounted) showHSnack(context, 'Cache cleared. Content will reload.');
+            }),
+            SettingsRow(title: 'Clear history', onTap: () async {
+              await ref.read(recentProvider.notifier).clear();
+              if (context.mounted) showHSnack(context, 'History cleared');
+            }),
+          ]),
+        ],
+        if (_matches('about version')) ...[
+          const SizedBox(height: 22),
+          SettingsCard(children: [SettingsRow(title: 'About ${Brand.shortName}',
+            value: ref.watch(appVersionProvider).valueOrNull,
+            onTap: () => context.push('/about'))]),
+        ],
+        const SizedBox(height: 22),
+        DestructiveActionButton(label: 'Log out', onPressed: () => logout(context, ref)),
       ],
     );
   }
+}
+
+Future<void> _chooseTheme(BuildContext context, WidgetRef ref, ThemeMode mode) async {
+  final next = await showModalBottomSheet<ThemeMode>(
+    context: context, backgroundColor: AccountStyle.card, showDragHandle: true,
+    builder: (context) => SafeArea(child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const AccountSectionHeader('App theme'),
+        for (final item in const [(ThemeMode.light, 'Light'), (ThemeMode.dark, 'Dark'),
+          (ThemeMode.system, 'Auto')])
+          SettingsRow(title: item.$2,
+            trailing: mode == item.$1 ? const Icon(Icons.check_rounded, color: AccountStyle.link) : null,
+            onTap: () => Navigator.pop(context, item.$1)),
+      ]),
+    )),
+  );
+  if (next != null && context.mounted) ref.read(themeModeProvider.notifier).set(next);
 }

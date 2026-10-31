@@ -10,7 +10,7 @@ import '../../core/widgets/main_dock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/widgets/profile_avatar.dart';
-import '../auth/domain/reference_data.dart';
+import '../profile/presentation/profile_screens.dart';
 
 /// Authenticated shell: Material navigation with Android back handling.
 class AppShell extends StatelessWidget {
@@ -21,6 +21,7 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final idx = navigationShell.currentIndex;
     final path = GoRouterState.of(context).uri.path;
+    final account = path.startsWith('/profile') || path == '/settings';
     final reader = path.startsWith('/pdf-studio/viewer/');
     return PopScope(
       canPop: false,
@@ -71,7 +72,7 @@ class AppShell extends StatelessWidget {
       child: Scaffold(
         extendBody: true,
         body: UpdateGate(child: navigationShell),
-        bottomNavigationBar: reader ? null : MainDock(path: path),
+        bottomNavigationBar: reader || account ? null : MainDock(path: path),
       ),
     );
   }
@@ -317,95 +318,22 @@ Future<void> showAccountMenu(BuildContext context) {
   final router = GoRouter.of(context);
   return showModalBottomSheet<void>(
     context: context,
-    showDragHandle: true,
-    builder: (c) => Consumer(
-      builder: (c, ref, _) {
-        final t = Theme.of(c);
-        final p = ref.watch(profileProvider).valueOrNull;
-        void go(String path) {
-          Navigator.pop(c);
-          if (path == '/profile' ||
-              path == '/settings' ||
-              path == '/downloads') {
-            router.go(path);
-          } else {
-            router.push(path);
-          }
-        }
-
-        Widget row(IconData icon, String label, String path) => ListTile(
-          leading: Icon(icon, color: t.colorScheme.primary),
-          title: Text(label),
-          trailing: const Icon(Icons.chevron_right_rounded),
-          onTap: () => go(path),
-        );
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: hSlateGradient,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      ProfileAvatar(
-                        photoUrl: p?.photoUrl,
-                        radius: 26,
-                        fallback: p?.firstName ?? 'H',
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p?.fullName ?? 'Your account',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: t.textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              p == null
-                                  ? 'PHARM D WITH HYZEN'
-                                  : ReferenceData.yearLabel(p.professionalYear),
-                              style: t.textTheme.bodySmall?.copyWith(
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () => go('/profile'),
-                        child: const Text('View'),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                row(Icons.settings_outlined, 'Settings', '/settings'),
-                row(Icons.download_done_rounded, 'Downloads', '/downloads'),
-                row(
-                  Icons.notifications_none_rounded,
-                  'Notifications',
-                  '/notifications',
-                ),
-                row(Icons.receipt_long_outlined, 'My orders', '/orders'),
-              ],
-            ),
-          ),
-        );
-      },
+    backgroundColor: Colors.black,
+    isScrollControlled: true,
+    useSafeArea: true,
+    clipBehavior: Clip.antiAlias,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+    ),
+    builder: (sheetContext) => FractionallySizedBox(
+      heightFactor: .96,
+      child: ProfileScreen(
+        onClose: () => Navigator.pop(sheetContext),
+        onNavigate: (path) {
+          Navigator.pop(sheetContext);
+          router.push(path);
+        },
+      ),
     ),
   );
 }

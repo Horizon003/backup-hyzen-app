@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hyzen_pharmd/app/app.dart';
+import 'package:hyzen_pharmd/features/profile/presentation/profile_screens.dart';
+import 'package:hyzen_pharmd/features/profile/presentation/widgets/account_widgets.dart';
 import 'package:hyzen_pharmd/app/providers.dart';
 import 'package:hyzen_pharmd/app/router.dart';
 import 'package:hyzen_pharmd/core/storage/local_store.dart';
@@ -140,6 +142,43 @@ void main() {
     container.read(routerProvider).go(path);
     await tester.pumpAndSettle();
   }
+
+  testWidgets('announcement toggle persists between settings and account info', (tester) async {
+    await open(tester, '/settings');
+    await tester.ensureVisible(find.byType(AccountToggle));
+    await tester.tap(find.byType(AccountToggle));
+    await tester.pumpAndSettle();
+    expect(prefs.getBool('pref_announcements'), isFalse);
+    container.read(routerProvider).go('/profile/info');
+    await tester.pumpAndSettle();
+    expect(tester.widget<AccountToggle>(find.byType(AccountToggle)).value, isFalse);
+    final email = tester.widget<SettingsRow>(find.byWidgetPredicate(
+      (w) => w is SettingsRow && w.title == 'Email'));
+    expect(email.value, 'student@example.org');
+    expect(email.onTap, isNull);
+    await tester.ensureVisible(find.text('Change Photo'));
+    await tester.tap(find.text('Change Photo'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditProfileScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('account surfaces fit narrow screens at large text sizes', (tester) async {
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    for (final path in ['/profile', '/profile/info', '/settings', '/profile/edit']) {
+      await open(tester, path);
+      for (var scroll = 0; scroll < 4; scroll++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: '$path scroll $scroll');
+      }
+    }
+  });
 
   testWidgets('all app sections load real screens', (tester) async {
     for (final path in [
@@ -608,3 +647,4 @@ void main() {
     });
   }
 }
+

@@ -10,12 +10,17 @@ import 'package:go_router/go_router.dart';
 
 const updateChannel = MethodChannel('com.hyzen.pharmd/updates');
 final appVersionProvider = FutureProvider<String>((ref) async {
-  if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return '1.4.3';
+  // CI derives this define from pubspec.yaml for browser previews. Android
+  // continues to read the installed package metadata over the native channel.
+  const buildVersion = String.fromEnvironment('HYZEN_APP_VERSION');
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+    return buildVersion.isEmpty ? 'Version unavailable' : buildVersion;
+  }
   try {
     final info = await updateChannel.invokeMapMethod<String, dynamic>('info');
-    return '${info?['name'] ?? '1.4.3'}';
+    return '${info?['name'] ?? 'Version unavailable'}';
   } catch (_) {
-    return '1.4.3';
+    return 'Version unavailable';
   }
 });
 
@@ -201,3 +206,4 @@ class _UpdateDialogState extends State<_UpdateDialog> {
     ),
   );
 }
+
