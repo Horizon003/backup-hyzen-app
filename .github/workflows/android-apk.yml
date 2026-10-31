@@ -43,7 +43,7 @@ jobs:
         working-directory: hyzen_flutter
       - run: flutter test --no-pub --reporter expanded
         working-directory: hyzen_flutter
-      - run: flutter build apk --release --no-pub --no-shrink
+      - run: flutter build apk --release --no-pub --no-shrink --target-platform android-arm64
         working-directory: hyzen_flutter
       - name: Identify artifact
         run: sha256sum hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk > hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
@@ -72,7 +72,7 @@ jobs:
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
-          arch: x86_64
+          arch: arm64-v8a
           profile: pixel_2
           disable-animations: true
           script: |
