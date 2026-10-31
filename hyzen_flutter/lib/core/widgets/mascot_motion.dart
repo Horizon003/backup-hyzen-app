@@ -61,10 +61,10 @@ class _HyzenMascotState extends State<HyzenMascot>
     if (!_idle.isAnimating) {
       _idle
         ..duration = _idleDuration
-        ..repeat(reverse: true);
+        ..forward(from: 0);
     }
     if (!_blink.isAnimating) {
-      _blink.repeat();
+      _blink.forward(from: 0);
     }
   }
 
@@ -79,6 +79,8 @@ class _HyzenMascotState extends State<HyzenMascot>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.loop != widget.loop || oldWidget.state != widget.state) {
       _idle.duration = _idleDuration;
+      _idle.value = 0;
+      _blink.value = 0;
       _syncAnimations();
     }
   }
