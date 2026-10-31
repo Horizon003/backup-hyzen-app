@@ -29,8 +29,8 @@ screenshots. It never invokes an Android build or publishes a release. Every
 matching commit pushed to this branch builds and deploys the browser preview
 after validation succeeds. Manual runs use the same validation and deployment.
 The existing github-pages environment must explicitly allow this exact branch;
-that permission change is pending user approval. The workflow does not change
-or bypass environment protection rules.
+the user explicitly approved this exact branch rule and it has been saved in
+github-pages settings alongside main. The workflow keeps the environment gate.
 
 Download and unzip the artifact, then from its `build/serve` folder run:
 
@@ -60,7 +60,8 @@ updates the same preview from the requested review branch on pushes and manual
 runs, subject to the repository’s Pages environment policy. The first automatic
 deployment attempt was rejected because only main was allowed. Validation and
 all browser builds/screenshots succeeded. Adding this review branch to the Pages
-allowlist requires the user's explicit approval; no environment rule has been saved.
+allowlist was explicitly approved by the user and saved. Existing main access
+and the other environment settings remain in place.
 
 ## Hosted browser preview
 
