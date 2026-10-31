@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'app/providers.dart';
+import 'app/router.dart';
 import 'core/storage/local_store.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/domain/student_profile.dart';
@@ -29,6 +30,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   await Boxes.init();
+  final requestedPath = Uri.base.fragment;
+  final initialPath = const ['/profile', '/profile/info', '/profile/edit', '/settings']
+    .contains(requestedPath) ? requestedPath : '/profile';
   runApp(
     ProviderScope(
       overrides: [
@@ -54,23 +58,34 @@ Future<void> main() async {
           ),
         ),
       ],
-      child: const _ReviewApp(),
+      child: _ReviewApp(initialPath: initialPath),
     ),
   );
 }
 
-class _ReviewApp extends StatelessWidget {
-  const _ReviewApp();
+class _ReviewApp extends ConsumerStatefulWidget {
+  const _ReviewApp({required this.initialPath});
+  final String initialPath;
   @override
-  Widget build(BuildContext context) => const Directionality(
-    textDirection: TextDirection.ltr,
-    child: Banner(
-      message: 'SAMPLE DATA',
-      location: BannerLocation.bottomEnd,
-      color: Color(0xFF38383D),
-      child: HyzenApp(),
-    ),
-  );
+  ConsumerState<_ReviewApp> createState() => _ReviewAppState();
+}
+
+class _ReviewAppState extends ConsumerState<_ReviewApp> {
+  bool _opened = false;
+  @override
+  Widget build(BuildContext context) {
+    if (!_opened && ref.watch(authStateProvider).valueOrNull != null) {
+      _opened = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.read(routerProvider).go(widget.initialPath);
+      });
+    }
+    return const Directionality(
+      textDirection: TextDirection.ltr,
+      child: Banner(message: 'SAMPLE DATA', location: BannerLocation.bottomEnd,
+        color: Color(0xFF38383D), child: HyzenApp()),
+    );
+  }
 }
 
 // Only fixture adapters live here. No review credentials or cloud writes.

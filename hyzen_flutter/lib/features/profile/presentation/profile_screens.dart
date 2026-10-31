@@ -221,38 +221,6 @@ class AccountInfoScreen extends ConsumerWidget {
               ),
           ],
         ),
-        if (p != null) ...[
-          const AccountSectionHeader('Academic details'),
-          SettingsCard(
-            children: [
-              SettingsRow(
-                title: 'Professional year',
-                value: ReferenceData.yearLabel(p.professionalYear),
-                onTap: edit,
-              ),
-              SettingsRow(
-                title: 'Institution',
-                value: p.institutionName,
-                onTap: edit,
-              ),
-              SettingsRow(
-                title: 'Roll number',
-                value: p.rollNumber ?? 'Add',
-                onTap: edit,
-              ),
-              SettingsRow(
-                title: 'Affiliation',
-                value: p.affiliationDisplay ?? 'Non-affiliated',
-                onTap: edit,
-              ),
-              SettingsRow(title: 'City', value: p.city, onTap: edit),
-              SettingsRow(
-                title: 'Gender',
-                value: ReferenceData.genders[p.gender] ?? p.gender,
-              ),
-            ],
-          ),
-        ],
         const SizedBox(height: 22),
         SettingsCard(
           children: [
@@ -291,6 +259,38 @@ class AccountInfoScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 22),
+        if (p != null) ...[
+          const AccountSectionHeader('Academic details'),
+          SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'Professional year',
+                value: ReferenceData.yearLabel(p.professionalYear),
+                onTap: edit,
+              ),
+              SettingsRow(
+                title: 'Institution',
+                value: p.institutionName,
+                onTap: edit,
+              ),
+              SettingsRow(
+                title: 'Roll number',
+                value: p.rollNumber ?? 'Add',
+                onTap: edit,
+              ),
+              SettingsRow(
+                title: 'Affiliation',
+                value: p.affiliationDisplay ?? 'Non-affiliated',
+                onTap: edit,
+              ),
+              SettingsRow(title: 'City', value: p.city, onTap: edit),
+              SettingsRow(
+                title: 'Gender',
+                value: ReferenceData.genders[p.gender] ?? p.gender,
+              ),
+            ],
+          ),
+        ],
         RoundedPrimaryButton(label: 'Edit profile', onPressed: edit),
         // Deletion is intentionally absent: there is no backend deletion flow.
       ],

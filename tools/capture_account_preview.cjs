@@ -14,8 +14,9 @@ const fs = require('node:fs');
     // Ask Flutter to expose semantics so the test verifies the requested screen
     // actually rendered before saving a canvas screenshot.
     const enable = page.getByRole('button', {name: 'Enable accessibility'});
-    if (await enable.count()) await enable.click({force: true});
-    await page.getByText(name === 'account-info' ? 'Account info' : name === 'account' ? 'Account' : 'Settings', {exact: true}).first().waitFor({timeout: 30000});
+    if (await enable.count()) await enable.evaluate(button => button.click());
+    const title = name === 'account-info' ? 'Account info' : name === 'account' ? 'Account' : 'Settings';
+    await page.getByLabel(title, {exact: true}).first().waitFor({timeout: 30000});
     await page.screenshot({path: `hyzen_flutter/qa/account-redesign/${name}.png`});
   }
   await browser.close();
