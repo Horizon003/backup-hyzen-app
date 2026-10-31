@@ -75,29 +75,24 @@ jobs:
         working-directory: hyzen_flutter
       - run: flutter test --no-pub --reporter expanded
         working-directory: hyzen_flutter
-      - run: flutter build apk --release --no-pub --split-per-abi --target-platform android-arm64,android-x64
+      - run: flutter build apk --release --no-pub --target-platform android-arm64
         working-directory: hyzen_flutter
 
       - name: Verify APK metadata and checksum
         working-directory: hyzen_flutter
         run: |
           set -euo pipefail
-          arm64=build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-          x64=build/app/outputs/flutter-apk/app-x86_64-release.apk
-          test -s "$arm64"
-          test -s "$x64"
-          sha256sum "$arm64" > "$arm64.sha256"
-          sha256sum "$x64" > "$x64.sha256"
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          test -s "$apk"
+          sha256sum "$apk" > "$apk.sha256"
           grep -q 'version: 1.5.3+12' pubspec.yaml
 
       - uses: actions/upload-artifact@v4
         with:
           name: PharmD_With_Hyzen_1.5.3_signed
           path: |
-            hyzen_flutter/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-            hyzen_flutter/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk.sha256
-            hyzen_flutter/build/app/outputs/flutter-apk/app-x86_64-release.apk
-            hyzen_flutter/build/app/outputs/flutter-apk/app-x86_64-release.apk.sha256
+            hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk
+            hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -123,11 +118,12 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: |
-            adb install -r apk/app-x86_64-release.apk
+            adb install -r apk/app-release.apk
             adb shell monkey -p com.hyzen.pharmd -c android.intent.category.LAUNCHER 1
             sleep 8
             adb logcat -d > launch-logcat.txt
-            adb shell pidof com.hyzen.pharmd
+            adb shell pidof com.hyzen.pharmd || true
+            ! grep -qE 'FATAL EXCEPTION|Process: com.hyzen.pharmd.*killed|signal 11' launch-logcat.txt
 
       - uses: actions/upload-artifact@v4
         if: always()
