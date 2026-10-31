@@ -134,6 +134,7 @@ class TabPage extends StatelessWidget {
           data: headerTheme ?? Theme.of(context),
           child: _Bar(
             integrated: integratedHeader,
+            onAccount: () => showAccountMenu(context),
             title: title,
             subtitle: subtitle,
             actions: actions,
@@ -171,8 +172,10 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
     this.actions = const [],
     this.showMenu = false,
     this.integrated = false,
+    this.onAccount,
   });
   final bool integrated;
+  final VoidCallback? onAccount;
   final bool showMenu;
   final String title;
   final String? subtitle;
@@ -289,7 +292,7 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
                     message: 'Profile & settings',
                     child: InkWell(
                       customBorder: const CircleBorder(),
-                      onTap: () => showAccountMenu(context),
+                      onTap: onAccount ?? () => showAccountMenu(context),
                       child: Padding(
                         padding: EdgeInsets.all(integrated ? 6 : 0),
                         child: Container(

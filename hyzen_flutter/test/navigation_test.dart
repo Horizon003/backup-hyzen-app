@@ -193,6 +193,15 @@ void main() {
       }
     },
   );
+  testWidgets('Light Home profile action preserves the light Account sheet', (tester) async {
+    container.read(themeModeProvider.notifier).set(ThemeMode.light);
+    await open(tester, '/home');
+    await tester.tap(find.byTooltip('Profile & settings'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileScreen), findsOneWidget);
+    expect(Theme.of(tester.element(find.byType(ProfileScreen))).brightness, Brightness.light);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('Home announcement preference hides the supplied content', (
     tester,
   ) async {
