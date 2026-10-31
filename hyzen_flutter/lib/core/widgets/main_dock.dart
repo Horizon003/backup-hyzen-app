@@ -154,10 +154,13 @@ class _DockItem extends StatelessWidget {
                       const SizedBox(height: 4),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Text(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
                           office && compact ? 'Office' : destination.label,
                           textAlign: TextAlign.center,
-                          maxLines: 2,
+                          maxLines: 1,
+                          softWrap: false,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 10.5,
@@ -167,6 +170,7 @@ class _DockItem extends StatelessWidget {
                                 ? FontWeight.w800
                                 : FontWeight.w600,
                           ),
+                        ),
                         ),
                       ),
                     ],

@@ -56,6 +56,10 @@ const fs = require('node:fs');
         }
         if (bounds.some((x, i) => i > 0 && x <= bounds[i - 1])) throw Error('Incorrect tab order');
       }
+      // Semantics can be ready before CanvasKit submits its next painted frame.
+      // Allow the restrained selection animation and font glyphs to settle.
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await page.waitForTimeout(700);
       const filename = `${theme}-${name}.png`;
       await page.screenshot({path: `${output}/${filename}`});
       evidence.captures.push({filename, theme, path, width, height});
