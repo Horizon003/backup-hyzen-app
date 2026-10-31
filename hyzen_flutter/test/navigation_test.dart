@@ -175,6 +175,9 @@ void main() {
         expect(greeting.data, 'GOOD EVENING');
         expect(greeting.style!.color, isNot(HColors.mint));
         expect(find.text('Welcome back, Ali'), findsOneWidget);
+      final accountAction = tester.getSize(find.byTooltip('Profile & settings'));
+      expect(accountAction.width, greaterThanOrEqualTo(48));
+      expect(accountAction.height, greaterThanOrEqualTo(48));
         expect(find.byType(HyzenRiveMascot), findsOneWidget);
         expect(find.text('More from Hyzen'), findsNothing);
         expect(find.text('About Hyzen'), findsNothing);
@@ -196,7 +199,7 @@ void main() {
     expect(find.text('Test academic announcement'), findsNothing);
     expect(prefs.getBool('pref_announcements'), isFalse);
   });
-  testWidgets('Home Clear confirms history scope and preserves saved files', (tester) async {
+  testWidgets('Home Clear requires confirmation before changing recent history', (tester) async {
     final saved = File('${temp.path}/keep.pdf');
     await tester.runAsync(() async {
       await saved.writeAsString('%PDF-');
@@ -211,10 +214,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Clear recent history?'), findsOneWidget);
     expect(container.read(recentProvider), isNotEmpty);
-    await tester.tap(find.widgetWithText(FilledButton, 'Clear history'));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 40)));
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
     await tester.pumpAndSettle();
-    expect(container.read(recentProvider), isEmpty);
+    expect(container.read(recentProvider), isNotEmpty);
     expect(container.read(downloadsProvider), contains('keep'));
     expect(await tester.runAsync(saved.exists), isTrue);
   });

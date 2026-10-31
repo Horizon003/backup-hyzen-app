@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hyzen_pharmd/core/storage/local_store.dart';
+import 'package:hyzen_pharmd/features/home/data/recent_controller.dart';
 import 'package:hyzen_pharmd/features/academics/domain/models.dart';
 import 'package:hyzen_pharmd/features/downloads/data/downloads_controller.dart';
 import 'package:hyzen_pharmd/features/downloads/data/file_store.dart';
@@ -200,4 +201,24 @@ void main() {
       reason: 'Restored metadata waits for a real file existence check',
     );
   });
+  test('Clearing recent history preserves saved and unopened download metadata', () async {
+    await Hive.openBox<String>(Boxes.recent);
+    final store = TestStore();
+    final container = ProviderContainer(overrides: [fileStoreProvider.overrideWithValue(store)]);
+    addTearDown(container.dispose);
+    final transfer = container.read(downloadsProvider.notifier).save(file);
+    await store.started.future;
+    store.transfer.complete(const DownloadedFile('/private/a.pdf', 50));
+    await transfer;
+    final recent = container.read(recentProvider.notifier);
+    await recent.touch(file);
+    await recent.clear();
+    expect(container.read(recentProvider), isEmpty);
+    expect(JsonBox(Boxes.recent).values(), isEmpty);
+    expect(container.read(downloadsProvider).values.single.isAvailableOffline, isTrue);
+    expect(container.read(downloadsProvider).values.single.unopened, isTrue);
+    expect(JsonBox(Boxes.downloads).values(), hasLength(1));
+    expect(store.deleted, isEmpty);
+  });
+
 }

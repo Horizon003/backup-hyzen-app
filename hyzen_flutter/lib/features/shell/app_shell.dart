@@ -290,7 +290,7 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
                     child: InkWell(
                       customBorder: const CircleBorder(),
                       onTap: () => showAccountMenu(context),
-                      child: Container(
+                      child: Padding(padding: EdgeInsets.all(integrated ? 6 : 0), child: Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -304,7 +304,7 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
                           radius: 16,
                           fallback: profile?.firstName ?? 'H',
                         ),
-                      ),
+                      )),
                     ),
                   ),
                 );

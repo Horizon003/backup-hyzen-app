@@ -46,14 +46,18 @@ class HomeScreen extends ConsumerWidget {
     final recent = ref.watch(recentProvider);
     final name = p?.firstName ?? user?.displayName?.split(' ').first ?? 'there';
     final newAccount = ref.watch(lastCreatedProfileProvider)?.uid == user?.uid;
-    final downloads = ref.watch(downloadsProvider).values.toList();
-    final active = downloads
-        .where((r) => r.status == DownloadStatus.downloading)
-        .length;
-    final saved = downloads.where((r) => r.isAvailableOffline).length;
-    final unopened = downloads
-        .where((r) => r.isAvailableOffline && r.unopened)
-        .length;
+    // Progress updates keep transferring without rebuilding the whole dashboard.
+    final (active, saved, unopened) = ref.watch(downloadsProvider.select((records) {
+      var active = 0, saved = 0, unopened = 0;
+      for (final record in records.values) {
+        if (record.status == DownloadStatus.downloading) { active++; }
+        if (record.isAvailableOffline) {
+          saved++;
+          if (record.unopened) { unopened++; }
+        }
+      }
+      return (active, saved, unopened);
+    }));
     final scale = MediaQuery.textScalerOf(context).scale(1);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
