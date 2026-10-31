@@ -8,7 +8,7 @@ import '../../../core/utils/links.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/surfaces.dart';
 import '../../../core/widgets/ui_kit.dart';
-import '../../../core/widgets/hyzen_art.dart';
+import '../../../core/widgets/mascot_motion.dart';
 import '../../academics/domain/models.dart';
 import '../../academics/presentation/library_screens.dart';
 import '../../academics/presentation/discovery_widgets.dart';
@@ -241,9 +241,13 @@ class _GreetingHero extends StatelessWidget {
           ),
           if (!hideArt)
             const Positioned(
-              right: -6,
-              bottom: 0,
-              child: HyzenArt('home', size: 150),
+              right: -24,
+              bottom: -28,
+              child: HyzenMascot(
+                state: HyzenMascotState.peeking,
+                size: 150,
+                semanticLabel: 'Hyzen panda welcoming you home',
+              ),
             ),
           Padding(
             padding: EdgeInsets.fromLTRB(20, 20, hideArt ? 20 : 140, 20),

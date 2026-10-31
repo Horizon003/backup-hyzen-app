@@ -17,7 +17,7 @@ import 'package:hyzen_pharmd/features/content/data/content_source.dart';
 import 'package:hyzen_pharmd/features/content/data/content_providers.dart';
 import 'package:hyzen_pharmd/features/academics/domain/models.dart';
 import 'package:hyzen_pharmd/features/viewer/external_files.dart';
-import 'package:hyzen_pharmd/core/widgets/hyzen_art.dart';
+import 'package:hyzen_pharmd/core/widgets/mascot_motion.dart';
 
 class StudentUser extends Fake implements User {
   @override
@@ -256,9 +256,12 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
-  testWidgets('Android back from Create PDF returns to the workspace', (tester) async {
+  testWidgets('Android back from Create PDF returns to the workspace', (
+    tester,
+  ) async {
     const camera = MethodChannel('com.hyzen.pharmd/camera_pages');
-    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(camera, (_) async => <String>[]);
     addTearDown(() => messenger.setMockMethodCallHandler(camera, null));
     await open(tester, '/pdf-studio');
@@ -266,7 +269,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(container.read(routerProvider).routeInformationProvider.value.uri.path, '/pdf-studio');
+    expect(
+      container.read(routerProvider).routeInformationProvider.value.uri.path,
+      '/pdf-studio',
+    );
     expect(tester.takeException(), isNull);
   });
   testWidgets(
@@ -326,7 +332,7 @@ void main() {
     await open(tester, '/home');
     final greeting = find.text('Welcome back, Ali');
     final image = find.byWidgetPredicate(
-      (w) => w is HyzenArt && w.name == 'home',
+      (w) => w is HyzenMascot && w.state == HyzenMascotState.peeking,
     );
     expect(greeting, findsOneWidget);
     expect(image, findsOneWidget);
@@ -528,7 +534,10 @@ void main() {
         for (final mode in [ThemeMode.light, ThemeMode.dark]) {
           admin.read(themeModeProvider.notifier).set(mode);
           await tester.pumpAndSettle();
-          await expectLater(find.byType(HyzenApp), matchesGoldenFile('../qa/${mode.name}_admin.png'));
+          await expectLater(
+            find.byType(HyzenApp),
+            matchesGoldenFile('../qa/${mode.name}_admin.png'),
+          );
         }
         admin.read(themeModeProvider.notifier).set(ThemeMode.system);
         await tester.pumpAndSettle();

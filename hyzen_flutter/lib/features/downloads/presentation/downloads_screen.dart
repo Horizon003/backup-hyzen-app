@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/ui_kit.dart';
+import '../../../core/widgets/mascot_motion.dart';
 import '../../academics/domain/models.dart';
 import '../../academics/presentation/library_screens.dart';
 import '../../shell/app_shell.dart';
@@ -110,24 +111,34 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                 ),
               ),
               const Gap(HSpace.md),
-              if (list.isEmpty)
+              if (list.isEmpty && all.isEmpty) ...[
+                const HyzenMascot(
+                  state: HyzenMascotState.downloading,
+                  size: 150,
+                  semanticLabel: 'Hyzen panda ready to save study files',
+                ),
                 EmptyState(
                   icon: Icons.cloud_download_outlined,
-                  title: all.isEmpty ? 'No downloads yet' : 'No matches',
-                  message: all.isEmpty
-                      ? 'Open any file and tap \u201cSave offline\u201d.'
-                      : null,
-                  action: all.isEmpty
-                      ? HButton(
-                          label: 'Browse library',
-                          onPressed: () => context.go('/study'),
-                        )
-                      : null,
+                  title: 'No downloads yet',
+                  message: 'Open any file and tap “Save offline”.',
+                  action: HButton(
+                    label: 'Browse library',
+                    onPressed: () => context.go('/study'),
+                  ),
+                ),
+              ],
+              if (list.isEmpty && all.isNotEmpty)
+                EmptyState(
+                  icon: Icons.cloud_download_outlined,
+                  title: 'No matches',
                 ),
               for (final r in list) _DownloadRow(r: r),
               if (opened.isNotEmpty) ...[
                 const Gap(HSpace.lg),
-                Text('Opened with PHARM D WITH HYZEN', style: t.textTheme.titleMedium),
+                Text(
+                  'Opened with PHARM D WITH HYZEN',
+                  style: t.textTheme.titleMedium,
+                ),
                 Text(
                   'Files from WhatsApp or your phone stay here for offline reading.',
                   style: t.textTheme.bodySmall,
@@ -231,39 +242,91 @@ class _DownloadRow extends ConsumerWidget {
   final DownloadRecord r;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final file = FileRef(kind:r.kind,title:r.title,url:r.sourceUrl,trail:r.trail);
+    final file = FileRef(
+      kind: r.kind,
+      title: r.title,
+      url: r.sourceUrl,
+      trail: r.trail,
+    );
     final downloading = r.status == DownloadStatus.downloading;
     Future<void> resume() async {
-      try { await ref.read(downloadsProvider.notifier).save(file); }
-      catch(e) { if(context.mounted) showHSnack(context,'$e',error:true); }
+      try {
+        await ref.read(downloadsProvider.notifier).save(file);
+      } catch (e) {
+        if (context.mounted) showHSnack(context, '$e', error: true);
+      }
     }
+
     return ResourceTile(
-      icon:kindIcon(r.kind), color:kindColor(r.kind), title:r.title,
-      subtitle:r.isReady ? '${r.kind.shortTitle} · ${formatBytes(r.sizeBytes)}' : r.transferDetail,
-      badge: Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
-        if(downloading) ...[
-          LinearProgressIndicator(value:r.progress>0 ? r.progress : null, minHeight:5, borderRadius:BorderRadius.circular(8)),
-          const SizedBox(height:6),
+      icon: kindIcon(r.kind),
+      color: kindColor(r.kind),
+      title: r.title,
+      subtitle: r.isReady
+          ? '${r.kind.shortTitle} · ${formatBytes(r.sizeBytes)}'
+          : r.transferDetail,
+      badge: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (downloading) ...[
+            LinearProgressIndicator(
+              value: r.progress > 0 ? r.progress : null,
+              minHeight: 5,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            const SizedBox(height: 6),
+          ],
+          Text(
+            r.isReady
+                ? 'Downloaded · Offline'
+                : downloading
+                ? 'Downloading ${r.progress > 0 ? '${(r.progress * 100).round()}%' : ''}'
+                : r.status == DownloadStatus.paused
+                ? 'Paused · tap to resume'
+                : 'Interrupted · tap to retry',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: r.isReady
+                  ? HColors.success
+                  : Theme.of(context).colorScheme.primary,
+            ),
+          ),
         ],
-        Text(r.isReady ? 'Downloaded · Offline' : downloading
-          ? 'Downloading ${r.progress>0 ? '${(r.progress*100).round()}%' : ''}'
-          : r.status == DownloadStatus.paused ? 'Paused · tap to resume' : 'Interrupted · tap to retry',
-          style:Theme.of(context).textTheme.labelSmall?.copyWith(color: r.isReady ? HColors.success : Theme.of(context).colorScheme.primary)),
-      ]),
-      onTap: r.isReady ? ()=>context.push('/viewer',extra:file) : downloading ? null : resume,
+      ),
+      onTap: r.isReady
+          ? () => context.push('/viewer', extra: file)
+          : downloading
+          ? null
+          : resume,
       trailing: PopupMenuButton<String>(
-        tooltip:'Download options', icon:const Icon(Icons.more_vert_rounded),
-        itemBuilder:(_)=>[
-          if(downloading) const PopupMenuItem(value:'pause',child:Text('Pause')),
-          if(!downloading && !r.isReady) const PopupMenuItem(value:'resume',child:Text('Resume / retry')),
-          const PopupMenuItem(value:'delete',child:Text('Delete local copy')),
+        tooltip: 'Download options',
+        icon: const Icon(Icons.more_vert_rounded),
+        itemBuilder: (_) => [
+          if (downloading)
+            const PopupMenuItem(value: 'pause', child: Text('Pause')),
+          if (!downloading && !r.isReady)
+            const PopupMenuItem(value: 'resume', child: Text('Resume / retry')),
+          const PopupMenuItem(
+            value: 'delete',
+            child: Text('Delete local copy'),
+          ),
         ],
-        onSelected:(value) async {
-          if(value=='pause') { ref.read(downloadsProvider.notifier).cancel(r.key); return; }
-          if(value=='resume') { await resume(); return; }
-          if(await confirmDialog(context,title:'Delete local copy?',message:'This only removes the copy on this device.',confirm:'Delete',destructive:true)) {
+        onSelected: (value) async {
+          if (value == 'pause') {
+            ref.read(downloadsProvider.notifier).cancel(r.key);
+            return;
+          }
+          if (value == 'resume') {
+            await resume();
+            return;
+          }
+          if (await confirmDialog(
+            context,
+            title: 'Delete local copy?',
+            message: 'This only removes the copy on this device.',
+            confirm: 'Delete',
+            destructive: true,
+          )) {
             await ref.read(downloadsProvider.notifier).remove(r.key);
-            if(context.mounted) showHSnack(context,'Local copy deleted');
+            if (context.mounted) showHSnack(context, 'Local copy deleted');
           }
         },
       ),

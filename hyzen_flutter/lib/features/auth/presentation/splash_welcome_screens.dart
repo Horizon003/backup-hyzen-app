@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/config/brand.dart';
-import '../../../core/widgets/hyzen_art.dart';
+import '../../../core/widgets/mascot_motion.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -24,7 +24,11 @@ class SplashScreen extends StatelessWidget {
             ),
             const Text('WITH HYZEN · Your pharmacy journey'),
             const SizedBox(height: 20),
-            const HyzenArt('welcome', size: 280),
+            const HyzenMascot(
+              state: HyzenMascotState.welcome,
+              size: 180,
+              semanticLabel: 'Hyzen panda preparing your study space',
+            ),
             const SizedBox(height: 24),
             const SizedBox(
               width: 120,
@@ -85,19 +89,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 children: [
                   Image.asset(Brand.logoAsset, width: 48, height: 48),
                   const SizedBox(width: 12),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text(
-                    'PHARM D',
-                    style: t.textTheme.headlineMedium?.copyWith(
-                      color: t.colorScheme.primary,
-                      fontWeight: FontWeight.w800,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PHARM D',
+                          style: t.textTheme.headlineMedium?.copyWith(
+                            color: t.colorScheme.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const Text('WITH HYZEN · Your pharmacy journey'),
+                      ],
                     ),
                   ),
-                  const Text('WITH HYZEN · Your pharmacy journey'),
-                    ],
-                  )),
                 ],
               ),
             ),
@@ -124,10 +130,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                         ? const Color(0xFF302846)
                                         : const Color(0xFFE4F4EB),
                                   ),
-                                  child: Image.asset(
-                                    'assets/illustrations/welcome.png',
-                                    fit: BoxFit.contain,
-                                    alignment: Alignment.center,
+                                  child: const HyzenMascot(
+                                    state: HyzenMascotState.welcome,
+                                    size: 210,
+                                    semanticLabel: 'Hyzen panda welcoming you',
                                   ),
                                 ),
                                 const SizedBox(height: 14),
@@ -163,9 +169,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             )
                           : Column(
                               children: [
-                                HyzenArt(
-                                  item.$1,
-                                  size: (c.maxHeight * .59).clamp(180, 340),
+                                HyzenMascot(
+                                  state: i == 1
+                                      ? HyzenMascotState.studying
+                                      : HyzenMascotState.downloading,
+                                  size: (c.maxHeight * .42).clamp(180, 280),
+                                  semanticLabel: i == 1
+                                      ? 'Hyzen panda studying with a pharmacy notebook'
+                                      : 'Hyzen panda helping you save files offline',
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
