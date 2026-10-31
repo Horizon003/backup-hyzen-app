@@ -119,7 +119,7 @@ class TabPage extends StatelessWidget {
           child: SizedBox(height: MediaQuery.paddingOf(context).top + 64 + 8),
         ),
         ...slivers,
-        SliverToBoxAdapter(
+        if (homeBackground == null) SliverToBoxAdapter(
           child: SizedBox(height: MainDock.contentInset(context)),
         ),
       ],

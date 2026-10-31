@@ -7,6 +7,7 @@ import '../../../app/providers.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/utils/links.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/main_dock.dart';
 import '../../../core/widgets/surfaces.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../downloads/domain/download_record.dart';
@@ -89,11 +90,11 @@ class HomeScreen extends ConsumerWidget {
                 HomeAtmosphere(
                   content: true,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
+                    padding: EdgeInsets.fromLTRB(
                       HSpace.screen,
                       18,
                       HSpace.screen,
-                      8,
+                      8 + MainDock.contentInset(context),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

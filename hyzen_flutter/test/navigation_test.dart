@@ -201,7 +201,7 @@ void main() {
             matching: find.text(entry.key),
           )
           .first;
-      await tester.ensureVisible(target);
+      await Scrollable.ensureVisible(tester.element(target), alignment: .5);
       await tester.pumpAndSettle();
       await tester.tap(target);
       await tester.pumpAndSettle();
@@ -325,20 +325,21 @@ void main() {
         () => file.writeAsString('Readable saved academic notes'),
       );
       var opened = 0;
-      await tester.pumpWidget(
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
         MaterialApp(
           home: OfflinePdf(path: file.path, onOpened: () => opened++),
         ),
-      );
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 40)),
-      );
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+      });
       await tester.pumpAndSettle();
       expect(find.text('Readable saved academic notes'), findsOneWidget);
       expect(opened, 1);
       await tester.pumpAndSettle();
       expect(opened, 1);
-      await tester.pumpWidget(
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
         MaterialApp(
           home: OfflinePdf(
             key: const ValueKey('missing'),
@@ -346,10 +347,9 @@ void main() {
             onOpened: () => opened++,
           ),
         ),
-      );
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 40)),
-      );
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+      });
       await tester.pumpAndSettle();
       expect(find.text('Could not read this document.'), findsOneWidget);
       expect(opened, 1);
