@@ -456,33 +456,51 @@ void main() {
     },
   );
 
-  testWidgets('NAV-10 signed-out Login and password recovery routes remain usable', (tester) async {
-    final guest = ProviderContainer(overrides: [
-      sharedPrefsProvider.overrideWithValue(prefs),
-      authStateProvider.overrideWith((ref) => Stream.value(null)),
-      profileProvider.overrideWith((ref) => Stream.value(null)),
-      contentProvider.overrideWith((ref, key) => Stream.value(
-        const ContentSnapshot(value: {}, fromCache: false))),
-    ]);
-    addTearDown(guest.dispose);
-    await tester.pumpWidget(UncontrolledProviderScope(container: guest, child: const HyzenApp()));
-    await tester.pumpAndSettle();
-    guest.read(routerProvider).go('/login');
-    await tester.pumpAndSettle();
-    expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.byType(MainDock), findsNothing);
-    await tester.enterText(find.byType(TextFormField).first, 'student@example.org');
-    await tester.tap(find.byTooltip('Show password'));
-    await tester.pumpAndSettle();
-    expect(find.byTooltip('Hide password'), findsOneWidget);
-    await tester.ensureVisible(find.text('Forgot password?'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Forgot password?'));
-    await tester.pumpAndSettle();
-    expect(guest.read(routerProvider).routeInformationProvider.value.uri.path, '/forgot-password');
-    expect(tester.widget<TextFormField>(find.byType(TextFormField).first).initialValue, 'student@example.org');
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'NAV-10 signed-out Login and password recovery routes remain usable',
+    (tester) async {
+      final guest = ProviderContainer(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(prefs),
+          authStateProvider.overrideWith((ref) => Stream.value(null)),
+          profileProvider.overrideWith((ref) => Stream.value(null)),
+          contentProvider.overrideWith(
+            (ref, key) => Stream.value(
+              const ContentSnapshot(value: {}, fromCache: false),
+            ),
+          ),
+        ],
+      );
+      addTearDown(guest.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: guest, child: const HyzenApp()),
+      );
+      await tester.pumpAndSettle();
+      guest.read(routerProvider).go('/login');
+      await tester.pumpAndSettle();
+      expect(find.text('Welcome back'), findsOneWidget);
+      expect(find.byType(MainDock), findsNothing);
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'student@example.org',
+      );
+      await tester.tap(find.byTooltip('Show password'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Hide password'), findsOneWidget);
+      await tester.ensureVisible(find.text('Forgot password?'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Forgot password?'));
+      await tester.pumpAndSettle();
+      expect(find.text('Forgot your password?'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextFormField>(find.byType(TextFormField).first)
+            .initialValue,
+        'student@example.org',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'account surfaces follow persisted Light and Dark without changing layout',
