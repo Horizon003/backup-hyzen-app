@@ -39,6 +39,14 @@ jobs:
           cache: gradle
           cache-dependency-path: hyzen_flutter/android/*.gradle*
 
+      - name: Cache Android native toolchains
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk/ndk/25.1.8937393
+            /usr/local/lib/android/sdk/cmake/3.22.1
+          key: android-native-${{ runner.os }}-ndk25-cmake322-${{ hashFiles('hyzen_flutter/pubspec.lock', 'hyzen_flutter/android/**/build.gradle*') }}
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.4'
@@ -67,24 +75,29 @@ jobs:
         working-directory: hyzen_flutter
       - run: flutter test --no-pub --reporter expanded
         working-directory: hyzen_flutter
-      - run: flutter build apk --release --no-pub --target-platform android-arm64,android-x64
+      - run: flutter build apk --release --no-pub --split-per-abi --target-platform android-arm64,android-x64
         working-directory: hyzen_flutter
 
       - name: Verify APK metadata and checksum
         working-directory: hyzen_flutter
         run: |
           set -euo pipefail
-          apk=build/app/outputs/flutter-apk/app-release.apk
-          test -s "$apk"
-          sha256sum "$apk" > "$apk.sha256"
+          arm64=build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          x64=build/app/outputs/flutter-apk/app-x86_64-release.apk
+          test -s "$arm64"
+          test -s "$x64"
+          sha256sum "$arm64" > "$arm64.sha256"
+          sha256sum "$x64" > "$x64.sha256"
           grep -q 'version: 1.5.3+12' pubspec.yaml
 
       - uses: actions/upload-artifact@v4
         with:
           name: PharmD_With_Hyzen_1.5.3_signed
           path: |
-            hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk
-            hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
+            hyzen_flutter/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            hyzen_flutter/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk.sha256
+            hyzen_flutter/build/app/outputs/flutter-apk/app-x86_64-release.apk
+            hyzen_flutter/build/app/outputs/flutter-apk/app-x86_64-release.apk.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -110,7 +123,7 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: |
-            adb install -r apk/app-release.apk
+            adb install -r apk/app-x86_64-release.apk
             adb shell monkey -p com.hyzen.pharmd -c android.intent.category.LAUNCHER 1
             sleep 8
             adb logcat -d > launch-logcat.txt
