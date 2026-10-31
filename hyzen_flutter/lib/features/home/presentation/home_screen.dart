@@ -458,9 +458,9 @@ class _AnnouncementBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: .25),
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
         borderRadius: BorderRadius.circular(HRadius.md),
       ),
@@ -468,7 +468,7 @@ class _AnnouncementBar extends StatelessWidget {
         children: [
           Icon(
             Icons.campaign_rounded,
-            color: Theme.of(context).colorScheme.primary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             size: 20,
           ),
           const SizedBox(width: 10),
@@ -476,7 +476,7 @@ class _AnnouncementBar extends StatelessWidget {
             child: Text(
               a.text,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),

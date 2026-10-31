@@ -89,7 +89,7 @@ const fs = require('node:fs');
   for (const theme of ['light', 'dark']) {
     for (const scenario of [
       {name: 'home', width: 390, height: 844},
-      {name: 'home-overview', width: 390, height: 1700},
+      {name: 'home-overview', width: 390, height: 1500},
       {name: 'home-narrow', width: 320, height: 1000},
       {name: 'home-large-text', width: 320, height: 1200, scale: 2},
       {name: 'home-empty', width: 390, height: 844, empty: true},
@@ -97,7 +97,7 @@ const fs = require('node:fs');
       const page = await browser.newPage({viewport: {width: scenario.width, height: scenario.height}, deviceScaleFactor: 2, reducedMotion: 'reduce'});
       page.on('pageerror', error => errors.push(String(error)));
       page.on('console', message => { if (/overflowed by|Unhandled Exception/.test(message.text())) errors.push(message.text()); });
-      await page.goto(`http://127.0.0.1:8080/pharm-d-with-hyzen/ui-review/?theme=${theme}&textScale=${scenario.scale || 1}&scenario=${scenario.empty ? 'empty' : 'populated'}#/home`);
+      await page.goto(`http://127.0.0.1:8080/pharm-d-with-hyzen/ui-review/?theme=${theme}&textScale=${scenario.scale || 1}&reduceMotion=true&scenario=${scenario.empty ? 'empty' : 'populated'}#/home`);
       await page.waitForSelector('flutter-view', {timeout: 90000});
       await page.waitForTimeout(2500);
       const enable = page.getByRole('button', {name: 'Enable accessibility'});
@@ -113,9 +113,11 @@ const fs = require('node:fs');
       const filename = `${theme}-${scenario.name}.png`;
       await page.screenshot({path: `${output}/${filename}`});
       if (scenario.name === 'home-overview') {
+        const labels = await page.locator('[aria-label]').evaluateAll(nodes => nodes.map(n => n.getAttribute('aria-label') || ''));
         for (const label of ['2 Downloading', '3 Saved', '1 New', 'Continue studying', 'Popular subjects']) {
-          if (!await page.getByText(label, {exact: true}).count()) throw Error(`Missing Home fixture: ${label}`);
+          if (!labels.some(text => text.includes(label)) && !await page.getByText(label, {exact: true}).count()) throw Error(`Missing Home fixture: ${label}; labels: ${JSON.stringify(labels)}`);
         }
+        evidence.homeLabels = labels;
         if (await page.getByText('More from Hyzen', {exact: true}).count()) throw Error('Removed Home group remains');
       }
       evidence.captures.push({filename, theme, path: '/home', ...scenario, sampleData: true});

@@ -119,9 +119,10 @@ class TabPage extends StatelessWidget {
           child: SizedBox(height: MediaQuery.paddingOf(context).top + 64 + 8),
         ),
         ...slivers,
-        if (homeBackground == null) SliverToBoxAdapter(
-          child: SizedBox(height: MainDock.contentInset(context)),
-        ),
+        if (homeBackground == null)
+          SliverToBoxAdapter(
+            child: SizedBox(height: MainDock.contentInset(context)),
+          ),
       ],
     );
     return Scaffold(
@@ -315,7 +316,16 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
     return integrated
-        ? DecoratedBox(decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black, Color(0xF2000000)])), child: header)
+        ? DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.black, Color(0xF2000000)],
+              ),
+            ),
+            child: header,
+          )
         : SurfacePanel(radius: 0, child: header);
   }
 }

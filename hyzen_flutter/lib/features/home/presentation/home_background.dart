@@ -15,6 +15,7 @@ class HomeAtmosphere extends StatelessWidget {
             painter: _Atmosphere(
               Theme.of(context).brightness == Brightness.dark,
               content,
+              420 * MediaQuery.textScalerOf(context).scale(1).clamp(1, 3),
             ),
           ),
         ),
@@ -25,8 +26,9 @@ class HomeAtmosphere extends StatelessWidget {
 }
 
 class _Atmosphere extends CustomPainter {
-  _Atmosphere(this.dark, this.content);
+  _Atmosphere(this.dark, this.content, this.heroExtent);
   final bool dark, content;
+  final double heroExtent;
   static final dots = List<Offset>.generate(160, (i) {
     final random = math.Random(i * 71 + 4);
     return Offset(random.nextDouble(), random.nextDouble());
@@ -36,7 +38,11 @@ class _Atmosphere extends CustomPainter {
     if (dark && content) return;
     final rect = Offset.zero & size;
     final base = dark ? const Color(0xFF353538) : const Color(0xFFF6F6F4);
-    if (content && !dark) {
+    if (!content && !dark) {
+      canvas.drawRect(rect, Paint()..color = base);
+      final hero = Rect.fromLTWH(0, 0, size.width, math.min(size.height, heroExtent));
+      canvas.drawRect(hero, Paint()..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black, Color(0xFF202022)]).createShader(hero));
+    } else if (content && !dark) {
       canvas.drawRect(rect, Paint()..color = base);
       canvas.drawRect(
         Rect.fromLTWH(0, 0, size.width, 96),
@@ -77,5 +83,5 @@ class _Atmosphere extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _Atmosphere old) =>
-      dark != old.dark || content != old.content;
+      dark != old.dark || content != old.content || heroExtent != old.heroExtent;
 }

@@ -94,7 +94,10 @@ class ResourceTile extends StatelessWidget {
             : null,
         onTap: onTap,
         semanticLabel: title,
-        padding: EdgeInsets.symmetric(horizontal: HSpace.sm, vertical: compact ? 10 : 9),
+        padding: EdgeInsets.symmetric(
+          horizontal: HSpace.sm,
+          vertical: compact ? 10 : 9,
+        ),
         child: Row(
           children: [
             IconBadge(icon: icon, color: color, size: compact ? 28 : 36),

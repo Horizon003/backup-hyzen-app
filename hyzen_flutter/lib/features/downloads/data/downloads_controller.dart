@@ -71,13 +71,37 @@ class DownloadsController extends Notifier<Map<String, DownloadRecord>> {
   }
 
   /// Called only after a renderer successfully opens this exact saved version.
-  Future<void> markOpened(String key, {required String path, required DateTime? savedAt}) async {
+  Future<void> markOpened(
+    String key, {
+    required String path,
+    required DateTime? savedAt,
+  }) async {
     final initial = state[key];
-    if (initial == null || !initial.isReady || !initial.unopened || initial.localPath != path || initial.savedAt != savedAt) { return; }
+    if (initial == null ||
+        !initial.isReady ||
+        !initial.unopened ||
+        initial.localPath != path ||
+        initial.savedAt != savedAt) {
+      return;
+    }
     if (!await _fs.exists(path) || _disposed) return;
     final current = state[key];
-    if (current == null || !current.isReady || !current.unopened || current.localPath != path || current.savedAt != savedAt || _removing.contains(key) || _clearing) { return; }
-    await _set(current.copyWith(unopened: false, firstOpenedAt: DateTime.now(), availabilityVerified: true));
+    if (current == null ||
+        !current.isReady ||
+        !current.unopened ||
+        current.localPath != path ||
+        current.savedAt != savedAt ||
+        _removing.contains(key) ||
+        _clearing) {
+      return;
+    }
+    await _set(
+      current.copyWith(
+        unopened: false,
+        firstOpenedAt: DateTime.now(),
+        availabilityVerified: true,
+      ),
+    );
   }
 
   DownloadRecord? recordFor(String url) => state[DriveLinks.offlineKey(url)];

@@ -116,6 +116,8 @@ void main() {
                   ? tree
                   : key == 'pw_settings'
                   ? {'shopComingSoon': false}
+                  : key == 'pw_announcement'
+                  ? {'enabled': true, 'text': 'Test academic announcement'}
                   : key == 'pw_about'
                   ? {'about': '<p>Welcome to Hyzen</p>'}
                   : key == 'pw_blogs'
@@ -186,6 +188,36 @@ void main() {
       }
     },
   );
+  testWidgets('Home announcement preference hides the supplied content', (tester) async {
+    await open(tester, '/home');
+    expect(find.text('Test academic announcement'), findsOneWidget);
+    container.read(boolPrefProvider('pref_announcements').notifier).set(false);
+    await tester.pumpAndSettle();
+    expect(find.text('Test academic announcement'), findsNothing);
+    expect(prefs.getBool('pref_announcements'), isFalse);
+  });
+  testWidgets('Home Clear confirms history scope and preserves saved files', (tester) async {
+    final saved = File('${temp.path}/keep.pdf');
+    await tester.runAsync(() async {
+      await saved.writeAsString('%PDF-');
+      await container.read(recentProvider.notifier).touch(const FileRef(kind: LibraryKind.notes, title: 'Recent revision', url: 'https://example.org/recent.pdf'));
+      await JsonBox(Boxes.downloads).put('keep', DownloadRecord(key: 'keep', kind: LibraryKind.notes, title: 'Keep', sourceUrl: 'https://example.org/keep.pdf', status: DownloadStatus.ready, localPath: saved.path).toMap());
+    });
+    await open(tester, '/home');
+    final clear = find.text('Clear');
+    await Scrollable.ensureVisible(tester.element(clear), alignment: .5);
+    await tester.pumpAndSettle();
+    await tester.tap(clear);
+    await tester.pumpAndSettle();
+    expect(find.text('Clear recent history?'), findsOneWidget);
+    expect(container.read(recentProvider), isNotEmpty);
+    await tester.tap(find.widgetWithText(FilledButton, 'Clear history'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 40)));
+    await tester.pumpAndSettle();
+    expect(container.read(recentProvider), isEmpty);
+    expect(container.read(downloadsProvider), contains('keep'));
+    expect(await tester.runAsync(saved.exists), isTrue);
+  });
   testWidgets('HOME-07/08 real search and Quick Access routes', (tester) async {
     for (final entry in <String, String>{
       'Search subjects, topics or files': '/search',
