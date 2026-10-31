@@ -26,6 +26,7 @@ class DownloadRecord {
 
   final bool unopened;
   final DateTime? firstOpenedAt;
+
   /// Runtime verification is deliberately not trusted from persisted metadata.
   final bool availabilityVerified;
   bool get isAvailableOffline => isReady && availabilityVerified;

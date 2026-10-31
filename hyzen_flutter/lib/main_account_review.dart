@@ -13,12 +13,10 @@ import 'features/auth/data/auth_repository.dart';
 import 'features/auth/domain/student_profile.dart';
 import 'features/content/data/content_source.dart';
 import 'features/admin/domain/import_csv.dart';
-import 'features/admin/data/admin_repository.dart';
 import 'features/academics/domain/models.dart';
 import 'features/downloads/data/downloads_controller.dart';
 import 'features/downloads/domain/download_record.dart';
 import 'features/home/data/recent_controller.dart';
-
 
 const reviewProfile = StudentProfile(
   uid: 'ui-review-student',
@@ -66,13 +64,18 @@ Future<void> main() async {
   final tree = <Map<String, dynamic>>[];
   var id = 0;
   if (!emptyHome) {
-    mergeRows(tree, validateImport(
-      'kind,professional_year,semester,subject,section,topic,title,url,published\n'
-      'notes,2nd Professional,Semester 1,Pharmaceutical Chemistry and Medicinal Compounds 2A,Study Notes,Revision,Pharmaceutical Chemistry comprehensive examination revision notes,https://example.org/review-notes.pdf,true\n'
-      'notes,2nd Professional,Semester 1,Physical Pharmacy,Study Notes,Revision,Physical Pharmacy,https://example.org/review-physical.pdf,true\n'
-      'notes,2nd Professional,Semester 1,Functional English,Study Notes,Revision,Functional English,https://example.org/review-english.pdf,true\n'
-      'notes,2nd Professional,Semester 1,Pharmacology,Study Notes,Revision,Pharmacology,https://example.org/review-pharmacology.pdf,true',
-      'review.csv').rows, () => 'review-${id++}');
+    mergeRows(
+      tree,
+      validateImport(
+        'kind,professional_year,semester,subject,section,topic,title,url,published\n'
+            'notes,2nd Professional,Semester 1,Pharmaceutical Chemistry and Medicinal Compounds 2A,Study Notes,Revision,Pharmaceutical Chemistry comprehensive examination revision notes,https://example.org/review-notes.pdf,true\n'
+            'notes,2nd Professional,Semester 1,Physical Pharmacy,Study Notes,Revision,Physical Pharmacy,https://example.org/review-physical.pdf,true\n'
+            'notes,2nd Professional,Semester 1,Functional English,Study Notes,Revision,Functional English,https://example.org/review-english.pdf,true\n'
+            'notes,2nd Professional,Semester 1,Pharmacology,Study Notes,Revision,Pharmacology,https://example.org/review-pharmacology.pdf,true',
+        'review.csv',
+      ).rows,
+      () => 'review-${id++}',
+    );
   }
   runApp(
     ProviderScope(
@@ -95,7 +98,11 @@ Future<void> main() async {
         contentProvider.overrideWith(
           (ref, key) => Stream.value(
             ContentSnapshot(
-              value: key == 'pw_settings' ? <String, dynamic>{} : key == 'pw_notes_tree' ? tree : [],
+              value: key == 'pw_settings'
+                  ? <String, dynamic>{}
+                  : key == 'pw_notes_tree'
+                  ? tree
+                  : [],
               fromCache: false,
             ),
           ),
@@ -186,9 +193,21 @@ class _ReviewScaledApp extends StatelessWidget {
   const _ReviewScaledApp();
   @override
   Widget build(BuildContext context) {
-    final scale = (double.tryParse(Uri.base.queryParameters['textScale'] ?? '') ?? 1).clamp(1.0, 2.0).toDouble();
-    return MediaQuery.fromView(view: View.of(context), child: Builder(builder: (context) => MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)), child: const HyzenApp())));
+    final scale =
+        (double.tryParse(Uri.base.queryParameters['textScale'] ?? '') ?? 1)
+            .clamp(1.0, 2.0)
+            .toDouble();
+    return MediaQuery.fromView(
+      view: View.of(context),
+      child: Builder(
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(scale)),
+          child: const HyzenApp(),
+        ),
+      ),
+    );
   }
 }
 
@@ -196,32 +215,67 @@ class _ReviewDownloads extends DownloadsController {
   _ReviewDownloads(this.empty);
   final bool empty;
   @override
-  Map<String, DownloadRecord> build() => empty ? {} : {
-    for (var i = 0; i < 5; i++) 'sample-$i': DownloadRecord(
-      key: 'sample-$i', kind: LibraryKind.notes, title: 'Sample academic document ${i + 1}',
-      sourceUrl: 'https://example.org/sample-$i.pdf',
-      status: i < 2 ? DownloadStatus.downloading : DownloadStatus.ready,
-      progress: i < 2 ? .45 : 1, sizeBytes: 450000, totalBytes: 1000000,
-      localPath: i < 2 ? null : '/sample-data/sample-$i.pdf',
-      savedAt: i < 2 ? null : DateTime(2026, 1, 1), unopened: i == 2,
-    ),
-  };
+  Map<String, DownloadRecord> build() => empty
+      ? {}
+      : {
+          for (var i = 0; i < 5; i++)
+            'sample-$i': DownloadRecord(
+              key: 'sample-$i',
+              kind: LibraryKind.notes,
+              title: 'Sample academic document ${i + 1}',
+              sourceUrl: 'https://example.org/sample-$i.pdf',
+              status: i < 2 ? DownloadStatus.downloading : DownloadStatus.ready,
+              progress: i < 2 ? .45 : 1,
+              sizeBytes: 450000,
+              totalBytes: 1000000,
+              localPath: i < 2 ? null : '/sample-data/sample-$i.pdf',
+              savedAt: i < 2 ? null : DateTime(2026, 1, 1),
+              unopened: i == 2,
+            ),
+        };
   @override
-  Future<void> remove(String key) async => throw UnsupportedError('Sample data preview');
+  Future<void> remove(String key) async =>
+      throw UnsupportedError('Sample data preview');
   @override
-  Future<void> removeAll() async => throw UnsupportedError('Sample data preview');
+  Future<void> removeAll() async =>
+      throw UnsupportedError('Sample data preview');
   // Sample files cannot be downloaded or deleted from the public UI review.
   @override
-  Future<void> save(FileRef file, {String? localPreview}) => Future.error(UnsupportedError('Sample data preview; open the Android app to save real files.'));
+  Future<void> save(FileRef file, {String? localPreview}) => Future.error(
+    UnsupportedError(
+      'Sample data preview; open the Android app to save real files.',
+    ),
+  );
 }
+
 class _ReviewRecent extends RecentController {
   _ReviewRecent(this.empty);
   final bool empty;
   @override
-  Future<void> clear() async { state = []; }
+  Future<void> clear() async {
+    state = [];
+  }
+
   @override
-  List<RecentItem> build() => empty ? [] : [
-    RecentItem(const FileRef(kind: LibraryKind.notes, title: 'Pharmaceutical Chemistry comprehensive examination revision notes — semester two', url: 'https://example.org/review-notes.pdf'), DateTime(2026, 1, 3)),
-    RecentItem(const FileRef(kind: LibraryKind.notes, title: 'Physical Pharmacy · Surface phenomena', url: 'https://example.org/review-physical.pdf'), DateTime(2026, 1, 2)),
-  ];
+  List<RecentItem> build() => empty
+      ? []
+      : [
+          RecentItem(
+            const FileRef(
+              kind: LibraryKind.notes,
+              title:
+                  'Pharmaceutical Chemistry comprehensive examination revision notes — semester two',
+              url: 'https://example.org/review-notes.pdf',
+            ),
+            DateTime(2026, 1, 3),
+          ),
+          RecentItem(
+            const FileRef(
+              kind: LibraryKind.notes,
+              title: 'Physical Pharmacy · Surface phenomena',
+              url: 'https://example.org/review-physical.pdf',
+            ),
+            DateTime(2026, 1, 2),
+          ),
+        ];
 }

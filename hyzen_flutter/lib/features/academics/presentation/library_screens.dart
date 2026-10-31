@@ -423,7 +423,12 @@ class _Resolved {
 
 /// File row with live offline status (watches only its own record).
 class FileTile extends ConsumerWidget {
-  const FileTile({super.key, required this.file, required this.color, this.compact = false});
+  const FileTile({
+    super.key,
+    required this.file,
+    required this.color,
+    this.compact = false,
+  });
   final bool compact;
   final FileRef file;
   final Color color;

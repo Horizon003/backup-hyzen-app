@@ -73,12 +73,10 @@ class DownloadsController extends Notifier<Map<String, DownloadRecord>> {
   /// Called only after a renderer successfully opens this exact saved version.
   Future<void> markOpened(String key, {required String path, required DateTime? savedAt}) async {
     final initial = state[key];
-    if (initial == null || !initial.isReady || !initial.unopened || initial.localPath != path || initial.savedAt != savedAt) return;
+    if (initial == null || !initial.isReady || !initial.unopened || initial.localPath != path || initial.savedAt != savedAt) { return; }
     if (!await _fs.exists(path) || _disposed) return;
     final current = state[key];
-    if (current == null || !current.isReady || !current.unopened ||
-        current.localPath != path || current.savedAt != savedAt ||
-        _removing.contains(key) || _clearing) return;
+    if (current == null || !current.isReady || !current.unopened || current.localPath != path || current.savedAt != savedAt || _removing.contains(key) || _clearing) { return; }
     await _set(current.copyWith(unopened: false, firstOpenedAt: DateTime.now(), availabilityVerified: true));
   }
 
@@ -147,31 +145,26 @@ class DownloadsController extends Notifier<Map<String, DownloadRecord>> {
       await _set(record);
       final output = localPreview != null && await store.exists(localPreview)
           ? await store.importPreview(localPreview, key)
-          : await store.download(
-              file.url,
-              key,
-              (received, total) {
-                if (_disposed ||
-                    _cancel.contains(key) ||
-                    _removing.contains(key) ||
-                    _clearing) {
-                  return;
-                }
-                final now = DateTime.now();
-                if (now.difference(lastEmit).inMilliseconds < 120) return;
-                lastEmit = now;
-                final progress = total != null && total > 0
-                    ? (received / total).clamp(0.0, 1.0).toDouble()
-                    : -1.0;
-                record = record.copyWith(
-                    progress: progress,
-                    sizeBytes: received,
-                    totalBytes: total,
-                  );
-                state = {...state, key: record};
-              },
-              cancelled: () => _disposed || _cancel.contains(key),
-            );
+          : await store.download(file.url, key, (received, total) {
+              if (_disposed ||
+                  _cancel.contains(key) ||
+                  _removing.contains(key) ||
+                  _clearing) {
+                return;
+              }
+              final now = DateTime.now();
+              if (now.difference(lastEmit).inMilliseconds < 120) return;
+              lastEmit = now;
+              final progress = total != null && total > 0
+                  ? (received / total).clamp(0.0, 1.0).toDouble()
+                  : -1.0;
+              record = record.copyWith(
+                progress: progress,
+                sizeBytes: received,
+                totalBytes: total,
+              );
+              state = {...state, key: record};
+            }, cancelled: () => _disposed || _cancel.contains(key));
       if (_disposed ||
           _cancel.contains(key) ||
           _removing.contains(key) ||
@@ -195,7 +188,12 @@ class DownloadsController extends Notifier<Map<String, DownloadRecord>> {
           : 'Download failed. Please retry.';
       if (!_disposed && !_removing.contains(key) && !_clearing) {
         await _set(
-          record.copyWith(status: _cancel.contains(key) ? DownloadStatus.paused : DownloadStatus.failed, error: message),
+          record.copyWith(
+            status: _cancel.contains(key)
+                ? DownloadStatus.paused
+                : DownloadStatus.failed,
+            error: message,
+          ),
         );
       }
       throw FriendlyException(message);

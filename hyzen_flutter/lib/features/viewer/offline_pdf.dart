@@ -143,27 +143,60 @@ class _OfflinePdfState extends State<OfflinePdf> {
   Future<void> _showPages() async {
     if (!_ready) return;
     await showModalBottomSheet<void>(
-      context: context, isScrollControlled: true, showDragHandle: true,
-      builder: (c) => SafeArea(child: SizedBox(
-        height: MediaQuery.sizeOf(c).height * .75,
-        child: Column(children: [
-          ListTile(title: const Text('Pages'), subtitle: Text('$_pages pages')),
-          Expanded(child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 150, mainAxisExtent: 180, crossAxisSpacing: 16, mainAxisSpacing: 16),
-            itemCount: _pages,
-            itemBuilder: (_, i) => InkWell(
-              onTap: () { Navigator.pop(c); _controller.goToPage(pageNumber: i + 1); },
-              child: Card(child: Column(children: [
-                Expanded(child: widget.path.isEmpty
-                  ? const Icon(Icons.description_outlined, size: 40)
-                  : StudioPageThumbnail(page: StudioPage(widget.path, i))),
-                Padding(padding: const EdgeInsets.all(8), child: Text('Page ${i + 1}')),
-              ])),
-            ),
-          )),
-        ]),
-      )),
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(c).height * .75,
+          child: Column(
+            children: [
+              ListTile(
+                title: const Text('Pages'),
+                subtitle: Text('$_pages pages'),
+              ),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 150,
+                    mainAxisExtent: 180,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: _pages,
+                  itemBuilder: (_, i) => InkWell(
+                    onTap: () {
+                      Navigator.pop(c);
+                      _controller.goToPage(pageNumber: i + 1);
+                    },
+                    child: Card(
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: widget.path.isEmpty
+                                ? const Icon(
+                                    Icons.description_outlined,
+                                    size: 40,
+                                  )
+                                : StudioPageThumbnail(
+                                    page: StudioPage(widget.path, i),
+                                  ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text('Page ${i + 1}'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -230,10 +263,18 @@ class _OfflinePdfState extends State<OfflinePdf> {
       );
     }
     final theme = Theme.of(context);
-    widget.tools?.search = () { if (mounted) setState(() => _searchOpen = true); };
-    widget.tools?.zoomIn = () { if (mounted && _ready) _controller.zoomUp(); };
-    widget.tools?.zoomOut = () { if (mounted && _ready) _controller.zoomDown(); };
-    widget.tools?.pages = () { if (mounted) _showPages(); };
+    widget.tools?.search = () {
+      if (mounted) setState(() => _searchOpen = true);
+    };
+    widget.tools?.zoomIn = () {
+      if (mounted && _ready) _controller.zoomUp();
+    };
+    widget.tools?.zoomOut = () {
+      if (mounted && _ready) _controller.zoomDown();
+    };
+    widget.tools?.pages = () {
+      if (mounted) _showPages();
+    };
     final params = PdfViewerParams(
       scaleEnabled: true,
       panEnabled: true,
@@ -385,7 +426,6 @@ class _OfflinePdfState extends State<OfflinePdf> {
             ),
           ),
         Expanded(child: viewer),
-
       ],
     );
   }
@@ -419,7 +459,9 @@ class _OfficeReaderState extends State<OfficeReader> {
       if (!s.hasData) return const Center(child: CircularProgressIndicator());
       if (!_reportedOpen) {
         _reportedOpen = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) widget.onOpened?.call(); });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.onOpened?.call();
+        });
       }
       return ListView.builder(
         padding: const EdgeInsets.all(16),

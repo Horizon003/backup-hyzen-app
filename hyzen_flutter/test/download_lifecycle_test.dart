@@ -116,42 +116,57 @@ void main() {
     expect(store.cleared, isTrue);
     expect(container.read(downloadsProvider), isEmpty);
   });
-  test('HOME-10/11/12 new completion persists, successful open clears only New', () async {
-    final store = TestStore();
-    var container = ProviderContainer(overrides: [fileStoreProvider.overrideWithValue(store)]);
-    final ctrl = container.read(downloadsProvider.notifier);
-    final transfer = ctrl.save(file);
-    await store.started.future;
-    store.transfer.complete(const DownloadedFile('/private/a.pdf', 50));
-    await transfer;
-    var record = container.read(downloadsProvider).values.single;
-    expect(record.unopened, isTrue);
-    expect(record.firstOpenedAt, isNull);
-    expect(record.isAvailableOffline, isTrue);
-    final key = record.key;
-    final savedAt = record.savedAt;
-    container.dispose();
-    container = ProviderContainer(overrides: [fileStoreProvider.overrideWithValue(store)]);
-    addTearDown(container.dispose);
-    expect(container.read(downloadsProvider)[key]!.unopened, isTrue);
-    await Future<void>.delayed(Duration.zero);
-    await container.read(downloadsProvider.notifier).markOpened(key, path: '/private/a.pdf', savedAt: savedAt);
-    record = container.read(downloadsProvider)[key]!;
-    expect(record.unopened, isFalse);
-    expect(record.firstOpenedAt, isNotNull);
-    expect(record.isAvailableOffline, isTrue);
-    expect(record.savedAt, savedAt);
-    expect(record.sizeBytes, 50);
-    final openedAt = record.firstOpenedAt;
-    await container.read(downloadsProvider.notifier).markOpened(key, path: '/private/a.pdf', savedAt: savedAt);
-    expect(container.read(downloadsProvider)[key]!.firstOpenedAt, openedAt);
-    final restored = DownloadRecord.fromMap(JsonBox(Boxes.downloads).values().single)!;
-    expect(restored.firstOpenedAt, openedAt);
-    expect(restored.unopened, isFalse);
-  });
+  test(
+    'HOME-10/11/12 new completion persists, successful open clears only New',
+    () async {
+      final store = TestStore();
+      var container = ProviderContainer(
+        overrides: [fileStoreProvider.overrideWithValue(store)],
+      );
+      final ctrl = container.read(downloadsProvider.notifier);
+      final transfer = ctrl.save(file);
+      await store.started.future;
+      store.transfer.complete(const DownloadedFile('/private/a.pdf', 50));
+      await transfer;
+      var record = container.read(downloadsProvider).values.single;
+      expect(record.unopened, isTrue);
+      expect(record.firstOpenedAt, isNull);
+      expect(record.isAvailableOffline, isTrue);
+      final key = record.key;
+      final savedAt = record.savedAt;
+      container.dispose();
+      container = ProviderContainer(
+        overrides: [fileStoreProvider.overrideWithValue(store)],
+      );
+      addTearDown(container.dispose);
+      expect(container.read(downloadsProvider)[key]!.unopened, isTrue);
+      await Future<void>.delayed(Duration.zero);
+      await container
+          .read(downloadsProvider.notifier)
+          .markOpened(key, path: '/private/a.pdf', savedAt: savedAt);
+      record = container.read(downloadsProvider)[key]!;
+      expect(record.unopened, isFalse);
+      expect(record.firstOpenedAt, isNotNull);
+      expect(record.isAvailableOffline, isTrue);
+      expect(record.savedAt, savedAt);
+      expect(record.sizeBytes, 50);
+      final openedAt = record.firstOpenedAt;
+      await container
+          .read(downloadsProvider.notifier)
+          .markOpened(key, path: '/private/a.pdf', savedAt: savedAt);
+      expect(container.read(downloadsProvider)[key]!.firstOpenedAt, openedAt);
+      final restored = DownloadRecord.fromMap(
+        JsonBox(Boxes.downloads).values().single,
+      )!;
+      expect(restored.firstOpenedAt, openedAt);
+      expect(restored.unopened, isFalse);
+    },
+  );
   test('HOME-11 failed and stale opens never clear unopened state', () async {
     final store = TestStore();
-    final container = ProviderContainer(overrides: [fileStoreProvider.overrideWithValue(store)]);
+    final container = ProviderContainer(
+      overrides: [fileStoreProvider.overrideWithValue(store)],
+    );
     addTearDown(container.dispose);
     final ctrl = container.read(downloadsProvider.notifier);
     final transfer = ctrl.save(file);
@@ -159,7 +174,11 @@ void main() {
     store.transfer.complete(const DownloadedFile('/private/a.pdf', 50));
     await transfer;
     final r = container.read(downloadsProvider).values.single;
-    await ctrl.markOpened(r.key, path: '/private/wrong.pdf', savedAt: r.savedAt);
+    await ctrl.markOpened(
+      r.key,
+      path: '/private/wrong.pdf',
+      savedAt: r.savedAt,
+    );
     await ctrl.markOpened(r.key, path: r.localPath!, savedAt: DateTime(2000));
     store.available = false;
     await ctrl.markOpened(r.key, path: r.localPath!, savedAt: r.savedAt);
@@ -167,12 +186,18 @@ void main() {
     expect(container.read(downloadsProvider)[r.key]!.firstOpenedAt, isNull);
   });
   test('HOME-12 legacy ready downloads migrate without a New badge', () {
-    final record = DownloadRecord.fromMap({'key': 'legacy', 'status': 'ready', 'localPath': '/private/old.pdf'})!;
+    final record = DownloadRecord.fromMap({
+      'key': 'legacy',
+      'status': 'ready',
+      'localPath': '/private/old.pdf',
+    })!;
     expect(record.isReady, isTrue);
     expect(record.unopened, isFalse);
     expect(record.firstOpenedAt, isNull);
-    expect(record.isAvailableOffline, isFalse, reason: 'Restored metadata waits for a real file existence check');
+    expect(
+      record.isAvailableOffline,
+      isFalse,
+      reason: 'Restored metadata waits for a real file existence check',
+    );
   });
-
 }
-

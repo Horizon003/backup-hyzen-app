@@ -129,23 +129,36 @@ class TabPage extends StatelessWidget {
       drawer: drawer,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
-        child: Theme(data: headerTheme ?? Theme.of(context), child: _Bar(
-        integrated: integratedHeader,
-        title: title,
-        subtitle: subtitle,
-        actions: actions,
-        showMenu: drawer != null,
-      )),
+        child: Theme(
+          data: headerTheme ?? Theme.of(context),
+          child: _Bar(
+            integrated: integratedHeader,
+            title: title,
+            subtitle: subtitle,
+            actions: actions,
+            showMenu: drawer != null,
+          ),
+        ),
       ),
-      body: homeBackground != null ? homeBackground!(onRefresh == null ? scroll : RefreshIndicator(onRefresh: onRefresh!, edgeOffset: 64, child: scroll)) : HBackground(
-        child: onRefresh == null
-            ? scroll
-            : RefreshIndicator(
-                onRefresh: onRefresh!,
-                edgeOffset: 64,
-                child: scroll,
-              ),
-      ),
+      body: homeBackground != null
+          ? homeBackground!(
+              onRefresh == null
+                  ? scroll
+                  : RefreshIndicator(
+                      onRefresh: onRefresh!,
+                      edgeOffset: 64,
+                      child: scroll,
+                    ),
+            )
+          : HBackground(
+              child: onRefresh == null
+                  ? scroll
+                  : RefreshIndicator(
+                      onRefresh: onRefresh!,
+                      edgeOffset: 64,
+                      child: scroll,
+                    ),
+            ),
     );
   }
 }
@@ -169,139 +182,141 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final header = SafeArea(
-        bottom: false,
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            children: [
-              if (showMenu)
-                IconButton(
-                  tooltip: 'Admin menu',
-                  icon: const Icon(Icons.menu_rounded),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                )
-              // The root Home page can appear poppable when another tab has a
-              // nested route in its retained navigator. Never show a dead
-              // back arrow on the Home header.
-              else if (!const [
-                    'PHARM D',
-                    'Study',
-                    'Search',
-                    'Office Workspace',
-                    'Downloads',
-                    'Profile',
-                    'Settings',
-                    'Shop',
-                  ].contains(title) &&
-                  Navigator.of(context).canPop())
-                IconButton(
-                  tooltip: 'Back',
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  onPressed: () => context.pop(),
-                )
-              else
-                const SizedBox(width: HSpace.screen),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (title == 'PHARM D')
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/brand/hyzen_icon_square.png',
-                            width: integrated ? 24 : 30,
-                            height: integrated ? 24 : 30,
-                          ),
-                          const SizedBox(width: 10),
-                          Flexible(
-                            child: Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: 'PHARM D ',
-                                    style: TextStyle(
-                                      color: t.colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: 'WITH HYZEN',
-                                    style: TextStyle(
-                                      color: t.colorScheme.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: t.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: integrated ? 13 : 17,
-                                letterSpacing: -.2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -.4,
+      bottom: false,
+      child: SizedBox(
+        height: 64,
+        child: Row(
+          children: [
+            if (showMenu)
+              IconButton(
+                tooltip: 'Admin menu',
+                icon: const Icon(Icons.menu_rounded),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              )
+            // The root Home page can appear poppable when another tab has a
+            // nested route in its retained navigator. Never show a dead
+            // back arrow on the Home header.
+            else if (!const [
+                  'PHARM D',
+                  'Study',
+                  'Search',
+                  'Office Workspace',
+                  'Downloads',
+                  'Profile',
+                  'Settings',
+                  'Shop',
+                ].contains(title) &&
+                Navigator.of(context).canPop())
+              IconButton(
+                tooltip: 'Back',
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => context.pop(),
+              )
+            else
+              const SizedBox(width: HSpace.screen),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (title == 'PHARM D')
+                    Row(
+                      children: [
+                        Image.asset(
+                          'assets/brand/hyzen_icon_square.png',
+                          width: integrated ? 24 : 30,
+                          height: integrated ? 24 : 30,
                         ),
-                      ),
-                    if (subtitle != null && title != 'PHARM D')
-                      Text(
-                        subtitle!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.textTheme.bodySmall,
-                      ),
-                  ],
-                ),
-              ),
-              ...actions,
-              const NotificationBell(),
-              Consumer(
-                builder: (context, ref, _) {
-                  final profile = ref.watch(profileProvider).valueOrNull;
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 2),
-                    child: Tooltip(
-                      message: 'Profile & settings',
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () => showAccountMenu(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: t.colorScheme.primary,
-                              width: 1.6,
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'PHARM D ',
+                                  style: TextStyle(
+                                    color: t.colorScheme.onSurface,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'WITH HYZEN',
+                                  style: TextStyle(
+                                    color: t.colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: integrated ? 13 : 17,
+                              letterSpacing: -.2,
                             ),
                           ),
-                          child: ProfileAvatar(
-                            photoUrl: profile?.photoUrl,
-                            radius: 16,
-                            fallback: profile?.firstName ?? 'H',
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -.4,
+                      ),
+                    ),
+                  if (subtitle != null && title != 'PHARM D')
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.textTheme.bodySmall,
+                    ),
+                ],
+              ),
+            ),
+            ...actions,
+            const NotificationBell(),
+            Consumer(
+              builder: (context, ref, _) {
+                final profile = ref.watch(profileProvider).valueOrNull;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Tooltip(
+                    message: 'Profile & settings',
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => showAccountMenu(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: t.colorScheme.primary,
+                            width: 1.6,
                           ),
+                        ),
+                        child: ProfileAvatar(
+                          photoUrl: profile?.photoUrl,
+                          radius: 16,
+                          fallback: profile?.firstName ?? 'H',
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
-              const SizedBox(width: 12),
-            ],
-          ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+          ],
         ),
-      );
-    return integrated ? ColoredBox(color: Colors.transparent, child: header) : SurfacePanel(radius: 0, child: header);
+      ),
+    );
+    return integrated
+        ? DecoratedBox(decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black, Color(0xF2000000)])), child: header)
+        : SurfacePanel(radius: 0, child: header);
   }
 }
 

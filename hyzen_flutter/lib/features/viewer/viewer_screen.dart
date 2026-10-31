@@ -283,8 +283,15 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       child: showOffline
           ? OfflinePdf(
               key: ValueKey('${rec!.key}:${rec.savedAt}:${rec.localPath}'),
-              path: rec.localPath!, tools: _tools,
-              onOpened: () => ref.read(downloadsProvider.notifier).markOpened(rec.key, path: rec.localPath!, savedAt: rec.savedAt),
+              path: rec.localPath!,
+              tools: _tools,
+              onOpened: () => ref
+                  .read(downloadsProvider.notifier)
+                  .markOpened(
+                    rec.key,
+                    path: rec.localPath!,
+                    savedAt: rec.savedAt,
+                  ),
             )
           : NativePreview(key: ValueKey(f.url), url: f.url, tools: _tools),
     );

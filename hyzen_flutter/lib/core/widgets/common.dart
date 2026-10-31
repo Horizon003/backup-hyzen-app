@@ -46,15 +46,23 @@ class _HMarqueeTextState extends State<HMarqueeText>
         final distance = painter.width - constraints.maxWidth;
         if (distance <= 1 || reduced) {
           _controller.stop();
-          return Tooltip(message: widget.text, child: Text(
-            widget.text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: widget.style,
-          ));
+          return Tooltip(
+            message: widget.text,
+            child: Text(
+              widget.text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: widget.style,
+            ),
+          );
         }
-        final duration = Duration(milliseconds: (5000 + distance * 35).round().clamp(5000, 30000));
-        if (_controller.duration != duration) { _controller.stop(); _controller.duration = duration; }
+        final duration = Duration(
+          milliseconds: (5000 + distance * 35).round().clamp(5000, 30000),
+        );
+        if (_controller.duration != duration) {
+          _controller.stop();
+          _controller.duration = duration;
+        }
         if (!_controller.isAnimating) _controller.repeat(reverse: true);
         return ClipRect(
           child: AnimatedBuilder(
@@ -65,8 +73,12 @@ class _HMarqueeTextState extends State<HMarqueeText>
             ),
             child: SizedBox(
               height: painter.height,
-              child: OverflowBox(minWidth: painter.width, maxWidth: painter.width, alignment: Alignment.centerLeft,
-                child: Text(widget.text, maxLines: 1, style: widget.style)),
+              child: OverflowBox(
+                minWidth: painter.width,
+                maxWidth: painter.width,
+                alignment: Alignment.centerLeft,
+                child: Text(widget.text, maxLines: 1, style: widget.style),
+              ),
             ),
           ),
         );
