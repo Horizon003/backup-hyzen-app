@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/utils/media_upload.dart';
 import '../../viewer/document_bytes.dart';
 import '../../viewer/document_flow.dart';
 import '../data/pdf_studio_repository.dart';
@@ -270,10 +271,9 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     final path = await StudioPdfEngine.imagesToPdf(_pages);
     final count = await StudioPdfEngine.pageCount(path);
     if (count != _pages.length) throw const FormatException('Incomplete PDF');
-    final name = _name.text.trim().replaceFirst(
-      RegExp(r'\.pdf$', caseSensitive: false),
-      '',
-    );
+    final name = _cleanFileName(
+      _name.text,
+    ).replaceFirst(RegExp(r'\.pdf$', caseSensitive: false), '');
     final item = await ref
         .read(pdfStudioHistoryProvider.notifier)
         .importFile(
@@ -287,10 +287,76 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
         .updatePageCount(item.id, count);
     if (_android) await _camera.invokeMethod<bool>('clear');
     if (mounted) {
-      showHSnack(context, 'PDF saved to your workspace');
-      context.replace('/pdf-studio/viewer/${item.id}');
+      final action = await showModalBottomSheet<String>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (sheet) => SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheet).height * .72,
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                  ),
+                  title: Text('Saved ${item.displayName}'),
+                  subtitle: Text(
+                    '$count page${count == 1 ? '' : 's'} · Office Workspace',
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.menu_book_rounded),
+                  title: const Text('Open PDF'),
+                  onTap: () => Navigator.pop(sheet, 'open'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.ios_share_rounded),
+                  title: const Text('Share PDF'),
+                  onTap: () => Navigator.pop(sheet, 'share'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.save_alt_rounded),
+                  title: const Text('Save a copy to device'),
+                  onTap: () => Navigator.pop(sheet, 'locate'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      if (!mounted) return;
+      if (action == 'share') {
+        await MediaUpload.shareDocument(
+          item.internalFilePath,
+          item.displayName,
+          'application/pdf',
+        );
+      } else if (action == 'locate') {
+        await MediaUpload.exportDocument(
+          item.internalFilePath,
+          item.displayName,
+          'application/pdf',
+        );
+      }
+      if (mounted) context.replace('/pdf-studio/viewer/${item.id}');
     }
   });
+
+  String _cleanFileName(String value) {
+    final cleaned = value
+        .trim()
+        .replaceAll(RegExp(r'[\\/:*?"<>|]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'\.+$'), '');
+    return cleaned.isEmpty ? 'Scanned notes' : cleaned;
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(documentDraftRevisionProvider, (_, __) {

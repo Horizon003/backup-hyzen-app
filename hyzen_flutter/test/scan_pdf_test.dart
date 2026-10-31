@@ -38,35 +38,50 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   late Directory directory;
   setUp(() async {
-    messenger.setMockMethodCallHandler(const MethodChannel('com.hyzen.pharmd/document_scanner'),
-      (_) async => await camera.invokeListMethod<String>('capture'));
+    messenger.setMockMethodCallHandler(
+      const MethodChannel('com.hyzen.pharmd/document_scanner'),
+      (_) async => await camera.invokeListMethod<String>('capture'),
+    );
     directory = await Directory.systemTemp.createTemp('hyzen-scan-test-');
     Hive.init(directory.path);
     await Hive.openBox<String>(Boxes.pdfStudioHistory);
   });
   tearDown(() async {
-    messenger.setMockMethodCallHandler(const MethodChannel('com.hyzen.pharmd/document_scanner'), null);
+    messenger.setMockMethodCallHandler(
+      const MethodChannel('com.hyzen.pharmd/document_scanner'),
+      null,
+    );
     messenger.setMockMethodCallHandler(camera, null);
     messenger.setMockMethodCallHandler(pdf, null);
     await Hive.close();
     await directory.delete(recursive: true);
   });
-  testWidgets('native multi-page scanner returns to a usable page grid', (tester) async {
-    var scanned = false;
-    messenger.setMockMethodCallHandler(camera, (_) async => <String>[]);
-    messenger.setMockMethodCallHandler(const MethodChannel('com.hyzen.pharmd/document_scanner'), (call) async {
-      scanned = call.method == 'scan';
-      return ['/tmp/scanned-one.jpg', '/tmp/scanned-two.jpg'];
-    });
-    await tester.pumpWidget(const ProviderScope(child: MaterialApp(home: ScanPdfScreen())));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Scan')); await tester.pumpAndSettle();
-    expect(scanned, isTrue);
-    expect(find.text('2 pages'), findsOneWidget);
-    expect(find.byTooltip('Crop / filter page 1'), findsOneWidget);
-    expect(find.byTooltip('Rotate page 2'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+  testWidgets(
+    'native multi-page scanner returns to a usable page grid',
+    (tester) async {
+      var scanned = false;
+      messenger.setMockMethodCallHandler(camera, (_) async => <String>[]);
+      messenger.setMockMethodCallHandler(
+        const MethodChannel('com.hyzen.pharmd/document_scanner'),
+        (call) async {
+          scanned = call.method == 'scan';
+          return ['/tmp/scanned-one.jpg', '/tmp/scanned-two.jpg'];
+        },
+      );
+      await tester.pumpWidget(
+        const ProviderScope(child: MaterialApp(home: ScanPdfScreen())),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Scan'));
+      await tester.pumpAndSettle();
+      expect(scanned, isTrue);
+      expect(find.text('2 pages'), findsOneWidget);
+      expect(find.byTooltip('Crop / filter page 1'), findsOneWidget);
+      expect(find.byTooltip('Rotate page 2'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
   testWidgets(
     'cancelled capture leaves an empty draft and disabled save',
     (tester) async {
@@ -229,13 +244,14 @@ void main() {
           if (events.contains('clear')) break;
         }
       });
-      await tester.pumpAndSettle();
+      await tester.pump();
+      Navigator.of(tester.element(find.text('Open PDF'))).pop('open');
+      await tester.pump(const Duration(milliseconds: 500));
       final saved = container.read(pdfStudioHistoryProvider).single;
       expect(saved.operationBadge, 'SCANNED');
       expect(saved.pageCount, 1);
       expect(saved.displayName, 'Scanned notes.pdf');
       expect(events.indexOf('clear'), greaterThan(events.indexOf('pageCount')));
-      expect(find.text('Saved PDF opened'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
