@@ -10,6 +10,7 @@ import '../data/pdf_studio_repository.dart';
 import '../data/studio_pdf_engine.dart';
 import 'scan_page_editor.dart';
 import 'page_grid.dart';
+import 'scan_review_panel.dart';
 
 Future<void> showCreatePdf(BuildContext context) async {
   final router = GoRouter.of(context);
@@ -57,6 +58,7 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
   static const _camera = MethodChannel('com.hyzen.pharmd/camera_pages');
   final _name = TextEditingController(text: 'Scanned notes');
   List<String> _pages = [];
+  int _selectedPage = 0;
   bool _busy = true;
   String? _error;
   bool get _android =>
@@ -102,7 +104,14 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
   Future<void> _refreshDraft() async {
     try {
       final pages = await _camera.invokeListMethod<String>('recover');
-      if (mounted && !_busy && pages != null) setState(() => _pages = pages);
+      if (mounted && !_busy && pages != null) {
+        setState(() {
+          _pages = pages;
+          _selectedPage = pages.isEmpty
+              ? 0
+              : _selectedPage.clamp(0, pages.length - 1);
+        });
+      }
     } catch (_) {}
   }
 
@@ -135,27 +144,52 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
 
   Future<void> _scan() => _work(() async {
     try {
-      final paths = await const MethodChannel('com.hyzen.pharmd/document_scanner').invokeListMethod<String>('scan');
-      if (mounted && paths != null) setState(() => _pages = paths);
+      final paths = await const MethodChannel(
+        'com.hyzen.pharmd/document_scanner',
+      ).invokeListMethod<String>('scan');
+      if (mounted && paths != null) {
+        setState(() {
+          _pages = paths;
+          _selectedPage = 0;
+        });
+      }
     } on MissingPluginException {
       // Older/unsupported platforms keep the explicit basic-camera fallback.
       final paths = await _camera.invokeListMethod<String>('capture');
-      if (mounted && paths != null) setState(() => _pages = paths);
+      if (mounted && paths != null) {
+        setState(() {
+          _pages = paths;
+          _selectedPage = 0;
+        });
+      }
     }
   });
 
   Future<void> _editPage(int i) async {
     if (_busy) return;
-    final edit = await Navigator.of(context).push<ScanPageEdit>(MaterialPageRoute(builder: (_) => ScanPageEditor(path: _pages[i])));
+    final edit = await Navigator.of(context).push<ScanPageEdit>(
+      MaterialPageRoute(builder: (_) => ScanPageEditor(path: _pages[i])),
+    );
     if (edit == null || !mounted) return;
     await _work(() async {
       var next = [..._pages];
       if (edit.crop != null) {
-        next = await _camera.invokeListMethod<String>('edit', {'paths': [next[i]], 'filter': 'original', 'crop': edit.crop}) ?? next;
+        next =
+            await _camera.invokeListMethod<String>('edit', {
+              'paths': [next[i]],
+              'filter': 'original',
+              'crop': edit.crop,
+            }) ??
+            next;
         if (mounted) setState(() => _pages = next);
       }
       if (edit.filter != 'original') {
-        next = await _camera.invokeListMethod<String>('edit', {'paths': edit.all ? next : [next[i]], 'filter': edit.filter}) ?? next;
+        next =
+            await _camera.invokeListMethod<String>('edit', {
+              'paths': edit.all ? next : [next[i]],
+              'filter': edit.filter,
+            }) ??
+            next;
       }
       if (mounted) setState(() => _pages = next);
     });
@@ -164,7 +198,11 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
   void _back() {
     if (_busy) return;
     // Draft is durable. Leaving the editor never closes the app or discards it.
-    if (context.canPop()) { context.pop(); } else { context.go('/pdf-studio'); }
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/pdf-studio');
+    }
   }
 
   Future<void> _capture() => _work(() async {
@@ -192,19 +230,40 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     final next = _android
         ? await _camera.invokeListMethod<String>('addImages', {'paths': paths})
         : [..._pages, ...paths];
-    if (mounted && next != null) setState(() => _pages = next);
+    if (mounted && next != null) {
+      setState(() {
+        _pages = next;
+        _selectedPage = next.isEmpty
+            ? 0
+            : _selectedPage.clamp(0, next.length - 1);
+      });
+    }
   });
   Future<void> _replace(List<String> pages) => _work(() async {
     final next = _android
         ? await _camera.invokeListMethod<String>('replace', {'paths': pages})
         : pages;
-    if (mounted && next != null) setState(() => _pages = next);
+    if (mounted && next != null) {
+      setState(() {
+        _pages = next;
+        _selectedPage = next.isEmpty
+            ? 0
+            : _selectedPage.clamp(0, next.length - 1);
+      });
+    }
   });
   Future<void> _rotate(String path) => _work(() async {
     final next = await _camera.invokeListMethod<String>('rotate', {
       'path': path,
     });
-    if (mounted && next != null) setState(() => _pages = next);
+    if (mounted && next != null) {
+      setState(() {
+        _pages = next;
+        _selectedPage = next.isEmpty
+            ? 0
+            : _selectedPage.clamp(0, next.length - 1);
+      });
+    }
   });
   Future<void> _save() => _work(() async {
     if (_pages.isEmpty) return;
@@ -240,7 +299,9 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     final t = Theme.of(context);
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _back();
+      },
       child: Scaffold(
         appBar: HTopBar(
           title: 'Create PDF',
@@ -259,7 +320,11 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                 ),
               ),
             if (_error != null && _android)
-              TextButton.icon(onPressed: _busy ? null : _capture, icon: const Icon(Icons.camera_alt_outlined), label: const Text('Use basic camera')),
+              TextButton.icon(
+                onPressed: _busy ? null : _capture,
+                icon: const Icon(Icons.camera_alt_outlined),
+                label: const Text('Use basic camera'),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
               child: TextField(
@@ -279,13 +344,38 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                       title: 'Add your first page',
                       message: 'Scan a document or choose photos below.',
                     )
-                  : PageGrid(
-                      count: _pages.length, identity: (i) => _pages[i],
-                      image: (i) => ScanPageImage(key: ValueKey(_pages[i]), path: _pages[i]),
-                      onMove: (from, to) { if (_busy) return; final next = [..._pages]; next.insert(to, next.removeAt(from)); _replace(next); },
-                      onEdit: _busy ? null : _editPage,
-                      onRotate: _busy ? null : (i) => _rotate(_pages[i]),
-                      onRemove: _busy ? null : (i) => _replace([..._pages]..removeAt(i)),
+                  : Column(
+                      children: [
+                        ScanReviewPanel(
+                          pages: _pages,
+                          selected: _selectedPage.clamp(0, _pages.length - 1),
+                          onSelected: (index) =>
+                              setState(() => _selectedPage = index),
+                        ),
+                        Expanded(
+                          child: PageGrid(
+                            count: _pages.length,
+                            identity: (i) => _pages[i],
+                            image: (i) => ScanPageImage(
+                              key: ValueKey(_pages[i]),
+                              path: _pages[i],
+                            ),
+                            selected: {_selectedPage},
+                            onSelect: (i) => setState(() => _selectedPage = i),
+                            onMove: (from, to) {
+                              if (_busy) return;
+                              final next = [..._pages];
+                              next.insert(to, next.removeAt(from));
+                              _replace(next);
+                            },
+                            onEdit: _busy ? null : _editPage,
+                            onRotate: _busy ? null : (i) => _rotate(_pages[i]),
+                            onRemove: _busy
+                                ? null
+                                : (i) => _replace([..._pages]..removeAt(i)),
+                          ),
+                        ),
+                      ],
                     ),
             ),
           ],
