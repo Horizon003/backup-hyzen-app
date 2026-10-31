@@ -25,8 +25,12 @@ APK workflow, version number, signing or release settings are changed.
 Open the **Account UI validation and browser preview** workflow for
 `fix/mascot-motion-apk`. Its artifact is named `account-ui-review-<full commit SHA>`.
 The job runs Flutter analysis, the test suite, two Flutter web builds and browser
-screenshots. It never invokes an Android build or publishes a release. Automatic branch pushes produce a downloadable browser preview. Manual runs
-also attempt deployment to the existing GitHub Pages preview environment.
+screenshots. It never invokes an Android build or publishes a release. Every
+matching commit pushed to this branch builds and deploys the browser preview
+after validation succeeds. Manual runs use the same validation and deployment.
+The existing github-pages environment must explicitly allow this exact branch;
+that permission change is pending user approval. The workflow does not change
+or bypass environment protection rules.
 
 Download and unzip the artifact, then from its `build/serve` folder run:
 
@@ -52,14 +56,15 @@ package metadata. Gallery upload and device downloads still require Android.
 Screenshots are in `qa/account-redesign/` inside the artifact. The existing Pages
 workflow now builds checked-out Flutter source directly instead of an older ZIP.
 Its own main/manual triggers remain unchanged; the account review workflow
-can update the same preview from the requested review branch on manual runs,
-subject to the repository’s existing Pages environment policy. The first automatic
-deployment attempt was rejected before a runner was allocated; validation and
-all browser builds/screenshots succeeded. No environment/security policy was changed.
+updates the same preview from the requested review branch on pushes and manual
+runs, subject to the repository’s Pages environment policy. The first automatic
+deployment attempt was rejected because only main was allowed. Validation and
+all browser builds/screenshots succeeded. Adding this review branch to the Pages
+allowlist requires the user's explicit approval; no environment rule has been saved.
 
 ## Hosted browser preview
 
-A hosted link is available only after a successful manual deployment. Check the
+A hosted link is available only after a successful deployment. Check the
 deploy job before using these URLs; the downloadable preview above works without
 Pages deployment. For the default GitHub Pages domain:
 
@@ -69,6 +74,9 @@ Pages deployment. For the default GitHub Pages domain:
 
 The root path is the normal authenticated app; `/ui-review/` uses the labelled
 sample profile. Check `commit.txt` at the root to identify the deployed source.
+After each requested UI change is committed to this branch, allow a few minutes
+for the web build and deployment, then refresh the same preview link. An Android
+APK is built only when separately requested.
 
 ## Local Flutter checks
 
