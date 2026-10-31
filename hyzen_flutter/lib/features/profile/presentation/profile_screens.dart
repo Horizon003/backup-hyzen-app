@@ -665,10 +665,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 }
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _query = '';
+
+  bool _matches(String value) =>
+      _query.trim().isEmpty ||
+      value.toLowerCase().contains(_query.toLowerCase());
+
+  @override
+  Widget build(BuildContext context) {
     final t = Theme.of(context);
     final mode = ref.watch(themeModeProvider);
     final notif = ref.watch(boolPrefProvider('pref_announcements'));
@@ -683,7 +695,12 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: HSpace.screen),
           sliver: SliverList.list(
             children: [
-              PanelBlock(
+              SurfacePanel(
+                tint: t.brightness == Brightness.dark
+                    ? t.colorScheme.surfaceContainerHigh
+                    : const Color(0xff27313b),
+                radius: HRadius.xl,
+                padding: const EdgeInsets.all(HSpace.md),
                 child: Row(
                   children: [
                     ProfileAvatar(
@@ -704,10 +721,18 @@ class SettingsScreen extends ConsumerWidget {
                           Text(
                             ref.watch(profileProvider).valueOrNull?.fullName ??
                                 'Your account',
-                            style: t.textTheme.titleMedium,
+                            style: t.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           const Gap(3),
-                          const Text('Make it yours'),
+                          Text(
+                            'Personal workspace · study preferences',
+                            style: t.textTheme.bodySmall?.copyWith(
+                              color: Colors.white70,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -719,150 +744,194 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Gap(18),
-              ResourceTile(
-                icon: Icons.system_update_rounded,
-                color: HColors.primary,
-                title: 'App updates',
-                subtitle: 'Check the latest PHARM D WITH HYZEN release',
-                onTap: () =>
-                    checkForUpdate(context, ref.read(siteSettingsProvider).raw),
-              ),
-              ResourceTile(
-                icon: Icons.school_rounded,
-                color: HColors.primary,
-                title: 'Professional year & profile',
-                subtitle: ReferenceData.yearLabel(
-                  ref.watch(professionalYearProvider),
-                ),
-                onTap: () => context.push('/profile/edit'),
-              ),
-              const Gap(HSpace.md),
-              PanelBlock(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('Appearance', style: t.textTheme.titleMedium),
-                    const Gap(HSpace.md),
-                    Row(
-                      children: [
-                        IconBadge(
-                          icon: Icons.contrast_rounded,
-                          color: HColors.primary,
-                          size: 32,
+              const Gap(HSpace.sm),
+              TextField(
+                onChanged: (value) => setState(() => _query = value),
+                decoration: InputDecoration(
+                  hintText: 'Search settings',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          onPressed: () => setState(() => _query = ''),
+                          icon: const Icon(Icons.close_rounded),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'General graphite palette',
-                            style: t.textTheme.bodyMedium,
+                  isDense: true,
+                ),
+              ),
+              const Gap(HSpace.sm),
+              Wrap(
+                spacing: 6,
+                children: [
+                  for (final category in const [
+                    ('Personal', Icons.person_outline_rounded),
+                    ('Academic', Icons.school_outlined),
+                    ('Security', Icons.shield_outlined),
+                  ])
+                    Chip(
+                      avatar: Icon(category.$2, size: 16),
+                      label: Text(category.$1),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+              const Gap(HSpace.sm),
+              if (_matches('personal academic profile updates'))
+                Text('Personal & academic', style: t.textTheme.titleSmall),
+              const Gap(4),
+              if (_matches('app updates release'))
+                ResourceTile(
+                  icon: Icons.system_update_rounded,
+                  color: HColors.primary,
+                  title: 'App updates',
+                  subtitle: 'Check the latest PHARM D WITH HYZEN release',
+                  onTap: () => checkForUpdate(
+                    context,
+                    ref.read(siteSettingsProvider).raw,
+                  ),
+                ),
+              if (_matches('professional year profile academic'))
+                ResourceTile(
+                  icon: Icons.school_rounded,
+                  color: HColors.primary,
+                  title: 'Professional year & profile',
+                  subtitle: ReferenceData.yearLabel(
+                    ref.watch(professionalYearProvider),
+                  ),
+                  onTap: () => context.push('/profile/edit'),
+                ),
+              const Gap(HSpace.md),
+              if (_matches('appearance theme graphite light dark'))
+                PanelBlock(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text('Appearance', style: t.textTheme.titleMedium),
+                      const Gap(HSpace.md),
+                      Row(
+                        children: [
+                          IconBadge(
+                            icon: Icons.contrast_rounded,
+                            color: HColors.primary,
+                            size: 32,
                           ),
-                        ),
-                        const Icon(Icons.check_circle_rounded, size: 20),
-                      ],
-                    ),
-                    const Gap(16),
-                    SegmentedButton<ThemeMode>(
-                      segments: const [
-                        ButtonSegment(
-                          value: ThemeMode.light,
-                          icon: Icon(Icons.light_mode_rounded),
-                          label: Text('Light'),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.dark,
-                          icon: Icon(Icons.dark_mode_rounded),
-                          label: Text('Dark'),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.system,
-                          icon: Icon(Icons.phone_android_rounded),
-                          label: Text('Auto'),
-                        ),
-                      ],
-                      selected: {mode},
-                      onSelectionChanged: (s) =>
-                          ref.read(themeModeProvider.notifier).set(s.first),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(HSpace.md),
-              PanelBlock(
-                padding: const EdgeInsets.symmetric(vertical: HSpace.sm),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      value: notif,
-                      onChanged: (v) => ref
-                          .read(boolPrefProvider('pref_announcements').notifier)
-                          .set(v),
-                      title: const Text('Show announcements'),
-                      subtitle: const Text(
-                        'Pop-up notices published by PHARM D WITH HYZEN',
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'General graphite palette',
+                              style: t.textTheme.bodyMedium,
+                            ),
+                          ),
+                          const Icon(Icons.check_circle_rounded, size: 20),
+                        ],
                       ),
-                    ),
-                  ],
+                      const Gap(16),
+                      SegmentedButton<ThemeMode>(
+                        segments: const [
+                          ButtonSegment(
+                            value: ThemeMode.light,
+                            icon: Icon(Icons.light_mode_rounded),
+                            label: Text('Light'),
+                          ),
+                          ButtonSegment(
+                            value: ThemeMode.dark,
+                            icon: Icon(Icons.dark_mode_rounded),
+                            label: Text('Dark'),
+                          ),
+                          ButtonSegment(
+                            value: ThemeMode.system,
+                            icon: Icon(Icons.phone_android_rounded),
+                            label: Text('Auto'),
+                          ),
+                        ],
+                        selected: {mode},
+                        onSelectionChanged: (s) =>
+                            ref.read(themeModeProvider.notifier).set(s.first),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               const Gap(HSpace.md),
-              PanelBlock(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('Storage', style: t.textTheme.titleMedium),
-                    const Gap(HSpace.sm),
-                    Text(
-                      'Offline files: ${formatBytes(used)}',
-                      style: t.textTheme.bodyMedium,
-                    ),
-                    if (kIsWeb)
+              if (_matches('notifications announcements'))
+                PanelBlock(
+                  padding: const EdgeInsets.symmetric(vertical: HSpace.sm),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        value: notif,
+                        onChanged: (v) => ref
+                            .read(
+                              boolPrefProvider('pref_announcements').notifier,
+                            )
+                            .set(v),
+                        title: const Text('Show announcements'),
+                        subtitle: const Text(
+                          'Pop-up notices published by PHARM D WITH HYZEN',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const Gap(HSpace.md),
+              if (_matches('storage downloads cache history'))
+                PanelBlock(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text('Storage', style: t.textTheme.titleMedium),
+                      const Gap(HSpace.sm),
                       Text(
-                        'Save Offline is available in the Android app.',
-                        style: t.textTheme.bodySmall,
+                        'Offline files: ${formatBytes(used)}',
+                        style: t.textTheme.bodyMedium,
                       ),
-                    const Gap(HSpace.sm),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.cleaning_services_rounded),
-                          label: const Text('Clear content cache'),
-                          onPressed: () async {
-                            await JsonBox(Boxes.contentCache).clear();
-                            for (final key in publicContentKeys) {
-                              forcedRefresh.add(key);
-                              ref.invalidate(contentProvider(key));
-                            }
-                            if (context.mounted) {
-                              showHSnack(
-                                context,
-                                'Cache cleared. Content will reload.',
-                              );
-                            }
-                          },
+                      if (kIsWeb)
+                        Text(
+                          'Save Offline is available in the Android app.',
+                          style: t.textTheme.bodySmall,
                         ),
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.history_rounded),
-                          label: const Text('Clear history'),
-                          onPressed: () async {
-                            await ref.read(recentProvider.notifier).clear();
-                            if (context.mounted) {
-                              showHSnack(context, 'History cleared');
-                            }
-                          },
-                        ),
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.folder_open_rounded),
-                          label: const Text('Manage downloads'),
-                          onPressed: () => context.go('/downloads'),
-                        ),
-                      ],
-                    ),
-                  ],
+                      const Gap(HSpace.sm),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.cleaning_services_rounded),
+                            label: const Text('Clear content cache'),
+                            onPressed: () async {
+                              await JsonBox(Boxes.contentCache).clear();
+                              for (final key in publicContentKeys) {
+                                forcedRefresh.add(key);
+                                ref.invalidate(contentProvider(key));
+                              }
+                              if (context.mounted) {
+                                showHSnack(
+                                  context,
+                                  'Cache cleared. Content will reload.',
+                                );
+                              }
+                            },
+                          ),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.history_rounded),
+                            label: const Text('Clear history'),
+                            onPressed: () async {
+                              await ref.read(recentProvider.notifier).clear();
+                              if (context.mounted) {
+                                showHSnack(context, 'History cleared');
+                              }
+                            },
+                          ),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.folder_open_rounded),
+                            label: const Text('Manage downloads'),
+                            onPressed: () => context.go('/downloads'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               const Gap(HSpace.md),
               ResourceTile(
                 icon: Icons.description_rounded,

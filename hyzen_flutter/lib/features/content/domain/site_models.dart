@@ -36,13 +36,48 @@ class SiteSettings {
   String get currency => _s(raw['currency'], 'PKR');
   String get logoUrl => _s(raw['logoUrl']);
 
+  /// Up to three optional account-overlay promotions controlled from the
+  /// admin settings document. Empty slots are ignored on student devices.
+  List<AccountAd> get accountAds => [
+    for (var slot = 1; slot <= 3; slot++) AccountAd.fromSlot(raw, slot),
+  ].where((ad) => ad.visible).toList(growable: false);
+
   FullScreenNotice? get notice {
     final n = raw['fullScreenNotice'];
     return n is Map ? FullScreenNotice(n.cast<String, dynamic>()) : null;
   }
 }
 
-/// CONFIRMED `settings/pw_settings.value.fullScreenNotice`.
+class AccountAd {
+  const AccountAd({
+    required this.slot,
+    required this.imageUrl,
+    required this.title,
+    required this.subtitle,
+    required this.route,
+    required this.enabled,
+  });
+
+  final int slot;
+  final String imageUrl, title, subtitle, route;
+  final bool enabled;
+
+  bool get visible => enabled && imageUrl.isNotEmpty && title.isNotEmpty;
+
+  factory AccountAd.fromSlot(Map<String, dynamic> raw, int slot) {
+    String value(String key) => _s(raw['accountAd$slot$key']);
+    return AccountAd(
+      slot: slot,
+      imageUrl: value('Image'),
+      title: value('Title'),
+      subtitle: value('Subtitle'),
+      route: value('Route'),
+      enabled: _truthy(raw['accountAd${slot}Enabled']),
+    );
+  }
+}
+
+/// CONFIRMED `pw_settings.value.fullScreenNotice`.
 /// Eligibility = legacy `Notices.eligible`: enabled && id && not expired && not seen.
 class FullScreenNotice {
   FullScreenNotice(this.raw);

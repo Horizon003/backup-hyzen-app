@@ -2,47 +2,214 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../content/data/content_providers.dart';
+import '../../../core/utils/links.dart';
 
-/// Real catalog promotions; no invented prices or duplicated character art.
+/// Account overlay promotions. Admin-managed image slots are rendered first;
+/// the existing catalog/offline cards remain as a safe fallback.
 class ProfilePromotions extends ConsumerStatefulWidget {
   const ProfilePromotions({super.key});
+
   @override
   ConsumerState<ProfilePromotions> createState() => _ProfilePromotionsState();
 }
+
+class _Promotion {
+  const _Promotion({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.image,
+    this.route,
+    this.admin = false,
+  });
+
+  final String title, subtitle;
+  final IconData icon;
+  final String? image, route;
+  final bool admin;
+}
+
 class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
-  int _page=0;
+  int _page = 0;
+
   @override
   Widget build(BuildContext context) {
-    final settings=ref.watch(siteSettingsProvider);
-    if(!settings.sectionEnabled('shop')) return const SizedBox.shrink();
-    final products=ref.watch(productsProvider).valueOrNull?.data.where((p)=>!p.hidden).take(5).toList();
-    final slides= <(String,String,IconData,String,String?)>[
-      if(products != null) for(final p in products)
-        (p.name,'${settings.currency} ${p.price}',Icons.shopping_bag_outlined,'/shop/p/${p.id}',p.image),
-      if(products == null || products.isEmpty)
-        ('Pharm-D essentials',settings.shopComingSoon ? 'Discover what is coming' : 'Tools for your study journey',Icons.shopping_bag_outlined,'/shop',null),
-      ('Your offline library','Keep your notes within reach',Icons.download_done_rounded,'/downloads',null),
-    ];
-    final theme=Theme.of(context);
-    return Column(children:[
-      SizedBox(height: 152 * MediaQuery.textScalerOf(context).scale(1).clamp(1,1.8),
-        child: PageView.builder(itemCount:slides.length,onPageChanged:(i)=>setState(()=>_page=i),
-          itemBuilder:(_,i){ final s=slides[i]; return Padding(padding:const EdgeInsets.symmetric(horizontal:2),child:Card(
-            clipBehavior:Clip.antiAlias, color:theme.colorScheme.primaryContainer,
-            child:InkWell(onTap:()=>context.push(s.$4),child:Padding(padding:const EdgeInsets.all(18),child:Row(children:[
-              if(s.$5 != null) ClipRRect(borderRadius:BorderRadius.circular(14),child:Image.network(s.$5!,width:72,height:96,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Icon(s.$3,size:42)))
-              else Icon(s.$3,size:42,color:theme.colorScheme.primary),
-              const SizedBox(width:16),Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[
-                Text(s.$1,maxLines:2,overflow:TextOverflow.ellipsis,style:theme.textTheme.titleMedium),
-                const SizedBox(height:6),Text(s.$2,maxLines:2,overflow:TextOverflow.ellipsis,style:theme.textTheme.bodySmall),
-              ])),const Icon(Icons.chevron_right_rounded),
-            ]))),
-          ));}),
+    final settings = ref.watch(siteSettingsProvider);
+    final products = ref
+        .watch(productsProvider)
+        .valueOrNull
+        ?.data
+        .where((p) => !p.hidden)
+        .take(5)
+        .toList();
+    final slides = <_Promotion>[
+      for (final ad in settings.accountAds)
+        _Promotion(
+          title: ad.title,
+          subtitle: ad.subtitle,
+          image: ad.imageUrl,
+          route: ad.route,
+          icon: Icons.campaign_outlined,
+          admin: true,
+        ),
+      if (products != null)
+        for (final product in products)
+          _Promotion(
+            title: product.name,
+            subtitle: '${settings.currency} ${product.price}',
+            icon: Icons.shopping_bag_outlined,
+            image: product.image,
+            route: '/shop/p/${product.id}',
+          ),
+      if (products == null || products.isEmpty)
+        _Promotion(
+          title: 'Pharm-D essentials',
+          subtitle: settings.shopComingSoon
+              ? 'Discover what is coming'
+              : 'Tools for your study journey',
+          icon: Icons.shopping_bag_outlined,
+          route: '/shop',
+        ),
+      const _Promotion(
+        title: 'Your offline library',
+        subtitle: 'Keep your notes within reach',
+        icon: Icons.download_done_rounded,
+        route: '/downloads',
       ),
-      const SizedBox(height:8),
-      Row(mainAxisAlignment:MainAxisAlignment.center,children:[for(var i=0;i<slides.length;i++)
-        Container(margin:const EdgeInsets.symmetric(horizontal:3),width:i==_page?18:6,height:6,decoration:BoxDecoration(color:i==_page?theme.colorScheme.primary:theme.colorScheme.outlineVariant,borderRadius:BorderRadius.circular(8))),
-      ]),
-    ]);
+    ];
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: PageView.builder(
+            itemCount: slides.length,
+            onPageChanged: (value) => setState(() => _page = value),
+            itemBuilder: (context, index) {
+              final slide = slides[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  margin: EdgeInsets.zero,
+                  child: InkWell(
+                    onTap: slide.route == null || slide.route!.isEmpty
+                        ? null
+                        : () {
+                            if (slide.route!.startsWith('/')) {
+                              context.push(slide.route!);
+                            } else {
+                              openLink(context, slide.route!);
+                            }
+                          },
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (slide.image != null && slide.image!.isNotEmpty)
+                          Image.network(
+                            slide.image!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink(),
+                          ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: .78),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              if (slide.admin)
+                                const Text(
+                                  'FEATURED',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              const SizedBox(height: 3),
+                              Text(
+                                slide.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (slide.subtitle.isNotEmpty)
+                                Text(
+                                  slide.subtitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (slide.image == null || slide.image!.isEmpty)
+                          Positioned(
+                            right: 18,
+                            top: 18,
+                            child: Icon(
+                              slide.icon,
+                              size: 42,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        const Positioned(
+                          right: 14,
+                          bottom: 14,
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var index = 0; index < slides.length; index++)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: index == _page ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: index == _page
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
