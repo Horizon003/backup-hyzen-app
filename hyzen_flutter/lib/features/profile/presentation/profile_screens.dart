@@ -998,7 +998,10 @@ Future<void> _chooseTheme(
               SettingsRow(
                 title: item.$2,
                 trailing: mode == item.$1
-                    ? Icon(Icons.check_rounded, color: AccountStyle.linkOf(context))
+                    ? Icon(
+                        Icons.check_rounded,
+                        color: AccountStyle.linkOf(context),
+                      )
                     : null,
                 onTap: () => Navigator.pop(context, item.$1),
               ),

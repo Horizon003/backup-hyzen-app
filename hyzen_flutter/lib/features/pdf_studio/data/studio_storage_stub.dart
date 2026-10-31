@@ -5,7 +5,9 @@ StudioStorage createStudioStorage() => _UnsupportedStudioStorage();
 class _UnsupportedStudioStorage implements StudioStorage {
   @override
   Future<StoredStudioFile> importCopy(String sourcePath, String id) =>
-      Future.error(UnsupportedError('Office Workspace file storage requires Android.'));
+      Future.error(
+        UnsupportedError('Office Workspace file storage requires Android.'),
+      );
 
   @override
   Future<void> deleteStored({

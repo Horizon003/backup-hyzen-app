@@ -73,13 +73,15 @@ class AppShell extends StatelessWidget {
       child: Scaffold(
         extendBody: true,
         body: UpdateGate(child: navigationShell),
-        bottomNavigationBar: reader || account ? null : MainDock(
-          path: path,
-          onSelected: (destination) => navigationShell.goBranch(
-            destination.branchIndex,
-            initialLocation: idx == destination.branchIndex,
-          ),
-        ),
+        bottomNavigationBar: reader || account
+            ? null
+            : MainDock(
+                path: path,
+                onSelected: (destination) => navigationShell.goBranch(
+                  destination.branchIndex,
+                  initialLocation: idx == destination.branchIndex,
+                ),
+              ),
       ),
     );
   }
@@ -111,7 +113,9 @@ class TabPage extends StatelessWidget {
           child: SizedBox(height: MediaQuery.paddingOf(context).top + 64 + 8),
         ),
         ...slivers,
-        SliverToBoxAdapter(child: SizedBox(height: MainDock.contentInset(context))),
+        SliverToBoxAdapter(
+          child: SizedBox(height: MainDock.contentInset(context)),
+        ),
       ],
     );
     return Scaffold(

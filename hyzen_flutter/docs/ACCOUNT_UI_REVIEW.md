@@ -1,8 +1,10 @@
 # Account UI review
 
 The active Flutter project is `hyzen_flutter/`. Account, Settings, Account Info
-(`/profile/info`) and the existing profile editor share the approved black,
-charcoal, white, soft blue and coral design. The avatar menu uses the same Account
+(`/profile/info`) and the existing profile editor share the approved rounded Account layout. They follow the app’s existing
+Light / Dark / Auto preference: white cards and dark text in Light, approved
+black/charcoal surfaces with white text in Dark. Soft blue links and coral
+destructive actions retain their purpose in both modes. The avatar menu uses the same Account
 screen as `/profile`; existing routes, academic fields, promotions, local profile
 sync, photo upload, downloads, orders, legal pages and logout remain connected.
 
@@ -28,9 +30,9 @@ The job runs Flutter analysis, the test suite, two Flutter web builds and browse
 screenshots. It never invokes an Android build or publishes a release. Every
 matching commit pushed to this branch builds and deploys the browser preview
 after validation succeeds. Manual runs use the same validation and deployment.
-The existing github-pages environment must explicitly allow this exact branch;
-the user explicitly approved this exact branch rule and it has been saved in
-github-pages settings alongside main. The workflow keeps the environment gate.
+The existing github-pages environment explicitly allows this review branch
+following the approved branch-rule update. The workflow does not change
+or bypass environment protection rules.
 
 Download and unzip the artifact, then from its `build/serve` folder run:
 
@@ -57,11 +59,8 @@ Screenshots are in `qa/account-redesign/` inside the artifact. The existing Page
 workflow now builds checked-out Flutter source directly instead of an older ZIP.
 Its own main/manual triggers remain unchanged; the account review workflow
 updates the same preview from the requested review branch on pushes and manual
-runs, subject to the repository’s Pages environment policy. The first automatic
-deployment attempt was rejected because only main was allowed. Validation and
-all browser builds/screenshots succeeded. Adding this review branch to the Pages
-allowlist was explicitly approved by the user and saved. Existing main access
-and the other environment settings remain in place.
+runs, subject to the repository’s Pages environment policy. The preview continues to use the existing protected github-pages environment;
+no additional site or deployment workflow is introduced.
 
 ## Hosted browser preview
 
@@ -92,3 +91,51 @@ flutter run -d chrome --target lib/main_account_review.dart --dart-define=HYZEN_
 Open `/profile`, `/profile/info` or `/settings` using the hash routes above.
 Do not invoke an APK workflow until the UI is approved. The final Android package
 remains one Universal APK for ARM32, ARM64 and x86_64.
+
+## Five-tab navigation review
+
+The existing MainDock now maps exactly five destinations to the original shell
+branches, without reordering auxiliary branches:
+
+| Visible destination | Existing route | Shell branch |
+| --- | --- | --- |
+| Home | /home | 0 |
+| Study | /study | 1 |
+| Office Workspace | /pdf-studio | 3 |
+| Shop | /shop | 6 |
+| Downloads | /downloads | 4 |
+
+Study opens its hub on first entry. Switching tabs restores each branch’s nested
+stack; tapping the selected destination returns to its root. Downloads has an
+independent selected state and retains the existing controller, persisted records
+and screen filters. Search, Account, Settings and Admin remain auxiliary routes.
+Account and immersive workspace readers continue to hide the dock.
+
+The dock is pure black in both app themes, with white labels/icons and neutral
+selected surfaces. Office occupies the center with a restrained selected lift.
+Motion uses HMotion and respects disableAnimations. Each destination keeps an
+equal accessible hit area; compact Office text retains the full accessibility
+label. TabPage reserves matching dock/system-gesture clearance once.
+
+The review entrypoint also accepts /home, /study, /pdf-studio, /shop, /downloads
+and /search, using the same real app screens with sample content/auth only.
+Add ?theme=light or ?theme=dark **before** the hash, for example:
+
+- https://horizon003.github.io/pharm-d-with-hyzen/ui-review/?theme=light#/profile
+- https://horizon003.github.io/pharm-d-with-hyzen/ui-review/?theme=dark#/pdf-studio
+- https://horizon003.github.io/pharm-d-with-hyzen/ui-review/?theme=dark#/downloads
+
+Normal Settings → App theme remains functional and persisted. An explicit review
+URL theme takes priority when that URL is loaded again.
+
+The existing capture script saves light/dark Account, Account Info, Settings,
+Office and Downloads screenshots plus 320px Office captures with reduced motion.
+It validates five accessible destinations, their order, >=48px hit targets and
+actual route changes in Chromium. browser-evidence.json records the source SHA
+and capture matrix. Flutter navigation tests cover route selection, retained
+Study stacks, retained download records/filters, auxiliary routes, safe areas,
+large text, reduced motion and theme changes. The full existing regression suite
+continues to run for downloads, scanner, reader, registration and account access.
+
+No Home redesign, panda/mascot change, Android build, version/signing/ABI change,
+release publication or main-branch merge is part of this task.

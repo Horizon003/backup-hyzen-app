@@ -134,9 +134,7 @@ class AppTheme {
       onSurfaceVariant: ink2,
       surfaceContainerLowest: dark ? HColors.darkSurface : Colors.white,
       surfaceContainerLow: dark ? HColors.darkSurfaceAlt : HColors.surfaceAlt,
-      surfaceContainer: dark
-          ? HColors.darkSurfaceAlt
-          : HColors.surfaceAlt,
+      surfaceContainer: dark ? HColors.darkSurfaceAlt : HColors.surfaceAlt,
       surfaceContainerHigh: dark
           ? const Color(0xFF323232)
           : const Color(0xFFE6E6E4),

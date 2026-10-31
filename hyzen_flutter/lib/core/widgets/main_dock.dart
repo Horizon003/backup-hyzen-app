@@ -31,7 +31,7 @@ class MainDock extends StatelessWidget {
   static double height(BuildContext context) =>
       48.0 + math.max(22.0, MediaQuery.textScalerOf(context).scale(11) * 2.4);
   static double contentInset(BuildContext context) =>
-      height(context) + 26 + MediaQuery.viewPaddingOf(context).bottom;
+      height(context) + 16 + math.max(10.0, MediaQuery.viewPaddingOf(context).bottom);
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +61,8 @@ class MainDock extends StatelessWidget {
                 padding: const EdgeInsets.all(6),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final compact = constraints.maxWidth / 5 < 116 ||
+                    final compact =
+                        constraints.maxWidth / 5 < 116 ||
                         MediaQuery.textScalerOf(context).scale(11) > 13;
                     return Row(
                       children: [
@@ -119,7 +120,9 @@ class _DockItem extends StatelessWidget {
                 curve: HMotion.curve,
                 decoration: BoxDecoration(
                   color: selected
-                      ? (office ? const Color(0xFF38383D) : const Color(0xFF29292D))
+                      ? (office
+                            ? const Color(0xFF38383D)
+                            : const Color(0xFF29292D))
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(HRadius.pill),
                 ),
@@ -128,14 +131,22 @@ class _DockItem extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       AnimatedSlide(
-                        offset: !reduce && selected ? const Offset(0, -.07) : Offset.zero,
+                        offset: !reduce && selected
+                            ? const Offset(0, -.07)
+                            : Offset.zero,
                         duration: duration,
                         curve: HMotion.curve,
                         child: AnimatedScale(
-                          scale: !reduce && selected ? (office ? 1.10 : 1.05) : 1,
+                          scale: !reduce && selected
+                              ? (office ? 1.10 : 1.05)
+                              : 1,
                           duration: duration,
                           curve: HMotion.curve,
-                          child: Icon(destination.icon, color: Colors.white, size: 23),
+                          child: Icon(
+                            destination.icon,
+                            color: Colors.white,
+                            size: 23,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -150,7 +161,9 @@ class _DockItem extends StatelessWidget {
                             fontSize: 10.5,
                             height: 1.15,
                             color: Colors.white,
-                            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                            fontWeight: selected
+                                ? FontWeight.w800
+                                : FontWeight.w600,
                           ),
                         ),
                       ),

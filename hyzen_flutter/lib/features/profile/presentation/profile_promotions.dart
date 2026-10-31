@@ -88,7 +88,8 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
             onPageChanged: (value) => setState(() => _page = value),
             itemBuilder: (context, index) {
               final slide = slides[index];
-              final overlay = theme.brightness == Brightness.dark ||
+              final overlay =
+                  theme.brightness == Brightness.dark ||
                   (slide.image != null && slide.image!.isNotEmpty);
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -122,7 +123,9 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                               end: Alignment.bottomCenter,
                               colors: [
                                 overlay ? Colors.transparent : Colors.white,
-                                overlay ? Colors.black.withValues(alpha: .78) : const Color(0xFFF0F2F3),
+                                overlay
+                                    ? Colors.black.withValues(alpha: .78)
+                                    : const Color(0xFFF0F2F3),
                               ],
                             ),
                           ),
@@ -149,7 +152,9 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  color: overlay ? Colors.white : theme.colorScheme.onSurface,
+                                  color: overlay
+                                      ? Colors.white
+                                      : theme.colorScheme.onSurface,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -159,7 +164,9 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: overlay ? Colors.white70 : theme.colorScheme.onSurfaceVariant,
+                                    color: overlay
+                                        ? Colors.white70
+                                        : theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                             ],
@@ -180,7 +187,9 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                           bottom: 14,
                           child: Icon(
                             Icons.arrow_forward_rounded,
-                            color: overlay ? Colors.white : theme.colorScheme.onSurface,
+                            color: overlay
+                                ? Colors.white
+                                : theme.colorScheme.onSurface,
                             size: 20,
                           ),
                         ),
