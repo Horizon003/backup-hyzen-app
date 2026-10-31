@@ -179,7 +179,9 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                             child: Icon(
                               slide.icon,
                               size: 42,
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: overlay
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         Positioned(

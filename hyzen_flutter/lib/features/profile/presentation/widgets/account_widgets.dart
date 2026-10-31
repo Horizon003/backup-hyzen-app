@@ -45,7 +45,7 @@ abstract final class AccountStyle {
       outlineVariant: line,
       primaryContainer: avatarOf(context),
       onPrimaryContainer: muted,
-      error: dark ? destructive : const Color(0xFFD94339),
+      error: dark ? destructive : HColors.error,
     );
     return base.copyWith(
       colorScheme: scheme,

@@ -31,7 +31,9 @@ class MainDock extends StatelessWidget {
   static double height(BuildContext context) =>
       48.0 + math.max(22.0, MediaQuery.textScalerOf(context).scale(11) * 2.4);
   static double contentInset(BuildContext context) =>
-      height(context) + 16 + math.max(10.0, MediaQuery.viewPaddingOf(context).bottom);
+      height(context) +
+      16 +
+      math.max(10.0, MediaQuery.viewPaddingOf(context).bottom);
 
   @override
   Widget build(BuildContext context) {

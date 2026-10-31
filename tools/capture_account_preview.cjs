@@ -29,12 +29,21 @@ const fs = require('node:fs');
       await page.waitForTimeout(3500);
       const enable = page.getByRole('button', {name: 'Enable accessibility'});
       if (await enable.count()) await enable.evaluate(button => button.click());
-      await page.getByLabel(title, {exact: true}).first().waitFor({timeout: 30000});
+      try {
+        // Retained shell branches can expose hidden copies of a header label.
+        // Wait for a visible match rather than an arbitrary first DOM node.
+        await page.getByLabel(title, {exact: true}).filter({visible: true}).first().waitFor({timeout: 30000});
+      } catch (error) {
+        await page.screenshot({path: `${output}/failure-${theme}-${name}.png`});
+        fs.writeFileSync(`${output}/failure-${theme}-${name}.html`, await page.content());
+        console.error(JSON.stringify({theme, name, url: page.url(), labels: await page.locator('[aria-label]').evaluateAll(nodes => nodes.map(n => n.getAttribute('aria-label')))}));
+        throw error;
+      }
       if (name.startsWith('office') || name === 'downloads') {
         // Verify all five actual accessible hit areas and their visual order.
         const bounds = [];
         for (const label of destinations) {
-          const item = page.getByRole('button', {name: label, exact: true});
+          const item = page.getByRole('button', {name: label, exact: true}).filter({visible: true});
           if (await item.count() !== 1) throw Error(`${theme}/${name}: expected one ${label}`);
           const box = await item.boundingBox();
           if (!box || box.width < 48 || box.height < 48) throw Error(`Small target: ${label}`);
@@ -48,7 +57,7 @@ const fs = require('node:fs');
       if (name === 'office') {
         for (const [label, route] of [['Study', '/study'], ['Downloads', '/downloads'],
           ['Office Workspace', '/pdf-studio'], ['Shop', '/shop'], ['Home', '/home']]) {
-          await page.getByRole('button', {name: label, exact: true}).click();
+          await page.getByRole('button', {name: label, exact: true}).filter({visible: true}).click();
           await page.waitForURL(url => url.hash === `#${route}`);
           evidence.navigation.push({theme, label, route, passed: true});
         }

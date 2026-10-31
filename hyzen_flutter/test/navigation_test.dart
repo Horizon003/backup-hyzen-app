@@ -278,11 +278,28 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Notes'), findsWidgets);
       expect(find.text('MCQs'), findsWidgets);
-      for (final path in ['/study/notes', '/study/special', '/study/mcqs', '/study/papers']) {
+      for (final path in [
+        '/study/notes',
+        '/study/special',
+        '/study/mcqs',
+        '/study/papers',
+      ]) {
         container.read(routerProvider).go(path);
         await tester.pumpAndSettle();
-        expect(tester.widget<Semantics>(find.byKey(const ValueKey('dock-study'))).properties.selected, isTrue);
-        expect(tester.widget<Semantics>(find.byKey(const ValueKey('dock-downloads'))).properties.selected, isFalse);
+        expect(
+          tester
+              .widget<Semantics>(find.byKey(const ValueKey('dock-study')))
+              .properties
+              .selected,
+          isTrue,
+        );
+        expect(
+          tester
+              .widget<Semantics>(find.byKey(const ValueKey('dock-downloads')))
+              .properties
+              .selected,
+          isFalse,
+        );
       }
     },
   );
@@ -438,6 +455,34 @@ void main() {
       }
     },
   );
+
+  testWidgets('NAV-10 signed-out Login and password recovery routes remain usable', (tester) async {
+    final guest = ProviderContainer(overrides: [
+      sharedPrefsProvider.overrideWithValue(prefs),
+      authStateProvider.overrideWith((ref) => Stream.value(null)),
+      profileProvider.overrideWith((ref) => Stream.value(null)),
+      contentProvider.overrideWith((ref, key) => Stream.value(
+        const ContentSnapshot(value: {}, fromCache: false))),
+    ]);
+    addTearDown(guest.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(container: guest, child: const HyzenApp()));
+    await tester.pumpAndSettle();
+    guest.read(routerProvider).go('/login');
+    await tester.pumpAndSettle();
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.byType(MainDock), findsNothing);
+    await tester.enterText(find.byType(TextFormField).first, 'student@example.org');
+    await tester.tap(find.byTooltip('Show password'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Hide password'), findsOneWidget);
+    await tester.ensureVisible(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+    expect(guest.read(routerProvider).routeInformationProvider.value.uri.path, '/forgot-password');
+    expect(tester.widget<TextFormField>(find.byType(TextFormField).first).initialValue, 'student@example.org');
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'account surfaces follow persisted Light and Dark without changing layout',
