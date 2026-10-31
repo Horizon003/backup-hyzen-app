@@ -144,6 +144,7 @@ Future<void> showStudioExportSheet(
   );
   if (destination == null || !context.mounted) return;
   final navigator = Navigator.of(context, rootNavigator: true);
+  final container = ProviderScope.containerOf(context, listen: false);
   var processing = true;
   unawaited(
     showDialog<void>(
@@ -195,7 +196,7 @@ Future<void> showStudioExportSheet(
       if (result.text.trim().isEmpty) {
         throw const FormatException('No readable Latin text was found.');
       }
-      await ProviderScope.containerOf(context, listen: false)
+      await container
           .read(ocrIndexProvider.notifier)
           .save(
             documentId: file.id,
