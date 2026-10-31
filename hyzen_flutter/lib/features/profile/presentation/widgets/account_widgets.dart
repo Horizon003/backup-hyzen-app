@@ -35,6 +35,26 @@ abstract final class AccountStyle {
         displayColor: Colors.white,
       ),
       dividerColor: divider,
+      dividerTheme: const DividerThemeData(color: divider, thickness: .7, space: 1),
+      iconTheme: const IconThemeData(color: secondary),
+      iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(
+        backgroundColor: Colors.transparent, foregroundColor: secondary,
+      )),
+      appBarTheme: base.appBarTheme.copyWith(
+        backgroundColor: background, foregroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+      ),
+      dialogTheme: base.dialogTheme.copyWith(
+        backgroundColor: card, surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+      ),
+      bottomSheetTheme: base.bottomSheetTheme.copyWith(
+        backgroundColor: card, modalBackgroundColor: card,
+      ),
+      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: link)),
+      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
+        backgroundColor: Colors.white, foregroundColor: Colors.black,
+      )),
       cardTheme: const CardThemeData(
         color: card,
         shape: RoundedRectangleBorder(
@@ -44,6 +64,8 @@ abstract final class AccountStyle {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: card,
+        prefixIconColor: secondary,
+        suffixIconColor: secondary,
         hintStyle: const TextStyle(color: secondary),
         labelStyle: const TextStyle(color: secondary),
         border: OutlineInputBorder(
@@ -161,6 +183,7 @@ class CircularNavigationButton extends StatelessWidget {
       tooltip: close ? 'Close account' : 'Back',
       onPressed: onPressed,
       color: const Color(0xFFE5E5E8),
+      style: IconButton.styleFrom(backgroundColor: Colors.transparent),
       icon: Icon(
         close ? Icons.close_rounded : Icons.chevron_left_rounded,
         size: close ? 31 : 36,
@@ -282,6 +305,26 @@ class SettingsRow extends StatelessWidget {
   );
 }
 
+class AccountAvatar extends StatelessWidget {
+  const AccountAvatar({super.key, required this.photoUrl, required this.fallback,
+    this.radius = 28});
+  final String? photoUrl;
+  final String fallback;
+  final double radius;
+  @override
+  Widget build(BuildContext context) {
+    final image = ProfileAvatar.imageFor(photoUrl);
+    return CircleAvatar(
+      radius: radius, foregroundImage: image,
+      onForegroundImageError: image == null ? null : (_, __) {},
+      backgroundColor: const Color(0xFF1D1D20),
+      child: Text(fallback.isEmpty ? 'H' : fallback[0].toUpperCase(),
+        style: const TextStyle(fontSize: 16, color: AccountStyle.secondary,
+          fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
 class AccountProfileCard extends StatelessWidget {
   const AccountProfileCard({
     super.key,
@@ -303,7 +346,7 @@ class AccountProfileCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              ProfileAvatar(photoUrl: photoUrl, fallback: name, radius: 28),
+              AccountAvatar(photoUrl: photoUrl, fallback: name, radius: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

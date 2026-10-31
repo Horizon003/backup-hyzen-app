@@ -192,11 +192,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'info',
-                    builder: (_, __) => const AccountTheme(child: AccountInfoScreen()),
+                    builder: (_, __) =>
+                        const AccountTheme(child: AccountInfoScreen()),
                   ),
                   GoRoute(
                     path: 'edit',
-                    builder: (_, __) => const AccountTheme(child: EditProfileScreen()),
+                    builder: (_, __) =>
+                        const AccountTheme(child: EditProfileScreen()),
                   ),
                 ],
               ),

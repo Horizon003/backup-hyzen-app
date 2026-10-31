@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: account-review-${{ github.ref }}
@@ -75,3 +77,21 @@ jobs:
             hyzen_flutter/test/navigation_test.dart
             hyzen_flutter/pubspec.lock
           if-no-files-found: error
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: hyzen_flutter/build/serve/pharm-d-with-hyzen
+
+  deploy-preview:
+    needs: validate-preview
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy reviewed browser build
+        id: deployment
+        uses: actions/deploy-pages@v4

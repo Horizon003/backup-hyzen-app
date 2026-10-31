@@ -25,7 +25,8 @@ APK workflow, version number, signing or release settings are changed.
 Open the **Account UI validation and browser preview** workflow for
 `fix/mascot-motion-apk`. Its artifact is named `account-ui-review-<full commit SHA>`.
 The job runs Flutter analysis, the test suite, two Flutter web builds and browser
-screenshots. It never invokes an Android build or publishes a release.
+screenshots. It never invokes an Android build or publishes a release. After validation, it
+updates the existing GitHub Pages browser preview (including `/ui-review/`).
 
 Download and unzip the artifact, then from its `build/serve` folder run:
 
@@ -50,7 +51,19 @@ package metadata. Gallery upload and device downloads still require Android.
 
 Screenshots are in `qa/account-redesign/` inside the artifact. The existing Pages
 workflow now builds checked-out Flutter source directly instead of an older ZIP.
-It still deploys only under its existing main/manual triggers.
+Its own main/manual triggers remain unchanged; the account review workflow
+updates the same preview from the requested review branch.
+
+## Hosted browser preview
+
+Use the deployment URL on the workflow run. For the default GitHub Pages domain:
+
+- `https://horizon003.github.io/pharm-d-with-hyzen/ui-review/#/profile`
+- `https://horizon003.github.io/pharm-d-with-hyzen/ui-review/#/profile/info`
+- `https://horizon003.github.io/pharm-d-with-hyzen/ui-review/#/settings`
+
+The root path is the normal authenticated app; `/ui-review/` uses the labelled
+sample profile. Check `commit.txt` at the root to identify the deployed source.
 
 ## Local Flutter checks
 

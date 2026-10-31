@@ -5,9 +5,9 @@ const fs = require('node:fs');
   fs.mkdirSync('hyzen_flutter/qa/account-redesign', {recursive: true});
   const browser = await chromium.launch({headless: true, args: ['--no-sandbox']});
   const errors = [];
-  const page = await browser.newPage({viewport: {width: 390, height: 1400}, deviceScaleFactor: 2});
-  page.on('pageerror', error => errors.push(String(error)));
   for (const [name, path] of [['account', '/profile'], ['account-info', '/profile/info'], ['settings', '/settings']]) {
+    const page = await browser.newPage({viewport: {width: 390, height: name === 'settings' ? 1600 : name === 'account' ? 1100 : 1400}, deviceScaleFactor: 2});
+    page.on('pageerror', error => errors.push(String(error)));
     await page.goto(`http://127.0.0.1:8080/pharm-d-with-hyzen/ui-review/#${path}`);
     await page.waitForSelector('flutter-view', {timeout: 90000});
     await page.waitForTimeout(5000);
@@ -18,6 +18,7 @@ const fs = require('node:fs');
     const title = name === 'account-info' ? 'Account info' : name === 'account' ? 'Account' : 'Settings';
     await page.getByLabel(title, {exact: true}).first().waitFor({timeout: 30000});
     await page.screenshot({path: `hyzen_flutter/qa/account-redesign/${name}.png`});
+    await page.close();
   }
   await browser.close();
   if (errors.length) throw new Error(errors.join('\n'));

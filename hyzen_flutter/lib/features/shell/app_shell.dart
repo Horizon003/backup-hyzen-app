@@ -328,13 +328,15 @@ Future<void> showAccountMenu(BuildContext context) {
     ),
     builder: (sheetContext) => FractionallySizedBox(
       heightFactor: .96,
-      child: AccountTheme(child: ProfileScreen(
-        onClose: () => Navigator.pop(sheetContext),
-        onNavigate: (path) {
-          Navigator.pop(sheetContext);
-          router.push(path);
-        },
-      )),
+      child: AccountTheme(
+        child: ProfileScreen(
+          onClose: () => Navigator.pop(sheetContext),
+          onNavigate: (path) {
+            Navigator.pop(sheetContext);
+            router.push(path);
+          },
+        ),
+      ),
     ),
   );
 }

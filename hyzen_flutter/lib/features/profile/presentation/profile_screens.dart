@@ -172,7 +172,7 @@ class AccountInfoScreen extends ConsumerWidget {
       children: [
         const SizedBox(height: 8),
         Center(
-          child: ProfileAvatar(
+          child: AccountAvatar(
             photoUrl: p?.photoUrl ?? user?.photoURL,
             fallback: name,
             radius: 46,

@@ -31,8 +31,15 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   await Boxes.init();
   final requestedPath = Uri.base.fragment;
-  final initialPath = const ['/profile', '/profile/info', '/profile/edit', '/settings']
-    .contains(requestedPath) ? requestedPath : '/profile';
+  final initialPath =
+      const [
+        '/profile',
+        '/profile/info',
+        '/profile/edit',
+        '/settings',
+      ].contains(requestedPath)
+      ? requestedPath
+      : '/profile';
   runApp(
     ProviderScope(
       overrides: [
@@ -82,8 +89,12 @@ class _ReviewAppState extends ConsumerState<_ReviewApp> {
     }
     return const Directionality(
       textDirection: TextDirection.ltr,
-      child: Banner(message: 'SAMPLE DATA', location: BannerLocation.bottomEnd,
-        color: Color(0xFF38383D), child: HyzenApp()),
+      child: Banner(
+        message: 'SAMPLE DATA',
+        location: BannerLocation.bottomEnd,
+        color: Color(0xFF38383D),
+        child: HyzenApp(),
+      ),
     );
   }
 }
