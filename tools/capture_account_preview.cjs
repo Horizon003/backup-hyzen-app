@@ -41,6 +41,17 @@ const fs = require('node:fs');
         throw error;
       }
       if (name.startsWith('office') || name === 'downloads') {
+        // Warm CanvasKit's icon glyph atlas through real navigation. A cold
+        // GPU readback can omit freshly rasterized foregrounds in Chromium.
+        await page.getByRole('button', {name: 'Home', exact: true}).click();
+        await page.waitForURL(url => url.hash === '#/home');
+        await page.waitForTimeout(300);
+        const activeLabel = name.startsWith('office') ? 'Office Workspace' : 'Downloads';
+        await page.getByRole('button', {name: activeLabel, exact: true}).click();
+        await page.waitForURL(url => url.hash === `#${path}`);
+        await page.waitForTimeout(300);
+      }
+      if (name.startsWith('office') || name === 'downloads') {
         // Verify all five actual accessible hit areas and their visual order.
         const bounds = [];
         const active = name.startsWith('office') ? 'Office Workspace' : 'Downloads';
