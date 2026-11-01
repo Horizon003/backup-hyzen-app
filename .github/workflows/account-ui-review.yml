@@ -67,8 +67,7 @@ jobs:
           mkdir -p "$preview"
           cp tools/downloads_preview.html "$preview/downloads.html"
           cp hyzen_flutter/qa/account-redesign/{dark,light}-downloads.png "$preview/"
-          cp hyzen_flutter/qa/account-redesign/{dark,light}-downloads-empty.png "$preview/"
-          for file in downloads.html dark-downloads.png light-downloads.png dark-downloads-empty.png light-downloads-empty.png; do
+          for file in downloads.html dark-downloads.png light-downloads.png; do
             test -s "$preview/$file"
           done
       - uses: actions/upload-artifact@v4

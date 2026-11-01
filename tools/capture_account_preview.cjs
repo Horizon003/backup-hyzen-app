@@ -164,23 +164,6 @@ const fs = require('node:fs');
       await page.close();
     }
   }
-  // Screenshot the true zero-download state so both unique panda poses can be reviewed.
-  for (const theme of ['light','dark']) {
-    const page = await browser.newPage({viewport:{width:390,height:1150},deviceScaleFactor:2,reducedMotion:'reduce'});
-    page.on('pageerror',error=>errors.push(String(error)));
-    page.on('console',m=>{if(/overflowed by|Unhandled Exception/.test(m.text()))errors.push(m.text());});
-    await page.goto(`http://127.0.0.1:8080/pharm-d-with-hyzen/ui-review/?theme=${theme}&scenario=empty#/downloads`);
-    await page.waitForSelector('flutter-view',{timeout:90000});
-    await page.waitForTimeout(2500);
-    const enable=page.getByRole('button',{name:'Enable accessibility'});
-    if(await enable.count())await enable.evaluate(b=>b.click());
-    await page.getByText('No downloads yet',{exact:true}).waitFor({timeout:30000});
-    await page.waitForTimeout(600);
-    const filename=`${theme}-downloads-empty.png`;
-    await page.screenshot({path:`${output}/${filename}`});
-    evidence.captures.push({filename,theme,path:'/downloads',scenario:'empty',sampleData:true});
-    await page.close();
-  }
   fs.writeFileSync(`${output}/browser-evidence.json`, JSON.stringify(evidence, null, 2));
   await browser.close();
   if (errors.length) throw new Error(errors.join('\n'));
