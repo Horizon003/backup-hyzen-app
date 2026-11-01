@@ -493,13 +493,10 @@ void main() {
     await open(tester, '/downloads');
     expect(
       find.byWidgetPredicate(
-        (widget) {
-          if (widget is! Image) return false;
-          final provider = widget.image;
-          final asset = provider is ResizeImage ? provider.image : provider;
-          return asset is AssetImage &&
-              asset.assetName == 'assets/mascot/mascot_success_wave.png';
-        },
+        (widget) =>
+            widget is Image &&
+            widget.semanticLabel ==
+                'Hyzen panda waving from the offline library card',
       ),
       findsOneWidget,
     );
