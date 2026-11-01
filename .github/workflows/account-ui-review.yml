@@ -46,7 +46,7 @@ jobs:
           version=$(sed -n 's/^version: //p' pubspec.yaml)
           flutter build web --release --no-pub --base-href /pharm-d-with-hyzen/ --dart-define=HYZEN_APP_VERSION="$version"
           mv build/web build/app-web
-          flutter build web --release --no-pub --target lib/main_account_review.dart --base-href /pharm-d-with-hyzen/ui-review/ --dart-define=HYZEN_APP_VERSION="$version"
+          flutter build web --release --pwa-strategy=none --no-pub --target lib/main_account_review.dart --base-href /pharm-d-with-hyzen/ui-review/ --dart-define=HYZEN_APP_VERSION="$version"
           mkdir -p build/app-web/ui-review
           cp -a build/web/. build/app-web/ui-review/
           mkdir -p build/serve/pharm-d-with-hyzen
@@ -61,6 +61,16 @@ jobs:
           npx playwright install --with-deps chromium
           python3 -m http.server 8080 --directory hyzen_flutter/build/serve > /tmp/hyzen-review-server.log 2>&1 &
           node tools/capture_account_preview.cjs
+      - name: Publish lightweight iPhone-friendly Downloads previews
+        run: |
+          preview=hyzen_flutter/build/serve/pharm-d-with-hyzen/preview
+          mkdir -p "$preview"
+          cp tools/downloads_preview.html "$preview/downloads.html"
+          cp hyzen_flutter/qa/account-redesign/{dark,light}-downloads.png "$preview/"
+          cp hyzen_flutter/qa/account-redesign/{dark,light}-downloads-empty.png "$preview/"
+          for file in downloads.html dark-downloads.png light-downloads.png dark-downloads-empty.png light-downloads-empty.png; do
+            test -s "$preview/$file"
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
