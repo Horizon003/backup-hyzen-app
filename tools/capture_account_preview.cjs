@@ -43,9 +43,11 @@ const fs = require('node:fs');
       if (name.startsWith('office') || name === 'downloads') {
         // Warm CanvasKit's icon glyph atlas through real navigation. A cold
         // GPU readback can omit freshly rasterized foregrounds in Chromium.
-        await page.getByRole('button', {name: 'Home', exact: true}).click();
-        await page.waitForURL(url => url.hash === '#/home');
-        await page.waitForTimeout(300);
+        for (const [label, route] of [['Home','/home'],['Study','/study'],['Shop','/shop'],['Downloads','/downloads']]) {
+          await page.getByRole('button',{name:label,exact:true}).click();
+          await page.waitForURL(url => url.hash === '#'+route);
+          await page.waitForTimeout(150);
+        }
         const activeLabel = name.startsWith('office') ? 'Office Workspace' : 'Downloads';
         await page.getByRole('button', {name: activeLabel, exact: true}).click();
         await page.waitForURL(url => url.hash === `#${path}`);

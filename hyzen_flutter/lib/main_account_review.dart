@@ -106,7 +106,7 @@ Future<void> main() async {
                   ? {
                       'enabled': true,
                       'text':
-                          'Sample announcement · Your revision workspace is ready.',
+                          'Made By Haris (Horizon) with pure Love ❤️',
                     }
                   : [],
               fromCache: false,

@@ -52,7 +52,8 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
   bool _matches(StudioFileItem file) {
     final filterMatch = switch (_filter) {
       _StudioFilter.all => true,
-      _StudioFilter.scanned => file.sourceType.contains('SCAN') || file.operationBadge == 'SCANNED',
+      _StudioFilter.scanned =>
+        file.sourceType.contains('SCAN') || file.operationBadge == 'SCANNED',
       _StudioFilter.edited => file.operationBadge == 'EDITED',
       _StudioFilter.mergedSplit =>
         file.operationBadge == 'MERGED' || file.operationBadge == 'SPLIT',
@@ -66,7 +67,10 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
                 .contains(_query.toLowerCase()));
   }
 
-  void _openTool(StudioTool tool) => Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(builder: (_) => StudioToolsScreen(tool: tool)));
+  void _openTool(StudioTool tool) =>
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute<void>(builder: (_) => StudioToolsScreen(tool: tool)),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +105,14 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
 
     return TabPage(
       title: 'Office Workspace',
-      headerTheme: theme.copyWith(textTheme: theme.textTheme.copyWith(titleLarge: theme.textTheme.titleLarge?.copyWith(fontSize: 22, fontWeight: FontWeight.w800))),
+      headerTheme: theme.copyWith(
+        textTheme: theme.textTheme.copyWith(
+          titleLarge: theme.textTheme.titleLarge?.copyWith(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
       subtitle: 'Read · Edit · Study · Succeed',
       slivers: [
         SliverPadding(
@@ -109,23 +120,142 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
           sliver: SliverList.list(
             children: [
               const Gap(12),
-              Text('CREATE & IMPORT', style: theme.textTheme.labelLarge), const Gap(14),
-              LayoutBuilder(builder: (context, constraints) {
-                final cards = [
-                  _WorkspaceAction(title: 'Scan document', subtitle: 'Use camera', icon: Icons.document_scanner_outlined, filled: true, onTap: () => context.push('/create-pdf?source=camera')),
-                  _WorkspaceAction(title: 'From images', subtitle: 'Convert gallery photos', icon: Icons.photo_library_outlined, onTap: () => context.push('/create-pdf?source=gallery')),
-                ];
-                return MediaQuery.textScalerOf(context).scale(1) > 1.3 ? Column(children: [for(final card in cards) Padding(padding: const EdgeInsets.only(bottom: 12), child: card)]) : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: cards[0]), const Gap(12), Expanded(child: cards[1])]);
-              }),
+              Text('CREATE & IMPORT', style: theme.textTheme.labelLarge),
+              const Gap(14),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cards = [
+                    _WorkspaceAction(
+                      title: 'Scan document',
+                      subtitle: 'Use camera',
+                      icon: Icons.document_scanner_outlined,
+                      filled: true,
+                      onTap: () => context.push('/create-pdf?source=camera'),
+                    ),
+                    _WorkspaceAction(
+                      title: 'From images',
+                      subtitle: 'Convert gallery photos',
+                      icon: Icons.photo_library_outlined,
+                      onTap: () => context.push('/create-pdf?source=gallery'),
+                    ),
+                  ];
+                  return MediaQuery.textScalerOf(context).scale(1) > 1.3
+                      ? Column(
+                          children: [
+                            for (final card in cards)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: card,
+                              ),
+                          ],
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: cards[0]),
+                            const SizedBox(width: 12),
+                            Expanded(child: cards[1]),
+                          ],
+                        );
+                },
+              ),
               const Gap(12),
-              HCard(radius: 20, onTap: () => _openTool(StudioTool.open), child: Row(children: [const Icon(Icons.picture_as_pdf_outlined, size: 30), const Gap(14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Open PDF', style: theme.textTheme.titleLarge), const Gap(4), const Text('Read or edit an existing file')])), const Icon(Icons.chevron_right)])),
-              const Gap(24), Text('QUICK TOOLS', style: theme.textTheme.labelLarge), const Gap(14),
-              LayoutBuilder(builder: (context, constraints) {
-                final tools = [(StudioTool.merge, Icons.copy_outlined, 'Merge PDFs'), (StudioTool.organize, Icons.folder_outlined, 'Organize'), (StudioTool.extract, Icons.document_scanner_outlined, 'Extract pages')];
-                return Wrap(spacing: 8, runSpacing: 8, children: [for(final tool in tools) SizedBox(width: MediaQuery.textScalerOf(context).scale(1) > 1.3 ? constraints.maxWidth : (constraints.maxWidth - 16) / 3, child: HCard(radius: 20, onTap: () => _openTool(tool.$1), padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8), child: Column(children: [Icon(tool.$2, size: 27), const Gap(10), Text(tool.$3, textAlign: TextAlign.center, style: theme.textTheme.titleSmall)])))]);
-              }),
+              HCard(
+                radius: 20,
+                onTap: () => _openTool(StudioTool.open),
+                child: Row(
+                  children: [
+                    const Icon(Icons.picture_as_pdf_outlined, size: 30),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Open PDF', style: theme.textTheme.titleLarge),
+                          const Gap(4),
+                          const Text('Read or edit an existing file'),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right),
+                  ],
+                ),
+              ),
               const Gap(24),
-              SectionHeader(title: 'Recent Files', action: 'See all', onAction: () => showModalBottomSheet<void>(context: context, isScrollControlled: true, useSafeArea: true, showDragHandle: true, builder: (_) => SizedBox(height: MediaQuery.sizeOf(context).height * .75, child: ListView(padding: const EdgeInsets.all(16), children: [Text('All workspace files', style: theme.textTheme.titleLarge), const Gap(16), if(ref.read(pdfStudioHistoryProvider).isEmpty) const Text('No recent documents'), for(final file in ref.read(pdfStudioHistoryProvider)) _StudioHistoryTile(file: file)])))),
+              Text('QUICK TOOLS', style: theme.textTheme.labelLarge),
+              const Gap(14),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final tools = [
+                    (StudioTool.merge, Icons.copy_outlined, 'Merge PDFs'),
+                    (StudioTool.organize, Icons.folder_outlined, 'Organize'),
+                    (
+                      StudioTool.extract,
+                      Icons.document_scanner_outlined,
+                      'Extract pages',
+                    ),
+                  ];
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final tool in tools)
+                        SizedBox(
+                          width: MediaQuery.textScalerOf(context).scale(1) > 1.3
+                              ? constraints.maxWidth
+                              : (constraints.maxWidth - 16) / 3,
+                          child: HCard(
+                            radius: 20,
+                            onTap: () => _openTool(tool.$1),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 18,
+                              horizontal: 8,
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(tool.$2, size: 27),
+                                const Gap(10),
+                                Text(
+                                  tool.$3,
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.titleSmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              const Gap(24),
+              SectionHeader(
+                title: 'Recent Files',
+                action: 'See all',
+                onAction: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  showDragHandle: true,
+                  builder: (_) => SizedBox(
+                    height: MediaQuery.sizeOf(context).height * .75,
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        Text(
+                          'All workspace files',
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        const Gap(16),
+                        if (ref.read(pdfStudioHistoryProvider).isEmpty)
+                          const Text('No recent documents'),
+                        for (final file in ref.read(pdfStudioHistoryProvider))
+                          _StudioHistoryTile(file: file),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               const Gap(10),
               HSearchField(
                 hint: 'Search documents',
@@ -149,8 +279,14 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
                             _StudioFilter.external => 'External (saved)',
                           }),
                           selected: _filter == filter,
-                          selectedColor: theme.brightness == Brightness.dark ? const Color(0xFF48484C) : const Color(0xFF1C1C1E),
-                          labelStyle: TextStyle(color: _filter == filter ? Colors.white : theme.colorScheme.onSurface),
+                          selectedColor: theme.brightness == Brightness.dark
+                              ? const Color(0xFF48484C)
+                              : const Color(0xFF1C1C1E),
+                          labelStyle: TextStyle(
+                            color: _filter == filter
+                                ? Colors.white
+                                : theme.colorScheme.onSurface,
+                          ),
                           checkmarkColor: Colors.white,
                           visualDensity: VisualDensity.compact,
                           materialTapTargetSize:
@@ -163,7 +299,39 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
               ),
               const Gap(HSpace.sm),
               if (history.isEmpty && notImported.isEmpty)
-                HCard(radius: 22, padding: const EdgeInsets.all(24), child: Column(children: [const Gap(12), Icon(Icons.file_copy_outlined, size: 80, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: .45)), const Gap(20), Text('No recent documents', style: theme.textTheme.titleLarge), const Gap(8), const Text('Your scans and PDFs will appear here', textAlign: TextAlign.center), const Gap(20), OutlinedButton.icon(onPressed: () => _openTool(StudioTool.open), icon: const Icon(Icons.folder_outlined), label: const Text('Browse files')), const Gap(8)])),
+                HCard(
+                  radius: 22,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      const Gap(12),
+                      Icon(
+                        Icons.file_copy_outlined,
+                        size: 80,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: .45,
+                        ),
+                      ),
+                      const Gap(20),
+                      Text(
+                        'No recent documents',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const Gap(8),
+                      const Text(
+                        'Your scans and PDFs will appear here',
+                        textAlign: TextAlign.center,
+                      ),
+                      const Gap(20),
+                      OutlinedButton.icon(
+                        onPressed: () => _openTool(StudioTool.open),
+                        icon: const Icon(Icons.folder_outlined),
+                        label: const Text('Browse files'),
+                      ),
+                      const Gap(8),
+                    ],
+                  ),
+                ),
               for (final file in history) _StudioHistoryTile(file: file),
               if (notImported.isNotEmpty) ...[
                 const Gap(HSpace.md),
@@ -515,7 +683,13 @@ class _PdfStudioFileViewerScreenState
 }
 
 class _WorkspaceAction extends StatelessWidget {
-  const _WorkspaceAction({required this.title, required this.subtitle, required this.icon, required this.onTap, this.filled = false});
+  const _WorkspaceAction({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+    this.filled = false,
+  });
   final String title, subtitle;
   final IconData icon;
   final VoidCallback onTap;
@@ -523,6 +697,37 @@ class _WorkspaceAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ink = filled ? Colors.white : Theme.of(context).colorScheme.onSurface;
-    return HCard(radius: 22, color: filled ? const Color(0xFF1C1C1E) : null, padding: const EdgeInsets.all(18), onTap: onTap, child: ConstrainedBox(constraints: BoxConstraints(minHeight: 96 * MediaQuery.textScalerOf(context).scale(1)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, size: 30, color: ink), const Gap(20), Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: ink, fontWeight: FontWeight.w800)), const Gap(4), Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ink.withValues(alpha: .72)))])));
+    return HCard(
+      radius: 22,
+      color: filled ? const Color(0xFF1C1C1E) : null,
+      padding: const EdgeInsets.all(18),
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: 96 * MediaQuery.textScalerOf(context).scale(1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 30, color: ink),
+            const Gap(20),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: ink,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const Gap(4),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: ink.withValues(alpha: .72),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
