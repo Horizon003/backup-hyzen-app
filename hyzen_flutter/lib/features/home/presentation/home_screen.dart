@@ -19,7 +19,6 @@ import '../../academics/domain/models.dart';
 import '../../academics/presentation/library_screens.dart';
 import '../../academics/presentation/discovery_widgets.dart';
 import '../../content/data/content_providers.dart';
-import '../../content/domain/site_models.dart';
 import '../../shell/app_shell.dart';
 import '../../auth/presentation/auth_controllers.dart';
 import '../data/recent_controller.dart';

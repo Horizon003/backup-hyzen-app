@@ -101,6 +101,7 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
 
     return TabPage(
       title: 'Office Workspace',
+      headerTheme: theme.copyWith(textTheme: theme.textTheme.copyWith(titleLarge: theme.textTheme.titleLarge?.copyWith(fontSize: 22, fontWeight: FontWeight.w800))),
       subtitle: 'Read · Edit · Study · Succeed',
       slivers: [
         SliverPadding(
