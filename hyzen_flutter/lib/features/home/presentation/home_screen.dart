@@ -147,7 +147,20 @@ class HomeScreen extends ConsumerWidget {
                               'Hyzen panda reading above mountains and clouds',
                         ),
                       ),
-                      Positioned(left: 0, right: 0, bottom: 0, height: 32, child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, dark ? const Color(0xFF101012) : const Color(0xFFF1F1F3)])))))),
+                      Positioned(
+                        left: 0, right: 0, bottom: 0, height: 32,
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Colors.transparent, dark ? const Color(0xFF101012) : const Color(0xFFF1F1F3)],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                       Positioned(
                         top: 32,
                         left: 16,
@@ -574,3 +587,4 @@ class LegalScreen extends StatelessWidget {
     );
   }
 }
+
