@@ -112,10 +112,12 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
               ),
               const Gap(HSpace.md),
               if (list.isEmpty && all.isEmpty) ...[
-                const HyzenRiveMascot(
-                  state: HyzenRiveState.downloading,
-                  size: 150,
-                  semanticLabel: 'Hyzen panda ready to save study files',
+                const Center(
+                  child: HyzenRiveMascot(
+                    state: HyzenRiveState.downloading,
+                    size: 150,
+                    semanticLabel: 'Hyzen panda ready to save study files',
+                  ),
                 ),
                 EmptyState(
                   icon: Icons.cloud_download_outlined,
