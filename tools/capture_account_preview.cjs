@@ -158,7 +158,7 @@ const fs = require('node:fs');
         await page.getByRole('button',{name:'Show password',exact:true}).click();
         await page.getByRole('button',{name:'Hide password',exact:true}).waitFor();
         await page.getByRole('button',{name:'Forgot password?',exact:true}).click();
-        await page.waitForURL(url=>url.hash==='#/forgot-password');
+        await page.getByText('Forgot your password?',{exact:true}).waitFor({timeout:30000});
         evidence.auth.push({theme,passwordVisibility:true,passwordRecovery:true});
       }
       await page.close();
