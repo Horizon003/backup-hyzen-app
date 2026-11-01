@@ -64,7 +64,11 @@ Future<void> main() async {
       ? requestedPath
       : '/profile';
   // Auth previews are signed out only in this isolated sample-data entrypoint.
-  final guestPreview = const ['/welcome', '/login', '/forgot-password'].contains(initialPath);
+  final guestPreview = const [
+    '/welcome',
+    '/login',
+    '/forgot-password',
+  ].contains(initialPath);
   final emptyHome = Uri.base.queryParameters['scenario'] == 'empty';
   final tree = <Map<String, dynamic>>[];
   var id = 0;
@@ -88,7 +92,9 @@ Future<void> main() async {
         sharedPrefsProvider.overrideWithValue(prefs),
         downloadsProvider.overrideWith(() => _ReviewDownloads(emptyHome)),
         recentProvider.overrideWith(() => _ReviewRecent(emptyHome)),
-        authStateProvider.overrideWith((ref) => Stream<User?>.value(guestPreview ? null : _ReviewUser())),
+        authStateProvider.overrideWith(
+          (ref) => Stream<User?>.value(guestPreview ? null : _ReviewUser()),
+        ),
         authRepositoryProvider.overrideWithValue(_ReviewAuth()),
         profileProvider.overrideWith((ref) {
           if (guestPreview) return Stream<StudentProfile?>.value(null);

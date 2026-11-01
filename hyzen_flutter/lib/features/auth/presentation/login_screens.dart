@@ -162,7 +162,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    final heroHeight = (MediaQuery.sizeOf(context).height * .32).clamp(220.0, 310.0);
+    final heroHeight = (MediaQuery.sizeOf(context).height * .32).clamp(
+      220.0,
+      310.0,
+    );
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -182,11 +185,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       'assets/auth/login_panda.webp',
                       key: const ValueKey('login-panda-hero'),
                       fit: BoxFit.cover,
-                      semanticLabel: 'Hyzen panda welcoming you to the pharmacy library',
+                      semanticLabel:
+                          'Hyzen panda welcoming you to the pharmacy library',
                     ),
                   ),
                   Positioned(
-                    top: 0, left: 0, right: 0,
+                    top: 0,
+                    left: 0,
+                    right: 0,
                     child: SafeArea(
                       bottom: false,
                       child: Padding(
@@ -201,7 +207,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 color: Colors.black,
                                 icon: const Icon(Icons.arrow_back_rounded),
                                 onPressed: () => context.canPop()
-                                    ? context.pop() : context.go('/welcome'),
+                                    ? context.pop()
+                                    : context.go('/welcome'),
                               ),
                             ),
                             const Spacer(),
@@ -217,84 +224,104 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       key: const ValueKey('login-form-panel'),
                       decoration: BoxDecoration(
                         color: t.colorScheme.surface,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(32),
+                        ),
                       ),
                       padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                       child: SafeArea(
                         top: false,
                         child: Form(
-        key: _form,
-        child: AutofillGroup(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Welcome to PHARM D WITH HYZEN',
-                style: t.textTheme.headlineSmall?.copyWith(fontSize: 24, fontWeight: FontWeight.w800, height: 1.2),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Log in to continue your Pharm-D journey.',
-                style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: HSpace.xl),
-              if (_error != null) ...[
-                _ErrorBanner(message: _error!),
-                const SizedBox(height: HSpace.md),
-              ],
-              TextFormField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                autofillHints: const [
-                  AutofillHints.email,
-                  AutofillHints.username,
-                ],
-                autocorrect: false,
-                validator: Validators.email,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                onFieldSubmitted: (_) => _pwFocus.requestFocus(),
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.alternate_email_rounded),
-                ),
-              ),
-              const SizedBox(height: HSpace.md),
-              PasswordField(
-                controller: _pw,
-                focusNode: _pwFocus,
-                validator: Validators.loginPassword,
-                onSubmitted: (_) => _submit(),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => context.push(
-                    '/forgot-password',
-                    extra: _email.text.trim(),
-                  ),
-                  child: const Text('Forgot password?'),
-                ),
-              ),
-              const SizedBox(height: HSpace.xs),
-              HButton(label: 'Log in', loading: _busy, onPressed: _submit),
-              const SizedBox(height: HSpace.lg),
-              Wrap(
-                alignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text('New to PHARM D WITH HYZEN?', style: t.textTheme.bodyMedium),
-                  TextButton(
-                    onPressed: () =>
-                        context.pushReplacement('/register/personal'),
-                    child: const Text('Create account'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+                          key: _form,
+                          child: AutofillGroup(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Welcome to PHARM D WITH HYZEN',
+                                  style: t.textTheme.headlineSmall?.copyWith(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Log in to continue your Pharm-D journey.',
+                                  style: t.textTheme.bodyMedium?.copyWith(
+                                    color: t.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: HSpace.xl),
+                                if (_error != null) ...[
+                                  _ErrorBanner(message: _error!),
+                                  const SizedBox(height: HSpace.md),
+                                ],
+                                TextFormField(
+                                  controller: _email,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  autofillHints: const [
+                                    AutofillHints.email,
+                                    AutofillHints.username,
+                                  ],
+                                  autocorrect: false,
+                                  validator: Validators.email,
+                                  autovalidateMode:
+                                      AutovalidateMode.onUserInteraction,
+                                  onFieldSubmitted: (_) =>
+                                      _pwFocus.requestFocus(),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Email',
+                                    prefixIcon: Icon(
+                                      Icons.alternate_email_rounded,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: HSpace.md),
+                                PasswordField(
+                                  controller: _pw,
+                                  focusNode: _pwFocus,
+                                  validator: Validators.loginPassword,
+                                  onSubmitted: (_) => _submit(),
+                                ),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () => context.push(
+                                      '/forgot-password',
+                                      extra: _email.text.trim(),
+                                    ),
+                                    child: const Text('Forgot password?'),
+                                  ),
+                                ),
+                                const SizedBox(height: HSpace.xs),
+                                HButton(
+                                  label: 'Log in',
+                                  loading: _busy,
+                                  onPressed: _submit,
+                                ),
+                                const SizedBox(height: HSpace.lg),
+                                Wrap(
+                                  alignment: WrapAlignment.center,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    Text(
+                                      'New to PHARM D WITH HYZEN?',
+                                      style: t.textTheme.bodyMedium,
+                                    ),
+                                    TextButton(
+                                      onPressed: () => context.pushReplacement(
+                                        '/register/personal',
+                                      ),
+                                      child: const Text('Create account'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

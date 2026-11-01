@@ -15,7 +15,8 @@ class HyzenArt extends StatelessWidget {
           children: [
             Positioned.fill(
               child: Image.asset(
-                studying ? 'assets/mascot/mascot_studying.png'
+                studying
+                    ? 'assets/mascot/mascot_studying.png'
                     : 'assets/mascot/mascot_downloading.png',
                 fit: BoxFit.contain,
                 cacheWidth: (size * 2).round(),
@@ -32,12 +33,21 @@ class HyzenArt extends StatelessWidget {
                   color: t.colorScheme.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: t.colorScheme.outlineVariant),
-                  boxShadow: const [BoxShadow(color: Color(0x16000000), blurRadius: 10, offset: Offset(0, 4))],
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x16000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(9),
-                  child: Icon(studying ? Icons.menu_book_rounded : Icons.download_rounded,
-                    size: 24, color: t.colorScheme.onSurface),
+                  child: Icon(
+                    studying ? Icons.menu_book_rounded : Icons.download_rounded,
+                    size: 24,
+                    color: t.colorScheme.onSurface,
+                  ),
                 ),
               ),
             ),
@@ -46,12 +56,12 @@ class HyzenArt extends StatelessWidget {
       );
     }
     return Image.asset(
-    'assets/illustrations/$name.png',
-    width: size,
-    height: size,
-    fit: BoxFit.contain,
-    cacheWidth: (size * 2).round(),
-    excludeFromSemantics: true,
+      'assets/illustrations/$name.png',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      cacheWidth: (size * 2).round(),
+      excludeFromSemantics: true,
     );
   }
 }
@@ -154,19 +164,18 @@ class HyzenBanner extends StatelessWidget {
             ),
           );
           return ConstrainedBox(
-            constraints: BoxConstraints(minHeight: action == null
-                ? (hideArt ? 144 : (artSize + 12).clamp(144.0, 220.0))
-                : 188),
+            constraints: BoxConstraints(
+              minHeight: action == null
+                  ? (hideArt ? 144 : (artSize + 12).clamp(144.0, 220.0))
+                  : 188,
+            ),
             child: Stack(
               children: [
                 if (!hideArt)
                   Positioned(
                     right: -3,
                     bottom: 0,
-                    child: HyzenArt(
-                      art,
-                      size: artSize,
-                    ),
+                    child: HyzenArt(art, size: artSize),
                   ),
                 text,
               ],

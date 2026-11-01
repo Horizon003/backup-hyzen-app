@@ -130,8 +130,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                       center: const Alignment(0, -.2),
                                       radius: .95,
                                       colors: t.brightness == Brightness.dark
-                                          ? const [Color(0xFF454548), Color(0xFF19191B)]
-                                          : const [Color(0xFFFAFAFA), Color(0xFFE2E2E5)],
+                                          ? const [
+                                              Color(0xFF454548),
+                                              Color(0xFF19191B),
+                                            ]
+                                          : const [
+                                              Color(0xFFFAFAFA),
+                                              Color(0xFFE2E2E5),
+                                            ],
                                     ),
                                   ),
                                   child: const HyzenRiveMascot(
@@ -235,9 +241,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     : context.push('/login'),
                 style: FilledButton.styleFrom(
                   backgroundColor: t.brightness == Brightness.dark
-                      ? Colors.white : Colors.black,
+                      ? Colors.white
+                      : Colors.black,
                   foregroundColor: t.brightness == Brightness.dark
-                      ? Colors.black : Colors.white,
+                      ? Colors.black
+                      : Colors.white,
                   shape: const StadiumBorder(),
                 ),
                 child: Text(
