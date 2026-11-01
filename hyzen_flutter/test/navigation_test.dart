@@ -31,6 +31,8 @@ import 'package:hyzen_pharmd/features/content/data/content_providers.dart';
 import 'package:hyzen_pharmd/features/academics/domain/models.dart';
 import 'package:hyzen_pharmd/features/viewer/external_files.dart';
 import 'package:hyzen_pharmd/core/widgets/rive_mascot.dart';
+import 'package:hyzen_pharmd/core/widgets/common.dart';
+import 'package:hyzen_pharmd/core/widgets/hyzen_art.dart';
 import 'package:hyzen_pharmd/features/auth/presentation/splash_welcome_screens.dart';
 
 class StudentUser extends Fake implements User {
@@ -193,13 +195,18 @@ void main() {
       }
     },
   );
-  testWidgets('Light Home profile action preserves the light Account sheet', (tester) async {
+  testWidgets('Light Home profile action preserves the light Account sheet', (
+    tester,
+  ) async {
     container.read(themeModeProvider.notifier).set(ThemeMode.light);
     await open(tester, '/home');
     await tester.tap(find.byTooltip('Profile & settings'));
     await tester.pumpAndSettle();
     expect(find.byType(ProfileScreen), findsOneWidget);
-    expect(Theme.of(tester.element(find.byType(ProfileScreen))).brightness, Brightness.light);
+    expect(
+      Theme.of(tester.element(find.byType(ProfileScreen))).brightness,
+      Brightness.light,
+    );
     expect(tester.takeException(), isNull);
   });
   testWidgets('Home announcement preference hides the supplied content', (
@@ -460,6 +467,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    addTearDown(tester.view.resetViewInsets);
     for (final path in [
       '/profile',
       '/profile/info',
@@ -755,7 +763,8 @@ void main() {
       await tester.pumpAndSettle();
       guest.read(routerProvider).go('/login');
       await tester.pumpAndSettle();
-      expect(find.text('Welcome back'), findsOneWidget);
+      expect(find.text('Welcome to PHARM D WITH HYZEN'), findsOneWidget);
+      expect(find.byKey(const ValueKey('login-panda-hero')), findsOneWidget);
       expect(find.byType(MainDock), findsNothing);
       await tester.enterText(
         find.byType(TextFormField).first,
@@ -959,7 +968,9 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
-  testWidgets('reference Home hero and positioned profile fit a 360px phone', (tester) async {
+  testWidgets('reference Home hero and positioned profile fit a 360px phone', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -967,7 +978,10 @@ void main() {
     await open(tester, '/home');
     expect(find.byKey(const ValueKey('home-hero-art')), findsOneWidget);
     expect(find.text('Others'), findsOneWidget);
-    expect(tester.getRect(find.byTooltip('Profile & settings')).left, lessThan(40));
+    expect(
+      tester.getRect(find.byTooltip('Profile & settings')).left,
+      lessThan(40),
+    );
     expect(tester.takeException(), isNull);
   });
   testWidgets('splash uses the dedicated loading mascot state', (tester) async {
@@ -989,6 +1003,57 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(HyzenRiveMascot), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('Login remains usable at 320px with large text, both themes and keyboard', (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final guest = ProviderContainer(overrides: [
+      sharedPrefsProvider.overrideWithValue(prefs),
+      authStateProvider.overrideWith((ref) => Stream.value(null)),
+      profileProvider.overrideWith((ref) => Stream.value(null)),
+      contentProvider.overrideWith((ref, key) => Stream.value(const ContentSnapshot(value: {}, fromCache: false))),
+    ]);
+    addTearDown(guest.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(container: guest, child: const HyzenApp()));
+    await tester.pumpAndSettle();
+    guest.read(routerProvider).go('/login');
+    await tester.pumpAndSettle();
+    for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+      guest.read(themeModeProvider.notifier).set(mode);
+      await tester.pumpAndSettle();
+      expect(find.text('Welcome back'), findsNothing);
+      expect(find.byType(HyzenBrandIcon), findsOneWidget);
+      await tester.ensureVisible(find.text('Log in'));
+      await tester.tap(find.text('Log in'));
+      await tester.pumpAndSettle();
+      expect(find.text('Email is required'), findsOneWidget);
+      expect(find.text('Password is required'), findsOneWidget);
+      await tester.ensureVisible(find.byType(TextFormField).first);
+      await tester.enterText(find.byType(TextFormField).first, 'student@example.org');
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byTooltip('Show password'));
+      expect(tester.takeException(), isNull);
+      tester.view.resetViewInsets();
+      await tester.enterText(find.byType(TextFormField).first, '');
+    }
+  });
+  testWidgets('Study and Downloads banners use approved panda artwork in both themes', (tester) async {
+    for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+      container.read(themeModeProvider.notifier).set(mode);
+      for (final path in ['/study', '/downloads']) {
+        await open(tester, path);
+        final art = find.descendant(of: find.byType(HyzenBanner), matching: find.byType(Image));
+        ImageProvider asset = tester.widget<Image>(art.first).image;
+        if (asset is ResizeImage) asset = asset.image;
+        expect((asset as AssetImage).assetName, startsWith('assets/mascot/mascot_'));
+        expect(tester.takeException(), isNull);
+      }
+    }
   });
   test(
     'academic content switches when a student changes professional year',

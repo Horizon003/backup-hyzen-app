@@ -43,6 +43,9 @@ Future<void> main() async {
   final requestedPath = Uri.base.fragment;
   final initialPath =
       const [
+        '/welcome',
+        '/login',
+        '/forgot-password',
         '/profile',
         '/profile/info',
         '/profile/edit',
@@ -60,6 +63,8 @@ Future<void> main() async {
       ].contains(requestedPath)
       ? requestedPath
       : '/profile';
+  // Auth previews are signed out only in this isolated sample-data entrypoint.
+  final guestPreview = const ['/welcome', '/login', '/forgot-password'].contains(initialPath);
   final emptyHome = Uri.base.queryParameters['scenario'] == 'empty';
   final tree = <Map<String, dynamic>>[];
   var id = 0;
@@ -83,9 +88,10 @@ Future<void> main() async {
         sharedPrefsProvider.overrideWithValue(prefs),
         downloadsProvider.overrideWith(() => _ReviewDownloads(emptyHome)),
         recentProvider.overrideWith(() => _ReviewRecent(emptyHome)),
-        authStateProvider.overrideWith((ref) => Stream.value(_ReviewUser())),
+        authStateProvider.overrideWith((ref) => Stream<User?>.value(guestPreview ? null : _ReviewUser())),
         authRepositoryProvider.overrideWithValue(_ReviewAuth()),
         profileProvider.overrideWith((ref) {
+          if (guestPreview) return Stream<StudentProfile?>.value(null);
           final cached = ref
               .read(pendingProfileStoreProvider)
               .cached(reviewProfile.uid);
@@ -105,8 +111,7 @@ Future<void> main() async {
                   : key == 'pw_announcement' && !emptyHome
                   ? {
                       'enabled': true,
-                      'text':
-                          'Made By Haris (Horizon) with pure Love ❤️',
+                      'text': 'Made By Haris (Horizon) with pure Love ❤️',
                     }
                   : [],
               fromCache: false,
@@ -130,7 +135,7 @@ class _ReviewAppState extends ConsumerState<_ReviewApp> {
   bool _opened = false;
   @override
   Widget build(BuildContext context) {
-    if (!_opened && ref.watch(authStateProvider).valueOrNull != null) {
+    if (!_opened && ref.watch(authStateProvider).hasValue) {
       _opened = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) ref.read(routerProvider).go(widget.initialPath);

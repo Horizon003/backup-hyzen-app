@@ -162,27 +162,80 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return AuthScaffold(
-      title: 'Log in',
-      child: Form(
+    final heroHeight = (MediaQuery.sizeOf(context).height * .32).clamp(220.0, 310.0);
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: t.colorScheme.surface,
+        resizeToAvoidBottomInset: true,
+        body: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Stack(
+                children: [
+                  SizedBox(
+                    height: heroHeight + 32,
+                    width: double.infinity,
+                    child: Image.asset(
+                      'assets/auth/login_panda.webp',
+                      key: const ValueKey('login-panda-hero'),
+                      fit: BoxFit.cover,
+                      semanticLabel: 'Hyzen panda welcoming you to the pharmacy library',
+                    ),
+                  ),
+                  Positioned(
+                    top: 0, left: 0, right: 0,
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Material(
+                              color: Colors.white.withValues(alpha: .95),
+                              shape: const CircleBorder(),
+                              child: IconButton(
+                                tooltip: 'Back',
+                                color: Colors.black,
+                                icon: const Icon(Icons.arrow_back_rounded),
+                                onPressed: () => context.canPop()
+                                    ? context.pop() : context.go('/welcome'),
+                              ),
+                            ),
+                            const Spacer(),
+                            const HyzenBrandIcon(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: heroHeight),
+                    child: Container(
+                      key: const ValueKey('login-form-panel'),
+                      decoration: BoxDecoration(
+                        color: t.colorScheme.surface,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                      child: SafeArea(
+                        top: false,
+                        child: Form(
         key: _form,
         child: AutofillGroup(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: HSpace.lg),
-              const Center(child: HyzenLogo(size: 64)),
-              const SizedBox(height: HSpace.lg),
               Text(
-                'Welcome back',
-                style: t.textTheme.headlineMedium,
-                textAlign: TextAlign.center,
+                'Welcome to PHARM D WITH HYZEN',
+                style: t.textTheme.headlineSmall?.copyWith(fontSize: 24, fontWeight: FontWeight.w800, height: 1.2),
               ),
               const SizedBox(height: 6),
               Text(
                 'Log in to continue your Pharm-D journey.',
-                style: t.textTheme.bodyMedium,
-                textAlign: TextAlign.center,
+                style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: HSpace.xl),
               if (_error != null) ...[
@@ -226,8 +279,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: HSpace.xs),
               HButton(label: 'Log in', loading: _busy, onPressed: _submit),
               const SizedBox(height: HSpace.lg),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text('New to PHARM D WITH HYZEN?', style: t.textTheme.bodyMedium),
                   TextButton(
@@ -238,6 +292,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

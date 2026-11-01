@@ -87,6 +87,24 @@ class _HMarqueeTextState extends State<HMarqueeText>
   }
 }
 
+/// Local brand mark: every square app-logo presentation shares a soft clip.
+class HyzenBrandIcon extends StatelessWidget {
+  const HyzenBrandIcon({super.key, this.size = 48});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(size * .24),
+    child: Image.asset(
+      Brand.logoAsset,
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      semanticLabel: Brand.appName,
+    ),
+  );
+}
+
 class HyzenLogo extends ConsumerWidget {
   const HyzenLogo({super.key, this.size = 72, this.glow = true});
   final double size;
@@ -100,12 +118,7 @@ class HyzenLogo extends ConsumerWidget {
     final url = saved == '__default'
         ? ''
         : '${saved ?? (id == 'green' ? settings.logoUrl : '')}';
-    Widget fallback() => Image.asset(
-      'assets/brand/hyzen_icon_square.png',
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-    );
+    Widget fallback() => HyzenBrandIcon(size: size);
     return Semantics(
       label: Brand.appName,
       image: true,
@@ -113,7 +126,7 @@ class HyzenLogo extends ConsumerWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(size * .24),
           boxShadow: glow
               ? [
                   BoxShadow(
@@ -126,7 +139,8 @@ class HyzenLogo extends ConsumerWidget {
               : null,
         ),
         child: url.startsWith('https://')
-            ? ClipOval(
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(size * .24),
                 child: Image.network(
                   url,
                   width: size,

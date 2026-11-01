@@ -15,6 +15,7 @@ const fs = require('node:fs');
       ['settings', '/settings', 'Settings', 1600],
       ['office', '/pdf-studio', 'Office Workspace', 844],
       ['downloads', '/downloads', 'Downloads', 844],
+      ['study', '/study', 'Study', 844],
       ['office-narrow', '/pdf-studio', 'Office Workspace', 800],
     ]) {
       const width = name.endsWith('narrow') ? 320 : 390;
@@ -123,6 +124,43 @@ const fs = require('node:fs');
         if (await page.getByText('More from Hyzen', {exact: true}).count()) throw Error('Removed Home group remains');
       }
       evidence.captures.push({filename, theme, path: '/home', ...scenario, sampleData: true});
+      await page.close();
+    }
+  }
+  evidence.auth = [];
+  for (const theme of ['light', 'dark']) {
+    for (const scenario of [
+      {name:'welcome',path:'/welcome',width:390,height:1000},
+      {name:'login',path:'/login',width:390,height:900},
+      {name:'login-narrow',path:'/login',width:320,height:900},
+      {name:'login-large-text',path:'/login',width:320,height:1200,scale:2},
+    ]) {
+      const page = await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:2,reducedMotion:'reduce'});
+      page.on('pageerror',error=>errors.push(String(error)));
+      page.on('console',m=>{if(/overflowed by|Unhandled Exception/.test(m.text()))errors.push(m.text());});
+      await page.goto(`http://127.0.0.1:8080/pharm-d-with-hyzen/ui-review/?theme=${theme}&textScale=${scenario.scale||1}&reduceMotion=true#${scenario.path}`);
+      await page.waitForSelector('flutter-view',{timeout:90000});
+      await page.waitForTimeout(2200);
+      const enable=page.getByRole('button',{name:'Enable accessibility'});
+      if(await enable.count())await enable.evaluate(b=>b.click());
+      if(scenario.path==='/login') {
+        await page.getByText('Welcome to PHARM D WITH HYZEN',{exact:true}).waitFor({timeout:30000});
+        if(await page.getByText('Welcome back',{exact:true}).count())throw Error('Outdated login greeting');
+        if(await page.getByRole('textbox').count()<1)throw Error('Missing real login fields');
+      } else {
+        await page.getByRole('button',{name:'Get Started →',exact:true}).waitFor({timeout:30000});
+      }
+      await page.waitForTimeout(700);
+      const filename=`${theme}-${scenario.name}.png`;
+      await page.screenshot({path:`${output}/${filename}`});
+      evidence.captures.push({filename,theme,...scenario,sampleData:true});
+      if(scenario.name==='login') {
+        await page.getByRole('button',{name:'Show password',exact:true}).click();
+        await page.getByRole('button',{name:'Hide password',exact:true}).waitFor();
+        await page.getByRole('button',{name:'Forgot password?',exact:true}).click();
+        await page.waitForURL(url=>url.hash==='#/forgot-password');
+        evidence.auth.push({theme,passwordVisibility:true,passwordRecovery:true});
+      }
       await page.close();
     }
   }

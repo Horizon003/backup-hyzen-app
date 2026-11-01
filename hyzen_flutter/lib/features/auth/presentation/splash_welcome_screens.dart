@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/tokens.dart';
-import '../../../core/config/brand.dart';
+import '../../../core/widgets/common.dart';
 import '../../../core/widgets/rive_mascot.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -13,7 +13,7 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(Brand.logoAsset, width: 72, height: 72),
+            const HyzenBrandIcon(size: 72),
             const SizedBox(height: 16),
             Text(
               'PHARM D',
@@ -87,7 +87,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Row(
                 children: [
-                  Image.asset(Brand.logoAsset, width: 48, height: 48),
+                  const HyzenBrandIcon(),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -126,9 +126,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                   clipBehavior: Clip.antiAlias,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(36),
-                                    color: t.brightness == Brightness.dark
-                                        ? const Color(0xFF302846)
-                                        : const Color(0xFFE4F4EB),
+                                    gradient: RadialGradient(
+                                      center: const Alignment(0, -.2),
+                                      radius: .95,
+                                      colors: t.brightness == Brightness.dark
+                                          ? const [Color(0xFF454548), Color(0xFF19191B)]
+                                          : const [Color(0xFFFAFAFA), Color(0xFFE2E2E5)],
+                                    ),
                                   ),
                                   child: const HyzenRiveMascot(
                                     state: HyzenRiveState.welcome,
@@ -230,8 +234,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       )
                     : context.push('/login'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: _index == 0 ? const Color(0xFF1A1723) : null,
-                  foregroundColor: _index == 0 ? Colors.white : null,
+                  backgroundColor: t.brightness == Brightness.dark
+                      ? Colors.white : Colors.black,
+                  foregroundColor: t.brightness == Brightness.dark
+                      ? Colors.black : Colors.white,
                   shape: const StadiumBorder(),
                 ),
                 child: Text(
