@@ -83,7 +83,7 @@ class HomeScreen extends ConsumerWidget {
         title: 'PHARM D',
         integratedHeader: true,
         headerTheme: AppTheme.dark(),
-        header: SafeArea(
+        header: ColoredBox(color: Colors.black, child: SafeArea(
           bottom: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -122,7 +122,7 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
           ),
-        ),
+        )),
         homeBackground: (child) => HomeAtmosphere(child: child),
         onRefresh: () => refreshContent(ref, [
           'pw_settings',
