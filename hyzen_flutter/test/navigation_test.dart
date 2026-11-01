@@ -493,11 +493,13 @@ void main() {
     await open(tester, '/downloads');
     expect(
       find.byWidgetPredicate(
-        (widget) =>
-            widget is Image &&
-            widget.image is AssetImage &&
-            (widget.image as AssetImage).assetName ==
-                'assets/mascot/mascot_success_wave.png',
+        (widget) {
+          if (widget is! Image) return false;
+          final provider = widget.image;
+          final asset = provider is ResizeImage ? provider.image : provider;
+          return asset is AssetImage &&
+              asset.assetName == 'assets/mascot/mascot_success_wave.png';
+        },
       ),
       findsOneWidget,
     );
