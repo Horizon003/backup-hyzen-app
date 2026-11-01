@@ -16,7 +16,7 @@ class ProfileAvatar extends StatelessWidget {
 
   static const pandaAsset = 'assets/mascot/mascot_idle_welcome.png';
 
-  static ImageProvider imageFor(String? value) {
+  static ImageProvider? imageFor(String? value) {
     if (value != null) {
       final uri = Uri.tryParse(value);
       if (uri?.scheme == 'https') return NetworkImage(value);
