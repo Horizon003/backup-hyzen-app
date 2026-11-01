@@ -181,7 +181,7 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
                   ],
                 ),
               ),
-              const Gap(24),
+              const Gap(16),
               Text('QUICK TOOLS', style: theme.textTheme.labelLarge),
               const Gap(14),
               LayoutBuilder(
@@ -228,7 +228,7 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
                   );
                 },
               ),
-              const Gap(24),
+              const Gap(16),
               SectionHeader(
                 title: 'Recent Files',
                 action: 'See all',
@@ -307,7 +307,7 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
                       const Gap(12),
                       Icon(
                         Icons.file_copy_outlined,
-                        size: 80,
+                        size: 60,
                         color: theme.colorScheme.onSurfaceVariant.withValues(
                           alpha: .45,
                         ),
@@ -700,29 +700,29 @@ class _WorkspaceAction extends StatelessWidget {
     return HCard(
       radius: 22,
       color: filled ? const Color(0xFF1C1C1E) : null,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(12),
       onTap: onTap,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          minHeight: 96 * MediaQuery.textScalerOf(context).scale(1),
+          minHeight: 64 * MediaQuery.textScalerOf(context).scale(1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 30, color: ink),
-            const Gap(20),
+            Icon(icon, size: 24, color: ink),
+            const Gap(10),
             Text(
               title,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: ink,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w800, fontSize: 15,
               ),
             ),
             const Gap(4),
             Text(
               subtitle,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: ink.withValues(alpha: .72),
+                color: ink.withValues(alpha: .72), fontSize: 11,
               ),
             ),
           ],

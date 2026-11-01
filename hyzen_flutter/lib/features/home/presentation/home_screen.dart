@@ -531,13 +531,9 @@ class _ReferenceCard extends StatelessWidget {
                           runSpacing: 3,
                           children: [
                             for (final badge in badges)
-                              Text(
-                                badge,
-                                style: TextStyle(
-                                  color: ink,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              DecoratedBox(
+                                decoration: BoxDecoration(color: const Color(0xFFE9E9EB), borderRadius: BorderRadius.circular(6)),
+                                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), child: Text(badge, style: const TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.w700))),
                               ),
                           ],
                         ),
@@ -587,4 +583,3 @@ class LegalScreen extends StatelessWidget {
     );
   }
 }
-
