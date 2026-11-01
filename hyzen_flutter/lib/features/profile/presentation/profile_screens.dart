@@ -508,34 +508,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             : const Icon(Icons.add_a_photo_outlined),
                         label: const Text('Change profile photo'),
                       ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 7,
-                        runSpacing: 7,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          for (final avatar in ProfileAvatar.choices)
-                            InkWell(
-                              onTap: () =>
-                                  setState(() => _photo = 'avatar:$avatar'),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    width: _photo == 'avatar:$avatar' ? 3 : 1,
-                                    color: _photo == 'avatar:$avatar'
-                                        ? t.colorScheme.primary
-                                        : t.colorScheme.outlineVariant,
-                                  ),
-                                ),
-                                child: ProfileAvatar(
-                                  photoUrl: 'avatar:$avatar',
-                                  radius: 23,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
                     ],
                   ),
                 ),

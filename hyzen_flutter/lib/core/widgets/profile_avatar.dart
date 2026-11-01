@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// An optional original Hyzen avatar is stored as `avatar:<id>` in photoUrl.
-/// Remote gallery photos keep their normal HTTPS URL.
+/// Student-uploaded photos remain available. Legacy teal avatar selections
+/// automatically use the existing Hyzen panda instead of deleted image assets.
 class ProfileAvatar extends StatelessWidget {
   const ProfileAvatar({
     super.key,
@@ -14,39 +14,36 @@ class ProfileAvatar extends StatelessWidget {
   final double radius;
   final String fallback;
 
-  static const choices = [
-    'male_1',
-    'male_2',
-    'male_3',
-    'female_1',
-    'female_2',
-    'female_3',
-  ];
+  static const pandaAsset = 'assets/mascot/mascot_idle_welcome.png';
 
-  static ImageProvider? imageFor(String? value) {
-    if (value == null) return null;
-    if (value.startsWith('avatar:') &&
-        choices.contains(value.substring('avatar:'.length))) {
-      return AssetImage(
-        'assets/avatars/${value.substring('avatar:'.length)}.webp',
-      );
+  static ImageProvider imageFor(String? value) {
+    if (value != null) {
+      final uri = Uri.tryParse(value);
+      if (uri?.scheme == 'https') return NetworkImage(value);
     }
-    final uri = Uri.tryParse(value);
-    return uri?.scheme == 'https' ? NetworkImage(value) : null;
+    // Decode the large source PNG at avatar resolution to reduce memory use.
+    return ResizeImage.resizeIfNeeded(
+      160,
+      160,
+      const AssetImage(pandaAsset),
+    );
   }
 
   @override
-  Widget build(BuildContext context) => CircleAvatar(
-    radius: radius,
-    foregroundImage: imageFor(photoUrl),
-    onForegroundImageError: imageFor(photoUrl) == null ? null : (_, __) {},
-    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-    child: Text(
-      fallback.isEmpty ? 'H' : fallback[0].toUpperCase(),
-      style: TextStyle(
-        fontSize: radius * .8,
-        color: Theme.of(context).colorScheme.onPrimaryContainer,
+  Widget build(BuildContext context) {
+    final image = imageFor(photoUrl);
+    return CircleAvatar(
+      radius: radius,
+      foregroundImage: image,
+      onForegroundImageError: (_, __) {},
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Text(
+        fallback.isEmpty ? 'H' : fallback[0].toUpperCase(),
+        style: TextStyle(
+          fontSize: radius * .8,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

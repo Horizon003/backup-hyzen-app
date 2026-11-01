@@ -49,7 +49,7 @@ class AppShell extends StatelessWidget {
             content: const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ProfileAvatar(photoUrl: 'avatar:male_1', radius: 44),
+                ProfileAvatar(photoUrl: null, radius: 44),
                 SizedBox(height: 16),
                 Text(
                   'Ready to take a break? Your study progress and downloads are saved.',

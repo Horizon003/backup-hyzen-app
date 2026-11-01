@@ -197,7 +197,7 @@ class _RegisterPersonalState extends ConsumerState<RegisterPersonalScreen> {
                               if (context.mounted) {
                                 showHSnack(
                                   context,
-                                  'Could not upload photo. Pick an avatar or retry.',
+                                  'Could not upload photo. Please retry.',
                                   error: true,
                                 );
                               }
@@ -216,43 +216,6 @@ class _RegisterPersonalState extends ConsumerState<RegisterPersonalScreen> {
                   ),
                 ],
               ),
-            ),
-            Text(
-              'Or choose an avatar',
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final avatar in ProfileAvatar.choices)
-                  InkWell(
-                    onTap: () => ref
-                        .read(registrationProvider.notifier)
-                        .update(
-                          (draft) => draft.copyWith(photoUrl: 'avatar:$avatar'),
-                        ),
-                    borderRadius: BorderRadius.circular(40),
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          width: d.photoUrl == 'avatar:$avatar' ? 3 : 1,
-                          color: d.photoUrl == 'avatar:$avatar'
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outlineVariant,
-                        ),
-                      ),
-                      child: ProfileAvatar(
-                        photoUrl: 'avatar:$avatar',
-                        radius: 23,
-                      ),
-                    ),
-                  ),
-              ],
             ),
             const SizedBox(height: HSpace.md),
             TextField(

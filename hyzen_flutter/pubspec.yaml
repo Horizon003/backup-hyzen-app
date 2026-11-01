@@ -80,7 +80,6 @@ flutter:
   assets:
     - assets/brand/
     - assets/illustrations/
-    - assets/avatars/
     - assets/mascot/
 
   fonts:
