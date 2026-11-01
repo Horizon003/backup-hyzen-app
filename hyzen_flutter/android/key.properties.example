@@ -1,0 +1,4 @@
+storeFile=signing/hyzen-release.jks
+storePassword=RESTORE-FROM-OWNER-PRIVATE-BACKUP
+keyAlias=hyzen-release
+keyPassword=RESTORE-FROM-OWNER-PRIVATE-BACKUP

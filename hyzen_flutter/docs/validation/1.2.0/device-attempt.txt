@@ -1,0 +1,18 @@
+Waiting for Android software emulator boot... 0 s
+Waiting for Android software emulator boot... 30 s
+Waiting for Android software emulator boot... 60 s
+Waiting for Android software emulator boot... 90 s
+Waiting for Android software emulator boot... 120 s
+Waiting for Android software emulator boot... 150 s
+Android booted
+Traceback (most recent call last):
+  File "/workspace/scratch/d8f628be0d15/test_android_emulator.py", line 33, in <module>
+    print(run('install','-r',str(apk),timeout=120).decode(),flush=True)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/d8f628be0d15/test_android_emulator.py", line 8, in run
+    if check and p.returncode:raise RuntimeError(p.stdout.decode(errors='replace'))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Performing Streamed Install
+adb: failed to install /tmp/hyzen-native-build/app/outputs/apk/release/app-release.apk: cmd: Failure calling service package: Broken pipe (32)
+
+

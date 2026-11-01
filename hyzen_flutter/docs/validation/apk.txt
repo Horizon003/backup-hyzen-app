@@ -1,0 +1,7 @@
+Android debug APK
+Package: com.hyzen.pharmd
+Version: 1.0.0+1
+Signature verified with apksigner.
+ZIP CRC passed.
+MainActivity and new feature strings are packaged.
+SHA-256: 82fe6367bc6c18b6ea49280699d544330c668d5a3056b565d4b6065fb6c47bea

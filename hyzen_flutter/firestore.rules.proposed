@@ -1,0 +1,102 @@
+// =====================================================================
+// HYZEN — PROPOSED Firestore rules (NOT DEPLOYED). Review before use.
+// Project: pharmawhisper-debd2
+//
+// The currently deployed rules were NOT available to us (UNKNOWN). These
+// rules were reconstructed from the website source (v2 HTML) and a read-only
+// probe of live Firestore, so the website and admin keep working:
+//   CONFIRMED  public read of settings/{PUBLIC_KEYS}
+//   CONFIRMED  private settings keys (pw_orders, pw_users, pw_messages, pw_import_history) are admin-only
+//   CONFIRMED  all settings writes are admin-only (admin = PW_ADMIN_UID)
+//   CONFIRMED  orders_inbox / messages_inbox: anyone may create; admin reads and deletes
+//   CONFIRMED  verifications/{token}: public get; created by the customer, synced by admin
+//   NEW        students/{uid}: owner-only profile; admin may read
+// Before deploying: diff this file against the rules in the Firebase console
+// and merge. Do NOT blindly overwrite.
+// =====================================================================
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.uid == 'Vv6HtZjmUvfVACzvuyL2pFx5HR33';
+    }
+    function isPublicKey(k) {
+      return k in ['pw_settings','pw_notes_tree','pw_lectures_tree','pw_mcqs_tree',
+                   'pw_products','pw_blogs','pw_announcement','pw_catalog_settings',
+                   'pw_delivery','pw_stats','pw_social','pw_credits','pw_about',
+                   'pw_pastpapers','pw_special_tree'];
+      // pw_special_tree: the website writes it but it is not in PUBLIC_KEYS.
+      // It is listed here so students can read the Special library (PROPOSED).
+    }
+
+    // ---- Legacy key/value mirror (CONFIRMED model: settings/{key} = {value, updatedAt}) ----
+    match /settings/{key} {
+      allow read: if isPublicKey(key) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ---- Create-only inboxes (CONFIRMED) ----
+    match /orders_inbox/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['value','createdAt'])
+                    && request.resource.data.value is map
+                    && request.resource.data.value.id == id;
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+    match /messages_inbox/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['value','createdAt'])
+                    && request.resource.data.value is map
+                    && request.resource.data.value.id == id;
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
+    // ---- Masked public order verification (CONFIRMED: public get, no listing) ----
+    match /verifications/{token} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if token.matches('^v_[A-Za-z0-9]{16,64}$');
+      allow update, delete: if isAdmin();
+    }
+
+    // ---- NEW: student profiles ----
+    match /students/{uid} {
+      function noSecrets(d) {
+        return !d.keys().hasAny(['password','passwordHash','pass','pwd']);
+      }
+      function allowedKeys(d) {
+        return d.keys().hasOnly(['uid','fullName','mobile','gender','city','professionalYear',
+          'institutionName','affiliationStatus','affiliatedUniversity','customUniversity',
+          'customUniversityCity','rollNumber','photoUrl','email','role','createdAt','updatedAt']);
+      }
+      allow get: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.uid == uid
+                    && request.resource.data.role == 'student'
+                    && request.resource.data.email == request.auth.token.email
+                    && allowedKeys(request.resource.data)
+                    && noSecrets(request.resource.data)
+                    && request.resource.data.professionalYear is int
+                    && request.resource.data.professionalYear >= 1
+                    && request.resource.data.professionalYear <= 5;
+      allow update: if request.auth != null && request.auth.uid == uid
+                    && allowedKeys(request.resource.data)
+                    && noSecrets(request.resource.data)
+                    && request.resource.data.uid == resource.data.uid
+                    && request.resource.data.email == resource.data.email
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && request.resource.data.professionalYear is int
+                    && request.resource.data.professionalYear >= 1
+                    && request.resource.data.professionalYear <= 5;
+      allow delete: if isAdmin();
+    }
+
+    // Everything else: deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,1869 @@
+[
+  {
+    "id": "S001",
+    "group": "01 • Entry / Authentication",
+    "title": "Splash / Startup",
+    "route": "/splash",
+    "dec": "Q01 Q02 Q17 Q29 Q31 Q33",
+    "summary": "Slate + Deep Teal premium branded startup with original pharmacy-academic icon mark; no forced repeated onboarding.",
+    "layout": [
+      "Centered verified app logo/mascot on calm Slate or soft teal background",
+      "Subtle brand loading/route-resolution indicator, not a fabricated progress bar",
+      "One restrained motion accent, no clutter"
+    ],
+    "interact": [
+      "Resolve first launch vs returning signed-in user and route reliably",
+      "Accessibility: reduced-motion static logo and skip long reveal"
+    ],
+    "states": [
+      "Loading, offline auth refresh, expired session, incompatible version, crash-safe retry; never infinite spinner"
+    ],
+    "motion": "Short native Flutter opacity/scale reveal with deterministic timeout; no heavy video on every launch",
+    "tech": "Preserve real session/router behavior; assets bundled offline; do not claim auth completed before it does.",
+    "kind": "hero",
+    "preview": "SCREEN_MOCKUPS/S001_Splash_Startup.png"
+  },
+  {
+    "id": "S002",
+    "group": "01 • Entry / Authentication",
+    "title": "Premium Welcome / Welcome Back",
+    "route": "/welcome",
+    "dec": "Q17 A Q31 D Q33",
+    "summary": "Premium academic introduction, personalized Welcome [Name]/Welcome back [Name] only when real profile is known.",
+    "layout": [
+      "Sparse full-height Slate/teal branded hero and original 3D-style academic character",
+      "Big Manrope headline, one sentence describing PHARM D WITH HYZEN",
+      "Primary Get Started/Continue and clear Sign In route"
+    ],
+    "interact": [
+      "New users continue to editorial onboarding and registration/login",
+      "Existing users can skip directly to Login/Home where permitted"
+    ],
+    "states": [
+      "Name missing uses a neutral greeting; no empty placeholder name",
+      "Animations disabled/shortened for returning users"
+    ],
+    "motion": "Character enters with gentle easing, headline stagger/reveal, reduced-motion fallback; no fake typing delays",
+    "tech": "Reuse verified profile displayName; avoid greeting before state resolves; do not block deep links.",
+    "kind": "hero",
+    "preview": "SCREEN_MOCKUPS/S002_Premium_Welcome_Welcome_Back.png"
+  },
+  {
+    "id": "S003",
+    "group": "01 • Entry / Authentication",
+    "title": "Editorial Onboarding • Intro",
+    "route": "existing onboarding flow; audit routes",
+    "dec": "Q17 D Q33",
+    "summary": "A sequence of modern editorial intro slides using original cohesive premium 3D educational characters.",
+    "layout": [
+      "Large 3D-style illustrated pharmacy student/scanner/learning companion",
+      "Short benefit-led headline and two-line caption",
+      "Minimal progress indicator, Next and Skip controls"
+    ],
+    "interact": [
+      "Swipe or Next, previous/back, Skip onboarding, Get Started last panel",
+      "Skip returns to intended authentication route"
+    ],
+    "states": [
+      "Offline-safe bundled assets; adapt aspect ratio, screen readers, reduced motion"
+    ],
+    "motion": "Light parallax/crossfade and character pose transitions; do not import web-specific React animation code",
+    "tech": "First-launch flag persisted; no broken route loops; original art with cleared reuse rights.",
+    "kind": "hero",
+    "preview": "SCREEN_MOCKUPS/S003_Editorial_Onboarding_Intro.png"
+  },
+  {
+    "id": "S004",
+    "group": "01 • Entry / Authentication",
+    "title": "Login",
+    "route": "/login",
+    "dec": "Q17 B Q29",
+    "summary": "Minimal professional login screen: small signature illustration, obvious fields and accessible status.",
+    "layout": [
+      "Small brand emblem and Welcome back heading",
+      "Email/username and password fields, password visibility, validation",
+      "Forgot Password; prominent Sign In; create-account link"
+    ],
+    "interact": [
+      "Submit once, show progress, recover from invalid credentials, navigate to current authorized destination"
+    ],
+    "states": [
+      "Empty, invalid format, wrong credentials, offline, server unavailable; no raw exceptions"
+    ],
+    "motion": "Smooth focus and button loading, error message without aggressive shake",
+    "tech": "Keep existing authentication provider, password and token contract; never add unapproved social login.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S004_Login.png"
+  },
+  {
+    "id": "S005",
+    "group": "01 • Entry / Authentication",
+    "title": "Forgot Password",
+    "route": "/forgot-password",
+    "dec": "Q17 B Q15 Security",
+    "summary": "Calm account recovery consistent with current backend policies.",
+    "layout": [
+      "Back navigation, centered small lock/letter illustration",
+      "Registered email entry, Submit, true recovery guidance",
+      "Success or failure with safe privacy-preserving wording"
+    ],
+    "interact": [
+      "Request reset using existing supported auth path",
+      "Return to login"
+    ],
+    "states": [
+      "Rate-limit / generic account-existence-safe messaging, offline, valid email errors"
+    ],
+    "motion": "Subtle email-sent confirmation or static reduced-motion equivalent",
+    "tech": "Do not invent SMS or verification method if backend does not implement it.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S005_Forgot_Password.png"
+  },
+  {
+    "id": "S006",
+    "group": "01 • Entry / Authentication",
+    "title": "Registration • Personal",
+    "route": "/register/personal",
+    "dec": "Q17 C Q16",
+    "summary": "Step one of guided registration capturing only existing necessary personal information.",
+    "layout": [
+      "Progress strip Personal / Academic / Credentials",
+      "Full name, existing required identity/contact fields, field helper text",
+      "Continue and Back with form state saved"
+    ],
+    "interact": [
+      "Validated next/back, autocomplete where safe, consent for profile data"
+    ],
+    "states": [
+      "Duplicate account, missing field, invalid phone/email, app dismissal"
+    ],
+    "motion": "Compact stage transition, no loss of entered fields",
+    "tech": "Confirm actual form/backend data model; avoid collecting roll number in public profile unnecessarily.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S006_Registration_Personal.png"
+  },
+  {
+    "id": "S007",
+    "group": "01 • Entry / Authentication",
+    "title": "Registration • Academic",
+    "route": "/register/academic",
+    "dec": "Q05 Q16 Q17 C Q28",
+    "summary": "Select university and Professional Year once; this is the source for Study and Campus eligibility.",
+    "layout": [
+      "Stage progress with Academic highlighted",
+      "University picker, Professional Year 1–5, any real necessary academic attributes",
+      "Context helper: Study automatically shows your year-specific resources"
+    ],
+    "interact": [
+      "Choose/edit year, search university if backend supports, next/back"
+    ],
+    "states": [
+      "Unknown university, unavailable program, empty options; no fake institutions"
+    ],
+    "motion": "Picker bottom sheets, smooth state highlighting",
+    "tech": "Persist genuine academic year in profile; sensitive roll number private if required.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S007_Registration_Academic.png"
+  },
+  {
+    "id": "S008",
+    "group": "01 • Entry / Authentication",
+    "title": "Registration • Credentials",
+    "route": "/register/credentials",
+    "dec": "Q17 C Q15 Security",
+    "summary": "Final signup step with authentication credentials and clear agreements.",
+    "layout": [
+      "Progress header and verified email/username if in model",
+      "Password/confirm password, visibility toggles and rules",
+      "Terms/privacy links, Create Account button"
+    ],
+    "interact": [
+      "Submit with duplicate-submission protection, read actual legal docs, back edits"
+    ],
+    "states": [
+      "Weak password, existing username/email, lost connection, server rejection"
+    ],
+    "motion": "Strength feedback without claiming unsupported security properties",
+    "tech": "Use existing identity provider and password policy; preserve backend verification gates.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S008_Registration_Credentials.png"
+  },
+  {
+    "id": "S009",
+    "group": "01 • Entry / Authentication",
+    "title": "Registration Success",
+    "route": "/register/success",
+    "dec": "Q17 C Q29 C Q33",
+    "summary": "Actual confirmed success screen with compact celebratory 3D graduation/academic illustration.",
+    "layout": [
+      "Success emblem and personalized welcome if available",
+      "Brief account status and relevant next action",
+      "Go to Home / Complete Profile as real routes permit"
+    ],
+    "interact": [
+      "Continue to allowed destination and never create account twice"
+    ],
+    "states": [
+      "Pending verification is shown honestly instead of success if not completed"
+    ],
+    "motion": "One gentle check-mark / illustration reveal plus reduced-motion static card",
+    "tech": "Success visible only after server confirms creation.",
+    "kind": "state",
+    "preview": "SCREEN_MOCKUPS/S009_Registration_Success.png"
+  },
+  {
+    "id": "S010",
+    "group": "01 • Entry / Authentication",
+    "title": "Legal & Policies",
+    "route": "/legal/:doc",
+    "dec": "Q17 Q15",
+    "summary": "Readable article page for terms/privacy policy and other supported legal documents.",
+    "layout": [
+      "Clear legal title, updated timestamp if available",
+      "Readable typography, headings, links",
+      "Back and optional share/print only when supported"
+    ],
+    "interact": [
+      "Scroll/accessibility links and safe back"
+    ],
+    "states": [
+      "Loading/error/missing document; never placeholder legal terms"
+    ],
+    "motion": "Almost static; subtle route transition",
+    "tech": "Render real legally approved source texts; do not generate fictitious policy.",
+    "kind": "article",
+    "preview": "SCREEN_MOCKUPS/S010_Legal_Policies.png"
+  },
+  {
+    "id": "S011",
+    "group": "02 • Home / Study",
+    "title": "Home Dashboard",
+    "route": "/home",
+    "dec": "Q01–Q04 Q30 B+A Q31 Q33",
+    "summary": "Academic-first Home with small premium greeting hero and genuinely useful Quick Access.",
+    "layout": [
+      "Top personalized short greeting/search and top-right notification/profile",
+      "Small editorial hero, 4 Quick Access tiles (Study Library, PDF Studio, Campus League, Downloads)",
+      "Real Recent Activity, announcements and selected Shop/Blog links; micro quiz teaser only if relevant upcoming/live event"
+    ],
+    "interact": [
+      "Search, quick access navigation, resume actual file, open legitimate announcement; no fifth tab"
+    ],
+    "states": [
+      "No recent activity, unauthorized League, offline partial data, empty announcements"
+    ],
+    "motion": "Short greeting/hero reveal, card press feedback, no oversized promotional animation",
+    "tech": "Home data truly from repo; avoid fake recents and nonexistent events; League feature flag server-enforced.",
+    "kind": "dashboard",
+    "preview": "SCREEN_MOCKUPS/S011_Home_Dashboard.png"
+  },
+  {
+    "id": "S012",
+    "group": "02 • Home / Study",
+    "title": "Global Search",
+    "route": "/search",
+    "dec": "Q19 B+A+D",
+    "summary": "Context-aware fast search with global category chips and advanced filters on demand.",
+    "layout": [
+      "Search bar at top, Recent Searches (with Clear) when empty",
+      "Category chips Study, PDFs, Shop, Articles as supported",
+      "Result list with breadcrumb locations and filters bottom sheet"
+    ],
+    "interact": [
+      "Debounced input, select category, clear recent, apply/reset advanced filters, open actual result"
+    ],
+    "states": [
+      "True loading/no results/network error; true result count, not invented PDF full-text index"
+    ],
+    "motion": "Light chips/highlights and list transition after debounce",
+    "tech": "Study context auto-applies year; reader PDF full-text search separate until index proven.",
+    "kind": "search",
+    "preview": "SCREEN_MOCKUPS/S012_Global_Search.png"
+  },
+  {
+    "id": "S013",
+    "group": "02 • Home / Study",
+    "title": "Study Landing — Resource First",
+    "route": "/study",
+    "dec": "Q05 A Q31 C",
+    "summary": "Library entrance goes Resource → Subject → Nested Folders → Final PDFs; year comes from saved profile.",
+    "layout": [
+      "Header Study Library + current Professional Year info (not repeatedly selected)",
+      "Compact rows for Regular Notes, Special Notes, MCQs, PPS",
+      "Search relevant to resource section"
+    ],
+    "interact": [
+      "Tap a resource and navigate to scoped subject listing; access downloaded items separately"
+    ],
+    "states": [
+      "No resources for year, changed year, backend error, offline saved content"
+    ],
+    "motion": "Restrained list entrance and press feedback; no giant cards",
+    "tech": "Do not add extra manual year prompt on Study; existing authorizations intact.",
+    "kind": "list",
+    "preview": "SCREEN_MOCKUPS/S013_Study_Landing_Resource_First.png"
+  },
+  {
+    "id": "S014",
+    "group": "02 • Home / Study",
+    "title": "Subject List",
+    "route": "/study/<resource>/subjects • verify path",
+    "dec": "Q06 A+C+D",
+    "summary": "Academic subject directory with clean folder icons, simple rows and optional search.",
+    "layout": [
+      "Breadcrumb Study / Resource, search/filter",
+      "Simple subject rows with small branded folder icon and subtitle only when real",
+      "Tap opens nested folder explorer"
+    ],
+    "interact": [
+      "Search subjects, open subject, breadcrumb navigate"
+    ],
+    "states": [
+      "No subject for selected year, loading, offline subset"
+    ],
+    "motion": "Stagger only a few visible rows or none on weak devices",
+    "tech": "Use current repo subject taxonomy; only existing year-scoped subjects.",
+    "kind": "list",
+    "preview": "SCREEN_MOCKUPS/S014_Subject_List.png"
+  },
+  {
+    "id": "S015",
+    "group": "02 • Home / Study",
+    "title": "Nested Folder Explorer",
+    "route": "study nested routes • audit",
+    "dec": "Q07 C+D",
+    "summary": "Recursive folder navigation with breadcrumbs and custom folder-icon cards until terminal leaf.",
+    "layout": [
+      "Compact top breadcrumb clickable path",
+      "Two-column/flexible folder cards with selected custom folder icon",
+      "Only actual nested folder names; file mixed content handled not hidden"
+    ],
+    "interact": [
+      "Open folder, jump to breadcrumb ancestor, back preserves scroll, optional sort"
+    ],
+    "states": [
+      "Empty subfolder, permission denied, deep nesting, partial offline tree"
+    ],
+    "motion": "Folder transition fades, no long cascading animations",
+    "tech": "Keep actual full storage path and stable IDs; do not arbitrarily flatten hierarchy.",
+    "kind": "folders",
+    "preview": "SCREEN_MOCKUPS/S015_Nested_Folder_Explorer.png"
+  },
+  {
+    "id": "S016",
+    "group": "02 • Home / Study",
+    "title": "PDF Leaf Gallery",
+    "route": "study terminal folder • audit",
+    "dec": "Q07 custom",
+    "summary": "Terminal study folder shows **real PDF first-page image thumbnails** in two-column grid with filename.",
+    "layout": [
+      "Breadcrumb with folder title",
+      "Two-column thumbnail cards, real page-one preview image, filename and minimal metadata",
+      "Tap opens Immersive Reader"
+    ],
+    "interact": [
+      "Open PDF, long-press supported actions, optional download for offline"
+    ],
+    "states": [
+      "Preview generation/loading/failure; fallback marked as unable to preview, not fake image"
+    ],
+    "motion": "Real thumbnails fade in after generation and caching",
+    "tech": "Thumbnails generated from file/document content; cache keyed by PDF revision.",
+    "kind": "gallery",
+    "preview": "SCREEN_MOCKUPS/S016_PDF_Leaf_Gallery.png"
+  },
+  {
+    "id": "S017",
+    "group": "02 • Home / Study",
+    "title": "Immersive Smart PDF Reader",
+    "route": "/viewer, /imported-viewer, /pdf-studio/viewer/:fileId",
+    "dec": "Q08 C Q09 B+D+A",
+    "summary": "Distraction-free PDF view with visible full page, pinch-zoom and tap-reveal controls.",
+    "layout": [
+      "PDF canvas full screen with overlay auto-hiding",
+      "Bottom quick-action floating dock Search/Pages/Bookmark/More",
+      "Dock collapses into small Deep Teal page-number pill, tap to reopen"
+    ],
+    "interact": [
+      "Zoom, scroll, select pages, search within opened PDF, bookmark, toggle tools, reader back"
+    ],
+    "states": [
+      "Protected/corrupt files, missing offline copy, search empty, zoom/performance large PDF"
+    ],
+    "motion": "Fast overlay slide/fade with reduced motion; no focus-changing animation while reading",
+    "tech": "Study source read-only; edit a safe copy; maintain original native/pdf viewer behavior.",
+    "kind": "reader",
+    "preview": "SCREEN_MOCKUPS/S017_Immersive_Smart_PDF_Reader.png"
+  },
+  {
+    "id": "S018",
+    "group": "02 • Home / Study",
+    "title": "Reader More Tools Sheet",
+    "route": "PDF reader overlay",
+    "dec": "Q09 D Q14",
+    "summary": "Categorized full-width bottom sheet for advanced reader actions, separate from compact dock.",
+    "layout": [
+      "Grouped headings: View/Navigation, Search/Bookmarks, Share/Save/Download if supported, Edit a Copy",
+      "Distinct icons and clear enabled/disabled affordances",
+      "Drag handle and Close"
+    ],
+    "interact": [
+      "Open safe supported tool, close on overlay/back, present copy-edit option"
+    ],
+    "states": [
+      "Unavailable actions explicitly not present or disabled with reason"
+    ],
+    "motion": "Bottom sheet rises with short standard easing and preserved PDF scroll position",
+    "tech": "Do not claim true PDF text editing/signature features if unavailable.",
+    "kind": "sheet",
+    "preview": "SCREEN_MOCKUPS/S018_Reader_More_Tools_Sheet.png"
+  },
+  {
+    "id": "S019",
+    "group": "02 • Home / Study",
+    "title": "Lecture Viewer Compatibility",
+    "route": "/lectures",
+    "dec": "Existing route + Q05–Q09",
+    "summary": "Preserve currently supported lecture discovery/reader under new design system.",
+    "layout": [
+      "Clean header and breadcrumb, lecture resources following existing access rules",
+      "Actual lecture media/PDF preview and metadata",
+      "Open/download actions only if supported"
+    ],
+    "interact": [
+      "Open lecture, return, download/view per existing behavior"
+    ],
+    "states": [
+      "Empty lectures, offline file missing, permission issue"
+    ],
+    "motion": "Subtle row/button feedback; no reimagined unsupported lecture player",
+    "tech": "Fresh repo audit establishes actual lecture types and backend.",
+    "kind": "list",
+    "preview": "SCREEN_MOCKUPS/S019_Lecture_Viewer_Compatibility.png"
+  },
+  {
+    "id": "S020",
+    "group": "03 • PDF Studio / Offline",
+    "title": "PDF Studio Workspace",
+    "route": "/pdf-studio",
+    "dec": "Q10 B+D",
+    "summary": "Professional File Workspace, not a game-like dashboard; Scan and Create foremost.",
+    "layout": [
+      "Top PDF Studio heading/search",
+      "Primary Scan Document and Create PDF controls",
+      "Recent Activity actual list, file management actions, folders if supported"
+    ],
+    "interact": [
+      "Scan, create/import, open file, rename/delete/share where existing or properly implemented"
+    ],
+    "states": [
+      "No documents, unavailable file, save error, storage permission"
+    ],
+    "motion": "Minimal card interactions; recent rows animate only after real updates",
+    "tech": "Preserve local DB/files, avoid duplicate recent activity without persistent source.",
+    "kind": "workspace",
+    "preview": "SCREEN_MOCKUPS/S020_PDF_Studio_Workspace.png"
+  },
+  {
+    "id": "S021",
+    "group": "03 • PDF Studio / Offline",
+    "title": "Precision Smart Scanner Camera",
+    "route": "custom native Android camera screen",
+    "dec": "Q11 B+C",
+    "summary": "Replace slow Google document-scanner UX only with tested native camera + on-device edge detection.",
+    "layout": [
+      "Full-camera live document view with stable quadrilateral four-corner overlay",
+      "Auto/Manual capture, flash, capture status/counter, shutter",
+      "Horizontal bottom thumbnail strip of captured pages, Done to review"
+    ],
+    "interact": [
+      "Auto or manual shutter, toggle flash, retake, capture multiple pages, open review"
+    ],
+    "states": [
+      "Camera permission denial, poor lighting, no edges, rotation, glare, blurred shot, backgrounding"
+    ],
+    "motion": "Subtle success capture ripple, overlay movement damped; no camera-frame jank",
+    "tech": "Native Kotlin CameraX/OpenCV or vetted equivalent after audit; preserve existing scanner until parity.",
+    "kind": "camera",
+    "preview": "SCREEN_MOCKUPS/S021_Precision_Smart_Scanner_Camera.png"
+  },
+  {
+    "id": "S022",
+    "group": "03 • PDF Studio / Offline",
+    "title": "Scan Page Review Hub",
+    "route": "scanner review",
+    "dec": "Q12 D",
+    "summary": "After capture, all pages appear in manageable grid with reorder/delete/rotate actions.",
+    "layout": [
+      "Large Page Review title and page count",
+      "2-column page thumbnail grid, drag reorder handles, selection",
+      "Bottom Edit, Add Page, Continue to Export primary actions"
+    ],
+    "interact": [
+      "Reorder, rotate, delete with confirmation, rescan/add, save drafts"
+    ],
+    "states": [
+      "No pages, failed thumbnail, accidental deletion, app lifecycle/background"
+    ],
+    "motion": "Responsive drag feedback and subtle page replacement",
+    "tech": "Changes non-destructively stored until confirmed; draft-safe snapshots.",
+    "kind": "gallery",
+    "preview": "SCREEN_MOCKUPS/S022_Scan_Page_Review_Hub.png"
+  },
+  {
+    "id": "S023",
+    "group": "03 • PDF Studio / Offline",
+    "title": "Four-Corner Manual Crop Editor",
+    "route": "scanner crop editor",
+    "dec": "Q12 B",
+    "summary": "Dedicated perspective crop UI with drag handles and zoom magnifier for precision.",
+    "layout": [
+      "Document fills crop canvas; four draggable high-contrast corners",
+      "Auto Redetect, Reset, Rotate controls",
+      "Cancel and Apply with preview"
+    ],
+    "interact": [
+      "Drag corners, pinch magnifier if suitable, revert, apply warp"
+    ],
+    "states": [
+      "Corners outside image, invalid quadrilateral, extreme perspective, low confidence"
+    ],
+    "motion": "Smooth but precise handle movement; no interpolated crop distortion during drag",
+    "tech": "Transform mathematically valid; original unmodified retained for recovery.",
+    "kind": "crop",
+    "preview": "SCREEN_MOCKUPS/S023_Four_Corner_Manual_Crop_Editor.png"
+  },
+  {
+    "id": "S024",
+    "group": "03 • PDF Studio / Offline",
+    "title": "Enhancement / Filter Studio",
+    "route": "scanner filter editor",
+    "dec": "Q12 C",
+    "summary": "Controlled image improvements optimized for readability, not cosmetic overprocessing.",
+    "layout": [
+      "Large scanned page preview",
+      "Horizontal preset chips Original, Magic, B&W, Grayscale",
+      "Brightness/Contrast adjust controls; Apply to This Page / All"
+    ],
+    "interact": [
+      "Select preset, compare before/after, adjust sliders, apply per-page/all, undo"
+    ],
+    "states": [
+      "Low quality, unsupported filter, multi-page processing in progress"
+    ],
+    "motion": "Crossfade before/after and accessible feedback without blocking navigation",
+    "tech": "Non-destructive transformations and memory-efficient preview/cache.",
+    "kind": "editor",
+    "preview": "SCREEN_MOCKUPS/S024_Enhancement_Filter_Studio.png"
+  },
+  {
+    "id": "S025",
+    "group": "03 • PDF Studio / Offline",
+    "title": "PDF Export Bottom Sheet",
+    "route": "scanner export",
+    "dec": "Q13 D+B",
+    "summary": "Compact export sheet first, with optional advanced settings rather than full-screen clutter.",
+    "layout": [
+      "Filename and number of pages, PDF as explicit output",
+      "Quality/compression and page size under Advanced Settings",
+      "Local save destination, export progress; real optional OCR only if supported"
+    ],
+    "interact": [
+      "Edit name, export, expand details, handle duplicate filename"
+    ],
+    "states": [
+      "Insufficient storage, permissions, export failure, cancellation and retry"
+    ],
+    "motion": "Bottom sheet standard motion and nonblocking progress with real values",
+    "tech": "Do not promise cloud destinations or multilingual OCR without verified provider.",
+    "kind": "sheet",
+    "preview": "SCREEN_MOCKUPS/S025_PDF_Export_Bottom_Sheet.png"
+  },
+  {
+    "id": "S026",
+    "group": "03 • PDF Studio / Offline",
+    "title": "PDF Saved Success",
+    "route": "post-export screen",
+    "dec": "Q13 C",
+    "summary": "Confirmation only after successful local PDF write and index update.",
+    "layout": [
+      "Original branded save-success icon/character",
+      "Saved filename/path and page count",
+      "Open, Share, Save to Device buttons where supported"
+    ],
+    "interact": [
+      "Open in reader, share via Android share sheet, open file location if supported"
+    ],
+    "states": [
+      "Share target missing, canceled save, invalid PDF"
+    ],
+    "motion": "One gentle success animation and reduced motion equivalent",
+    "tech": "File save status tied to actual filesystem operation; prevent duplicate export.",
+    "kind": "state",
+    "preview": "SCREEN_MOCKUPS/S026_PDF_Saved_Success.png"
+  },
+  {
+    "id": "S027",
+    "group": "03 • PDF Studio / Offline",
+    "title": "PDF Editor Workspace",
+    "route": "/create-pdf and existing editor routes",
+    "dec": "Q14 C+D+A",
+    "summary": "Adobe-inspired floating editing controls without claiming enterprise PDF authoring features.",
+    "layout": [
+      "Document canvas with independent Read/Edit states",
+      "Collapsible floating edit shortcut rail, More grouped tools sheet",
+      "Contextual bottom controls for drawing thickness, opacity, color and active tool"
+    ],
+    "interact": [
+      "Select/edit tool, change brush, annotate, undo/redo, save new copy, collapse rail"
+    ],
+    "states": [
+      "Unsupported PDF, protected original resource, unsaved changes, crash draft recovery"
+    ],
+    "motion": "Floating dock compresses/reveals quickly, context controls adjust naturally",
+    "tech": "Study originals preserved, edits on a safe copy; no invented certified signatures/full original-text edit.",
+    "kind": "editor",
+    "preview": "SCREEN_MOCKUPS/S027_PDF_Editor_Workspace.png"
+  },
+  {
+    "id": "S028",
+    "group": "03 • PDF Studio / Offline",
+    "title": "Create PDF / Import Content",
+    "route": "/create-pdf",
+    "dec": "Q10 Q13 Q14",
+    "summary": "Clean PDF creation flow from supported camera/images/documents.",
+    "layout": [
+      "Create PDF title and real input choices Camera/Images/Files if supported",
+      "Selected pages preview/reorder",
+      "Continue to same export settings as scanner"
+    ],
+    "interact": [
+      "Add images/files, reorder, cancel, export; preserve existing importer routes"
+    ],
+    "states": [
+      "Unsupported format, oversized file, missing permission, interrupted import"
+    ],
+    "motion": "Import previews fade in when ready",
+    "tech": "Maintain existing create/import behavior; no fabricated Word-to-PDF format support.",
+    "kind": "workspace",
+    "preview": "SCREEN_MOCKUPS/S028_Create_PDF_Import_Content.png"
+  },
+  {
+    "id": "S029",
+    "group": "03 • PDF Studio / Offline",
+    "title": "Downloads • Saved / In Progress / Failed",
+    "route": "/downloads",
+    "dec": "Q20 B+A",
+    "summary": "Smart Offline Library management with compact honest download rows.",
+    "layout": [
+      "Tabbed top navigation Saved / In Progress / Failed",
+      "Search and compact file row with actual progress/retry",
+      "Saved tab leads into nested resource/subject/folder hierarchy"
+    ],
+    "interact": [
+      "Open saved, retry failure, cancel download, remove offline copy safely"
+    ],
+    "states": [
+      "0 saved, interrupted/background download, network offline, permission error"
+    ],
+    "motion": "Animated progress based only on real network bytes; subtle retry feedback",
+    "tech": "Persist transfer job state; deleting cached copy never removes source document.",
+    "kind": "downloads",
+    "preview": "SCREEN_MOCKUPS/S029_Downloads_Saved_In_Progress_Failed.png"
+  },
+  {
+    "id": "S030",
+    "group": "03 • PDF Studio / Offline",
+    "title": "Offline Nested Library & PDF Gallery",
+    "route": "Downloads saved folders",
+    "dec": "Q20 C",
+    "summary": "Saved-only resource→subject→nested folders→real PDF leaf thumbnail hierarchy.",
+    "layout": [
+      "Breadcrumb from Downloads / resource / subject",
+      "Compact folders using Study icon family",
+      "Two-column real first-page downloaded PDF previews at terminal leaf"
+    ],
+    "interact": [
+      "Navigate offline, open local PDF, remove copy, return to folder"
+    ],
+    "states": [
+      "Only items actually saved locally appear; corrupted cache error and retry"
+    ],
+    "motion": "Low-motion transitions and cached thumbnails load instantly where possible",
+    "tech": "Match Study folder tree via stable ancestry metadata; local DB ensures listing offline.",
+    "kind": "folders",
+    "preview": "SCREEN_MOCKUPS/S030_Offline_Nested_Library_PDF_Gallery.png"
+  },
+  {
+    "id": "S031",
+    "group": "03 • PDF Studio / Offline",
+    "title": "Storage & Cleanup",
+    "route": "Settings → Storage",
+    "dec": "Q20 D",
+    "summary": "Storage usage and safe offline clean-up tools housed only in Settings, not Downloads primary tab.",
+    "layout": [
+      "Local used space and breakdown based on real bytes",
+      "Remove unused downloads, failed transfer entries; confirmation",
+      "Explain removal of local copy vs source"
+    ],
+    "interact": [
+      "Review cleanup, confirm, cancel, view storage details"
+    ],
+    "states": [
+      "Unknown storage stats, locked/in-use PDF, failure to delete"
+    ],
+    "motion": "Controlled progress and safe success feedback",
+    "tech": "Do not erase source academic content, active scanner drafts or user files accidentally.",
+    "kind": "settings",
+    "preview": "SCREEN_MOCKUPS/S031_Storage_Cleanup.png"
+  },
+  {
+    "id": "S032",
+    "group": "04 • Profile / Settings",
+    "title": "Student Profile Overview",
+    "route": "/profile",
+    "dec": "Q16 C+A+D+B Q33",
+    "summary": "Elegant academic identity overview with Personal / Academic / Security sections.",
+    "layout": [
+      "Top user avatar or selected premade avatar and academic identity card",
+      "Personal/Academic/Security tabs or equivalent accessible segmented UI",
+      "Edit Profile separate action, competitive public profile separate from private fields"
+    ],
+    "interact": [
+      "View sections, open Edit Profile, change photo/avatar, My Year"
+    ],
+    "states": [
+      "Missing profile photo uses chosen avatar/default; partial profile fields honest"
+    ],
+    "motion": "Smooth tab transitions, subtle header entrance, reduced-motion support",
+    "tech": "No roll number/contact exposure to leaderboard; use real profile source.",
+    "kind": "profile",
+    "preview": "SCREEN_MOCKUPS/S032_Student_Profile_Overview.png"
+  },
+  {
+    "id": "S033",
+    "group": "04 • Profile / Settings",
+    "title": "Edit Profile — Personal / Academic / Security",
+    "route": "/profile/edit",
+    "dec": "Q16 D+B",
+    "summary": "Dedicated editable screen with categorized tabs and preview/save behavior.",
+    "layout": [
+      "Name and allowed personal fields",
+      "University / Professional Year (and private roll number where existing)",
+      "Security tab links to safe Security & Account settings"
+    ],
+    "interact": [
+      "Edit, validate, Save, Cancel, navigate tabs with unsaved-changes confirmation"
+    ],
+    "states": [
+      "Missing permission, duplicate username, field validation, network conflict"
+    ],
+    "motion": "Short save feedback only after backend confirms",
+    "tech": "Respect existing auth uniqueness/backend rules; changing year reruns Study filter.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S033_Edit_Profile_Personal_Academic_Security.png"
+  },
+  {
+    "id": "S034",
+    "group": "04 • Profile / Settings",
+    "title": "Avatar & Photo Picker",
+    "route": "profile avatar picker",
+    "dec": "Q16 B Q33 custom",
+    "summary": "User may upload a real photo OR choose premade original curated avatar; neither is mandatory.",
+    "layout": [
+      "Top preview circle large enough to see art",
+      "Tabs: Premade Avatars / Upload Photo",
+      "Grid of academic and contemporary Gen-Z friendly original avatars; crop/preview/save for photos"
+    ],
+    "interact": [
+      "Select premade, import photo, crop, preview light/dark, confirm, revert"
+    ],
+    "states": [
+      "No gallery permission, unsupported image, upload failure, missing internet"
+    ],
+    "motion": "Card tap scale/selection ring, gentle updated-avatar reveal",
+    "tech": "Store stable avatar ID vs uploaded URL; avoid gender stereotypes; optimized licensed assets.",
+    "kind": "gallery",
+    "preview": "SCREEN_MOCKUPS/S034_Avatar_Photo_Picker.png"
+  },
+  {
+    "id": "S035",
+    "group": "04 • Profile / Settings",
+    "title": "Settings Landing — My Workspace",
+    "route": "/settings",
+    "dec": "Q15 D+C",
+    "summary": "Searchable organized settings categories with tall dark-Slate centered My Workspace hero.",
+    "layout": [
+      "Tall Slate identity card: avatar **above centered display name**",
+      "Edit Profile and My Year buttons within/below identity hero",
+      "Your Preferences cards below, Security & Account group, then Appearance/Storage/Downloads/Support"
+    ],
+    "interact": [
+      "Search settings, enter subpages, change available values, sign out as supported"
+    ],
+    "states": [
+      "Unconfigured security feature explicitly not live, unavailable sync state"
+    ],
+    "motion": "Tactile setting-row feedback, limited hero motion",
+    "tech": "Do not put avatar alongside name in card (user explicitly chose vertical centered layout).",
+    "kind": "settings",
+    "preview": "SCREEN_MOCKUPS/S035_Settings_Landing_My_Workspace.png"
+  },
+  {
+    "id": "S036",
+    "group": "04 • Profile / Settings",
+    "title": "Appearance & Accessibility",
+    "route": "Settings → Appearance",
+    "dec": "Q02 Q29 D Q31",
+    "summary": "User-selectable Light / Dark / System modes, readability and reduced-motion preferences.",
+    "layout": [
+      "Three meaningful theme options with small preview tiles",
+      "Text scaling, motion preference and helpful explanations",
+      "Contrast-safe states consistent with Slate/Teal colors"
+    ],
+    "interact": [
+      "Set theme, preview immediately, restore System, reduce animation"
+    ],
+    "states": [
+      "System auto switch, accessibility high text scale, low contrast, missing saved value"
+    ],
+    "motion": "Live theme crossfade only when permitted; reduced-motion instant switch",
+    "tech": "No hard-coded light cards that become unreadable in dark mode.",
+    "kind": "settings",
+    "preview": "SCREEN_MOCKUPS/S036_Appearance_Accessibility.png"
+  },
+  {
+    "id": "S037",
+    "group": "04 • Profile / Settings",
+    "title": "Security & Account",
+    "route": "Settings → Security & Account",
+    "dec": "Q15 Security Q16",
+    "summary": "Organized future-safe security grouping: App Lock, Change Password, Change Username.",
+    "layout": [
+      "List with clear descriptions and lock/credential icons",
+      "Actual implemented actions enabled; planned unavailable actions marked without deceptive controls",
+      "Recovery/verification links only if real"
+    ],
+    "interact": [
+      "Navigate existing authorized security flow; explain disabled planned actions"
+    ],
+    "states": [
+      "Reauthentication required, old password incorrect, recovery errors"
+    ],
+    "motion": "Subtle success acknowledgment after server response",
+    "tech": "Detailed security, verification and recovery mechanics were deliberately not finalized; Claude must audit first and request approvals.",
+    "kind": "settings",
+    "preview": "SCREEN_MOCKUPS/S037_Security_Account.png"
+  },
+  {
+    "id": "S038",
+    "group": "05 • Shop / Content",
+    "title": "Shop Home & Product Catalog",
+    "route": "/shop",
+    "dec": "Q18 A+B+D",
+    "summary": "Small editorial Shop feature banner followed immediately by usable product catalog.",
+    "layout": [
+      "Compact editorial hero with licensed image; real categories/search/filter",
+      "Clean product cards with actual images, names, price and availability",
+      "Cart icon badge reflects actual cart"
+    ],
+    "interact": [
+      "Browse products, filter, search, add supported variant/quantity, open detail"
+    ],
+    "states": [
+      "Sold out, missing images, slow network, empty catalog and price changes"
+    ],
+    "motion": "Very subtle add-to-cart, image fade-in and badge count feedback",
+    "tech": "Never invent stock, prices, shipping or checkout provider; preserve actual Shop data.",
+    "kind": "shop",
+    "preview": "SCREEN_MOCKUPS/S038_Shop_Home_Product_Catalog.png"
+  },
+  {
+    "id": "S039",
+    "group": "05 • Shop / Content",
+    "title": "Product Detail",
+    "route": "/shop/p/:id",
+    "dec": "Q18 B",
+    "summary": "Uncluttered product detail with rich photos and transparent purchase information.",
+    "layout": [
+      "Real product image gallery above concise name/price",
+      "Variant/size/quantity selection only if product supports",
+      "Description, availability, add-to-cart footer"
+    ],
+    "interact": [
+      "Select variant, increment quantity within stock, Add to Cart, return"
+    ],
+    "states": [
+      "Product removed, unavailable variant, failed cart mutation, missing stock"
+    ],
+    "motion": "Tap/thumbnail feedback and small add-to-cart confirmation",
+    "tech": "No fictitious reviews/ratings, returns policies or delivery promises.",
+    "kind": "shop",
+    "preview": "SCREEN_MOCKUPS/S039_Product_Detail.png"
+  },
+  {
+    "id": "S040",
+    "group": "05 • Shop / Content",
+    "title": "Shopping Cart",
+    "route": "/cart",
+    "dec": "Q18 B+D",
+    "summary": "Compact cart rows and transparent cost summary linked to current backend pricing.",
+    "layout": [
+      "Product thumbnail, name, variant, quantity controls and remove",
+      "Subtotal / supported charges / total only from actual checkout",
+      "Proceed to Checkout prominent"
+    ],
+    "interact": [
+      "Adjust quantity, remove/undo if supported, checkout"
+    ],
+    "states": [
+      "Empty cart, out-of-stock, price changed, server sync conflict"
+    ],
+    "motion": "Micro quantity changes and cart updates without jumping layout",
+    "tech": "No fabricated checkout totals; existing guest/auth behavior audited.",
+    "kind": "shop",
+    "preview": "SCREEN_MOCKUPS/S040_Shopping_Cart.png"
+  },
+  {
+    "id": "S041",
+    "group": "05 • Shop / Content",
+    "title": "Guided Checkout",
+    "route": "/checkout",
+    "dec": "Q18 D",
+    "summary": "Stepwise review of delivery/customer/payment method **only when currently supported**.",
+    "layout": [
+      "Compact progress with Customer → Delivery → Review (actual steps vary)",
+      "Validated address/contact inputs and honest shipping/payment options",
+      "Order summary with confirm action"
+    ],
+    "interact": [
+      "Next/back retain input, choose real payment method, submit once"
+    ],
+    "states": [
+      "Address invalid, stock changed, payment/ordering failed, slow network"
+    ],
+    "motion": "Progress and action feedback, not excessive celebration",
+    "tech": "Existing Shop checkout distinct from prohibited Quiz wallet/contest fees.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S041_Guided_Checkout.png"
+  },
+  {
+    "id": "S042",
+    "group": "05 • Shop / Content",
+    "title": "Order Success",
+    "route": "/order-success",
+    "dec": "Q18 D Q29",
+    "summary": "Confirmed order screen with genuine order number/status, nothing fabricated.",
+    "layout": [
+      "Branded success illustration",
+      "Order ID and receipt summary only if returned",
+      "View My Orders, Continue Shopping actions"
+    ],
+    "interact": [
+      "Open order detail/history, continue browsing"
+    ],
+    "states": [
+      "Payment pending vs order placed must be differentiated"
+    ],
+    "motion": "Short checkmark/parcel motion and reduced motion version",
+    "tech": "Do not infer shipment or delivery estimate.",
+    "kind": "state",
+    "preview": "SCREEN_MOCKUPS/S042_Order_Success.png"
+  },
+  {
+    "id": "S043",
+    "group": "05 • Shop / Content",
+    "title": "My Orders & Order Detail",
+    "route": "/orders",
+    "dec": "Q18 D",
+    "summary": "Purchase history with clear live status and drill-down.",
+    "layout": [
+      "Compact chronology cards and order search/filter if backend supports",
+      "Order detail lists items, amounts, status and next supported action",
+      "No fake tracking button"
+    ],
+    "interact": [
+      "View details, contact support/reorder only if existing"
+    ],
+    "states": [
+      "No orders, cancellation/failure, network sync stale"
+    ],
+    "motion": "Subtle status highlight and list transitions",
+    "tech": "Use backend order state, never infer shipping progress.",
+    "kind": "list",
+    "preview": "SCREEN_MOCKUPS/S043_My_Orders_Order_Detail.png"
+  },
+  {
+    "id": "S044",
+    "group": "05 • Shop / Content",
+    "title": "Notification Center",
+    "route": "/notifications",
+    "dec": "Q21 B+A+C+D selective",
+    "summary": "Categorized real Academic / Announcements / Orders feeds with compact chronological rows.",
+    "layout": [
+      "Category tabs, read/unread state",
+      "Featured important announcement only when genuine",
+      "Overflow Mark Read and Archive/Delete only if supported"
+    ],
+    "interact": [
+      "Open source item, mark read, supported long press/menu operations"
+    ],
+    "states": [
+      "No notifications, read sync conflict, blocked category or offline cached subset"
+    ],
+    "motion": "Subtle unread indicator and viewed-row animation",
+    "tech": "Separate admin broadcasts from user-specific notification data.",
+    "kind": "list",
+    "preview": "SCREEN_MOCKUPS/S044_Notification_Center.png"
+  },
+  {
+    "id": "S045",
+    "group": "05 • Shop / Content",
+    "title": "Announcements / Featured Message",
+    "route": "Home / Notifications / Admin content",
+    "dec": "Q21 C Q23",
+    "summary": "Lightweight announcement detail with genuine importance and timestamps.",
+    "layout": [
+      "Featured compact announcement hero, headline, safe rich content and links",
+      "Back to feed, related content links only if valid"
+    ],
+    "interact": [
+      "View announcement, open authorized attachment/link"
+    ],
+    "states": [
+      "Expired or removed notice, unavailable attachment"
+    ],
+    "motion": "Small expansion reveal only once",
+    "tech": "Admin publishing controls must not expose draft notices.",
+    "kind": "article",
+    "preview": "SCREEN_MOCKUPS/S045_Announcements_Featured_Message.png"
+  },
+  {
+    "id": "S046",
+    "group": "05 • Shop / Content",
+    "title": "Blog Feed",
+    "route": "/blog",
+    "dec": "Q22 A",
+    "summary": "Editorial academic Blog with tasteful small featured section and chronological real articles.",
+    "layout": [
+      "Compact feature image/card only when real featured article",
+      "Article list with genuine thumbnail/title/excerpt/date",
+      "Category/subject chips if content supports"
+    ],
+    "interact": [
+      "Open article, search/filter if supported"
+    ],
+    "states": [
+      "No posts, missing cover, unpublish, network error"
+    ],
+    "motion": "Image fade-in and subtle list reveal",
+    "tech": "No fabricated articles or stock content.",
+    "kind": "article",
+    "preview": "SCREEN_MOCKUPS/S046_Blog_Feed.png"
+  },
+  {
+    "id": "S047",
+    "group": "05 • Shop / Content",
+    "title": "Blog Article Reader",
+    "route": "/blog/:id",
+    "dec": "Q22 B",
+    "summary": "Distraction-free comfortable long-form article experience.",
+    "layout": [
+      "Real cover, title, date/author if recorded",
+      "Well-spaced headings, body, images and accessible captions",
+      "Minimal back/share/bookmark controls only when real"
+    ],
+    "interact": [
+      "Read, scroll, share link where supported, return"
+    ],
+    "states": [
+      "Missing unpublished article, failed remote image, offline"
+    ],
+    "motion": "Gentle image reveal; no scroll hijacking",
+    "tech": "Sanitize rich text and external embeds; avoid broken links.",
+    "kind": "article",
+    "preview": "SCREEN_MOCKUPS/S047_Blog_Article_Reader.png"
+  },
+  {
+    "id": "S048",
+    "group": "05 • Shop / Content",
+    "title": "About Hyzen",
+    "route": "/about",
+    "dec": "Q22 D + custom",
+    "summary": "Founder-centric authentic About page: **real owner photo centered at top**, then **rectangular Slate→Teal gradient introduction card**.",
+    "layout": [
+      "Centered owner photo at top with clean background",
+      "Immediately below: rectangular gradient intro card with actual owner bio",
+      "Mission/academic context and links only with approved content"
+    ],
+    "interact": [
+      "Open supported socials/contact, return"
+    ],
+    "states": [
+      "Founder photo or text unavailable -> omit gracefully; never invent owner identity/bio"
+    ],
+    "motion": "Small photo and card reveal with reduced-motion equivalent",
+    "tech": "Do not use unauthorized founder image or generated impersonation as real photo.",
+    "kind": "hero",
+    "preview": "SCREEN_MOCKUPS/S048_About_Hyzen.png"
+  },
+  {
+    "id": "S049",
+    "group": "05 • Shop / Content",
+    "title": "Contact Us",
+    "route": "/contact",
+    "dec": "Q22 D",
+    "summary": "Reliable concise Contact form or supported actual contact channel.",
+    "layout": [
+      "Short header and category/subject, message, reply details",
+      "Accessible validation and privacy note",
+      "Send button with clear final status"
+    ],
+    "interact": [
+      "Submit existing form, launch official contact link if configured"
+    ],
+    "states": [
+      "Validation, network failure, support unavailable, duplicate send"
+    ],
+    "motion": "Submit loading then subtle real success, never fabricated sent state",
+    "tech": "Use existing backend contact receiver; ensure PII handled properly.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S049_Contact_Us.png"
+  },
+  {
+    "id": "S050",
+    "group": "06 • Campus League",
+    "title": "Campus League Landing",
+    "route": "Home Quick Access → new League route (audit)",
+    "dec": "Q24 custom Q26 Q30 B",
+    "summary": "New separate competitive learning section reached from Home, **not** a fifth navigation tab.",
+    "layout": [
+      "TOP dark-Slate Join Community card with real configured link",
+      "Standard/Special segmented selector and current/upcoming event card with Register",
+      "Below: Campus Rankings My Year/My University/Overall; MCQ Duels & My Performance"
+    ],
+    "interact": [
+      "Join legitimate community, switch tabs, open event, ranking or duels"
+    ],
+    "states": [
+      "Feature disabled, community link missing, no upcoming quiz, eligibility unknown"
+    ],
+    "motion": "Small badge/card reveal and tab motion with server states",
+    "tech": "No monetary price/reward/free/paid labels; hidden feature modules obey server flag and compliance hold.",
+    "kind": "league",
+    "preview": "SCREEN_MOCKUPS/S050_Campus_League_Landing.png"
+  },
+  {
+    "id": "S051",
+    "group": "06 • Campus League",
+    "title": "Standard Quiz Listing & Upcoming Card",
+    "route": "League → Standard",
+    "dec": "Q26 Q28",
+    "summary": "Standard accessible subject-specific academic quiz list; users see relevant Professional Year.",
+    "layout": [
+      "Standard header, current quiz date/topic/subject (ONE subject only)",
+      "Register/Join or Resume only when eligible",
+      "Attempts remaining and 1-hour cooldown truthful status when available"
+    ],
+    "interact": [
+      "Register according to actual rules, view details, resume active attempt"
+    ],
+    "states": [
+      "No quiz scheduled, 3/day exhausted, cooldown active, questions exhausted"
+    ],
+    "motion": "Compact CTA availability/disabled transition",
+    "tech": "Question bank subject/year filtering enforced server-side; no fee labels.",
+    "kind": "league",
+    "preview": "SCREEN_MOCKUPS/S051_Standard_Quiz_Listing_Upcoming_Card.png"
+  },
+  {
+    "id": "S052",
+    "group": "06 • Campus League",
+    "title": "Special Quiz Listing & Mixed-Subject Card",
+    "route": "League → Special",
+    "dec": "Q26 Q28 + amendments",
+    "summary": "Special community-announced academic event card with TWO OR MORE admin-selected subjects and ONE attempt.",
+    "layout": [
+      "Special event title, targeted Professional Year(s), list of selected subjects/topics",
+      "Real date/start-end, countdown and current registration status",
+      "View/Request Registration action; no monetary or reward labels"
+    ],
+    "interact": [
+      "Open competition details, request registration if eligible, view pending/approved status"
+    ],
+    "states": [
+      "Compliance-blocked event must not be accessible/registrable; no published event fallback"
+    ],
+    "motion": "Restrained countdown change and state swap",
+    "tech": "If external fees plus cash prizes, app facilitation blocked without legal/Play approval even if money absent in UI.",
+    "kind": "league",
+    "preview": "SCREEN_MOCKUPS/S052_Special_Quiz_Listing_Mixed_Subject_Card.png"
+  },
+  {
+    "id": "S053",
+    "group": "06 • Campus League",
+    "title": "Quiz Competition Details",
+    "route": "League → Event Details",
+    "dec": "Q26 B+C",
+    "summary": "Transparent event details page before registration or quiz start.",
+    "layout": [
+      "Title/type and academic audience",
+      "Real calendar/timezone, subjects/topics, question count, duration, attempts and start-end window",
+      "Live countdown if scheduled; clear eligibility/rules link"
+    ],
+    "interact": [
+      "Review rules, register if allowed, join when server permits"
+    ],
+    "states": [
+      "Not yet open, closed, registration full, missing policy, scheduled date moved"
+    ],
+    "motion": "Simple countdown with no blinking, reduced motion",
+    "tech": "Show only actually configured policies, not fabricated scores/rewards.",
+    "kind": "article",
+    "preview": "SCREEN_MOCKUPS/S053_Quiz_Competition_Details.png"
+  },
+  {
+    "id": "S054",
+    "group": "06 • Campus League",
+    "title": "Special Registration Form",
+    "route": "League → Special → Register",
+    "dec": "Q26 D Q25 privacy",
+    "summary": "Private admin-review registration prefilled from real student profile; user reviews before submit.",
+    "layout": [
+      "Step header Personal / Academic / Confirm",
+      "Full name, email, phone/WhatsApp, roll number privately reviewed",
+      "Quiz title and rules, explicit consent and Submit Registration"
+    ],
+    "interact": [
+      "Verify/edit permitted data, submit once, inspect privacy note, back/cancel"
+    ],
+    "states": [
+      "Profile missing fields, duplicate request, network loss, registration closed"
+    ],
+    "motion": "Step progress and submit progress; no false instant approval",
+    "tech": "Admin-only fields protected; no display of roll number in public profile, leaderboard, search logs.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S054_Special_Registration_Form.png"
+  },
+  {
+    "id": "S055",
+    "group": "06 • Campus League",
+    "title": "Registration Status / Countdown",
+    "route": "League → Registration Status",
+    "dec": "Q26 C+D",
+    "summary": "Registration result and event readiness page with real Pending/Approved/Rejected/Closed states.",
+    "layout": [
+      "Academic competition summary and status tile",
+      "Countdown until scheduled start; subject list and join eligibility",
+      "Contact organizer only via vetted real channel, no fee collecting CTA"
+    ],
+    "interact": [
+      "Refresh status, re-check scheduling, Start when approved/window open"
+    ],
+    "states": [
+      "Approval reversed, rescheduled event, compliance blocked, network offline"
+    ],
+    "motion": "Status/clock updates without jitter; no celebratory success before approval",
+    "tech": "Cannot start Special with status pending/rejected; server decides eligibility.",
+    "kind": "state",
+    "preview": "SCREEN_MOCKUPS/S055_Registration_Status_Countdown.png"
+  },
+  {
+    "id": "S056",
+    "group": "06 • Campus League",
+    "title": "MCQ Exam — Focused Question",
+    "route": "League → Quiz Attempt",
+    "dec": "Q27 A+B+C+D",
+    "summary": "Full-screen focused single-question exam with four large options and prominent server countdown.",
+    "layout": [
+      "Header exam title, time left, progress Question X of N",
+      "One actual MCQ plus four A–D option cards and Bookmark/Flag",
+      "Previous / Save & Next; Navigator icon; Exit confirmation"
+    ],
+    "interact": [
+      "Select/change answer, flag, next/previous, open navigator, review final"
+    ],
+    "states": [
+      "Network drop, expired time, double tap, crash restore, late submit, unknown answer"
+    ],
+    "motion": "Quick option highlight and progress, no blocking wrong/correct reveal during timed exam",
+    "tech": "Never bundle answer key/correct option to client while live; server authoritative time and attempt.",
+    "kind": "quiz",
+    "preview": "SCREEN_MOCKUPS/S056_MCQ_Exam_Focused_Question.png"
+  },
+  {
+    "id": "S057",
+    "group": "06 • Campus League",
+    "title": "Question Navigator Bottom Sheet",
+    "route": "Exam → Navigator",
+    "dec": "Q27 C",
+    "summary": "Grid navigation for Answered, Unanswered and Flagged states without losing timer.",
+    "layout": [
+      "Bottom sheet with 1..N numbered cells; teal answered, neutral unanswered, amber flagged",
+      "Legend clearly communicates states beyond color",
+      "Tap grid tile to navigate; Close/Review button"
+    ],
+    "interact": [
+      "Jump, mark flag, return to question, review unanswered"
+    ],
+    "states": [
+      "Question count larger than viewport, narrow devices, screen readers"
+    ],
+    "motion": "Bottom sheet standard eased animation; timer remains visible or clear",
+    "tech": "Unanswered distinguishable to color-blind learners; preserve focus.",
+    "kind": "navigator",
+    "preview": "SCREEN_MOCKUPS/S057_Question_Navigator_Bottom_Sheet.png"
+  },
+  {
+    "id": "S058",
+    "group": "06 • Campus League",
+    "title": "Review Answers & Confirm Submit",
+    "route": "Exam → Review/Submit",
+    "dec": "Q27 D",
+    "summary": "Last checkpoint before final submission, with accurate counts and warning for unanswered.",
+    "layout": [
+      "Answered/Unanswered/Flagged tallies and direct jump links",
+      "Explicit Submit Test confirmation dialog",
+      "Remaining time and notice that submitting closes attempt"
+    ],
+    "interact": [
+      "Review, return to MCQ, confirm exactly once, handle timeout forced submit"
+    ],
+    "states": [
+      "Network failure during submit, conflicting second device, expired attempt"
+    ],
+    "motion": "Subtle confirm sheet with haptics when enabled",
+    "tech": "Idempotent server submission; never claim submitted if request unresolved.",
+    "kind": "state",
+    "preview": "SCREEN_MOCKUPS/S058_Review_Answers_Confirm_Submit.png"
+  },
+  {
+    "id": "S059",
+    "group": "06 • Campus League",
+    "title": "Quiz Result & Rank",
+    "route": "League → Results",
+    "dec": "Q27 D Q24",
+    "summary": "Verified scorecard after server grade processing; ranking visible only when permitted by competition rules.",
+    "layout": [
+      "Compact celebratory crest and completion status",
+      "Accuracy, correct count, time used and rank where verified",
+      "Review explanations only after allowed release; standard next-attempt eligibility"
+    ],
+    "interact": [
+      "View rankings, retry Standard if eligible, close to League"
+    ],
+    "states": [
+      "Pending grading, contest locked, ranking delayed, appeal/irregularity review"
+    ],
+    "motion": "Small result reveal and count-up only if genuine and accessible",
+    "tech": "Exact scoring formula/rank aggregation unresolved and must be approved before public leaderboard.",
+    "kind": "state",
+    "preview": "SCREEN_MOCKUPS/S059_Quiz_Result_Rank.png"
+  },
+  {
+    "id": "S060",
+    "group": "06 • Campus League",
+    "title": "Campus Rankings • Scopes",
+    "route": "League → Rankings",
+    "dec": "Q24 A Q25",
+    "summary": "Year, University and Overall leaderboards using opted-in public usernames.",
+    "layout": [
+      "Compact top-3 podium/leader highlight when enough real records",
+      "My Year / My University / Overall segmented scopes",
+      "Ranked rows with username, score/rank and open competition profile"
+    ],
+    "interact": [
+      "Switch scope, view consenting competitor, find own position"
+    ],
+    "states": [
+      "No participants, unranked student, opt-out, delayed/under-review scores"
+    ],
+    "motion": "Moderate score row transitions; avoid confetti on every refresh",
+    "tech": "Never expose roll number, private full name, email, WhatsApp or payment info.",
+    "kind": "league",
+    "preview": "SCREEN_MOCKUPS/S060_Campus_Rankings_Scopes.png"
+  },
+  {
+    "id": "S061",
+    "group": "06 • Campus League",
+    "title": "Public Competition Profile",
+    "route": "League → Student Profile",
+    "dec": "Q25 A custom",
+    "summary": "Public-by-choice competition identity, not full academic/legal student profile.",
+    "layout": [
+      "Avatar/premade icon, PUBLIC username, rank, score and permitted duel performance",
+      "University/Year only if user explicitly permits",
+      "Challenge button if mutual eligibility and opt-in"
+    ],
+    "interact": [
+      "Challenge, block/report if supported, return"
+    ],
+    "states": [
+      "Hidden profile, blocked invites, ineligible year/topic"
+    ],
+    "motion": "Subtle identity header and safe action confirmation",
+    "tech": "Roll number, contacts, personal identifiers remain private in all API responses.",
+    "kind": "profile",
+    "preview": "SCREEN_MOCKUPS/S061_Public_Competition_Profile.png"
+  },
+  {
+    "id": "S062",
+    "group": "06 • Campus League",
+    "title": "Student Duel Discovery & Invitation",
+    "route": "League → Duels",
+    "dec": "Q24/Q25 Duel",
+    "summary": "Opt-in student matching/selection with invitation and safety controls.",
+    "layout": [
+      "Public opt-in competitors list with year/university filters only if consent",
+      "Choose opponent and view duel topics/timer rules before invitation",
+      "Send challenge; incoming invites Accept/Decline"
+    ],
+    "interact": [
+      "Find, invite, accept/decline, block and report, cancel if allowed"
+    ],
+    "states": [
+      "No eligible players, invite expired, rapid invite abuse, blocked student"
+    ],
+    "motion": "Short invitation sent status (actual server acknowledgement only)",
+    "tech": "No forced public student directory. Rate limits and admin moderation required.",
+    "kind": "league",
+    "preview": "SCREEN_MOCKUPS/S062_Student_Duel_Discovery_Invitation.png"
+  },
+  {
+    "id": "S063",
+    "group": "06 • Campus League",
+    "title": "Timed MCQ Duel",
+    "route": "League → Active Duel",
+    "dec": "Q24/Q25 Q27",
+    "summary": "Challenge-specific MCQ screen reuses focused exam components and server-secured timing.",
+    "layout": [
+      "Opponent usernames, challenge topic(s), neutral progress/timer",
+      "Same A–D question interaction and clear remaining questions",
+      "Result pending after submit, not assuming other student finished"
+    ],
+    "interact": [
+      "Answer, submit, view post-duel score, return to history"
+    ],
+    "states": [
+      "Opponent disconnects, match invalid, queue/cancel, duplicate duel session"
+    ],
+    "motion": "Minimal challenge start/reveal, no gaming-heavy effects",
+    "tech": "Duel scoring fairness and possible retry/rank impact remain decisions to approve; **no fees**.",
+    "kind": "quiz",
+    "preview": "SCREEN_MOCKUPS/S063_Timed_MCQ_Duel.png"
+  },
+  {
+    "id": "S064",
+    "group": "06 • Campus League",
+    "title": "Duel History & My Academic Performance",
+    "route": "League → History / Performance",
+    "dec": "Q24 custom",
+    "summary": "Academic improvement view separated from monetary gamification.",
+    "layout": [
+      "Compact duel chronology, outcome/status and study topic",
+      "Subject-wise accuracy, attempts, time trends from real completed events",
+      "Clear distinction practice data vs published competition score"
+    ],
+    "interact": [
+      "Filter history, open verified result, review performance"
+    ],
+    "states": [
+      "No attempts, pending opponent, under-review duel or unavailable metrics"
+    ],
+    "motion": "Subtle chart/row reveal and skeletons",
+    "tech": "Do not fabricate performance charts with insufficient data.",
+    "kind": "dashboard",
+    "preview": "SCREEN_MOCKUPS/S064_Duel_History_My_Academic_Performance.png"
+  },
+  {
+    "id": "S065",
+    "group": "07 • Administration",
+    "title": "Admin Task-First Dashboard",
+    "route": "/admin",
+    "dec": "Q23 B+C+D",
+    "summary": "Authorized admin landing organized around genuine tasks and recent records.",
+    "layout": [
+      "Top Overview hero with priority actions, pending counts, actual incoming orders/messages",
+      "Modules Content/Commerce/Announcements/Stats/Quizzes",
+      "Quick access to nested explorer and imports"
+    ],
+    "interact": [
+      "Open task, assign action if supported, navigate management"
+    ],
+    "states": [
+      "Unauthorized account, unavailable data, stale metric, zero tasks"
+    ],
+    "motion": "Compact count update, no decorative animation on sensitive actions",
+    "tech": "Role enforcement server-side; do not reveal admin screens via client-only route check.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S065_Admin_Task_First_Dashboard.png"
+  },
+  {
+    "id": "S066",
+    "group": "07 • Administration",
+    "title": "Admin Content Explorer",
+    "route": "/admin/sections, /admin/content/:kind",
+    "dec": "Q23 C",
+    "summary": "Academic content explorer mirroring authentic resource→subject→folder hierarchy.",
+    "layout": [
+      "Breadcrumb tree and compact folder rows",
+      "Actual create/edit/import action bar where supported",
+      "Explicit year/resource tagging, file references and preview"
+    ],
+    "interact": [
+      "Open content, manage permissioned items, bulk import with preview"
+    ],
+    "states": [
+      "Nested empty, validation failure, missing file, parent folder moved"
+    ],
+    "motion": "Quick folder navigation, confirmation for destructive actions",
+    "tech": "Respect existing storage references and foreign keys; no blind deletion of original PDFs.",
+    "kind": "folders",
+    "preview": "SCREEN_MOCKUPS/S066_Admin_Content_Explorer.png"
+  },
+  {
+    "id": "S067",
+    "group": "07 • Administration",
+    "title": "Admin General Import & Manage",
+    "route": "/admin/import, /admin/manage/:section",
+    "dec": "Q23 C+D",
+    "summary": "Generic content import/manage surface separate from new quiz CSV studio.",
+    "layout": [
+      "File picker and import mapping when existing",
+      "Preview changes and warnings before confirm",
+      "Target section/category breadcrumb and history"
+    ],
+    "interact": [
+      "Review import, confirm, correct errors, cancel safely"
+    ],
+    "states": [
+      "Bad file type, duplicates, partial save, unauthorized import"
+    ],
+    "motion": "Progress tied to real processed records",
+    "tech": "Do not mistake legacy document import for quiz MCQ CSV import; keep both flows distinct.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S067_Admin_General_Import_Manage.png"
+  },
+  {
+    "id": "S068",
+    "group": "07 • Administration",
+    "title": "Admin Commerce & Orders",
+    "route": "admin commerce/orders routes • audit",
+    "dec": "Q23 D Q18",
+    "summary": "Modular orders/products management with accurate financial info related to Shop only.",
+    "layout": [
+      "Overview/Commerce tabs, product catalog editing and order list",
+      "Real order status, search/filter and buyer detail per role",
+      "No quiz Wallet/contest payment screen"
+    ],
+    "interact": [
+      "Manage catalog/orders under existing rules, view audit status"
+    ],
+    "states": [
+      "No orders, permission denied, stock conflict"
+    ],
+    "motion": "Task feedback and restrained table/list transitions",
+    "tech": "Preserve legitimate e-commerce provider and Shop workflow; monetized quiz exclusion separate.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S068_Admin_Commerce_Orders.png"
+  },
+  {
+    "id": "S069",
+    "group": "07 • Administration",
+    "title": "Admin Announcements & Broadcasts",
+    "route": "Admin announcements module",
+    "dec": "Q21 Q23",
+    "summary": "Create and manage real academic broadcast notices with audience targeting.",
+    "layout": [
+      "Draft/published list, Compose announcement and audience options",
+      "Priority/featured flag, schedule only if backend can support",
+      "Preview on student feed before publish"
+    ],
+    "interact": [
+      "Draft/edit/publish/unpublish with confirmation and scope"
+    ],
+    "states": [
+      "Wrong audience, incomplete content, expired campaign"
+    ],
+    "motion": "Publish success only after server acknowledgement",
+    "tech": "School/year segmentation must match actual data policies.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S069_Admin_Announcements_Broadcasts.png"
+  },
+  {
+    "id": "S070",
+    "group": "07 • Administration",
+    "title": "Admin Statistics",
+    "route": "/admin/stats",
+    "dec": "Q23 D",
+    "summary": "Modular stats sourced from real counts, not decorative mock analytics.",
+    "layout": [
+      "Metric cards, trend chart only if historical data available",
+      "Filters/timeframe and neutral status",
+      "Link to source list where supported"
+    ],
+    "interact": [
+      "Change period, drill into authorized reports, export if real"
+    ],
+    "states": [
+      "Insufficient statistics, delayed aggregation, unauthorized data"
+    ],
+    "motion": "Minimal chart transitions, accessible tabular alternative",
+    "tech": "No fabrication of earnings/quiz prize metrics or personal data exposure.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S070_Admin_Statistics.png"
+  },
+  {
+    "id": "S071",
+    "group": "07 • Administration",
+    "title": "Quiz Operations Dashboard",
+    "route": "Admin → Quiz Management",
+    "dec": "Q28 A",
+    "summary": "New admin module home with direct pathways to Question Bank, Quiz Creation, Registrations, Results and Flags.",
+    "layout": [
+      "Compact dark-Slate top overview/quick actions",
+      "Grid of modules: Bank, Schedule, Registrations, Results, Duels, Controls",
+      "Needs Attention showing only real counts/import warnings"
+    ],
+    "interact": [
+      "Import CSV, create scheduled quiz, review tasks, change safe settings"
+    ],
+    "states": [
+      "No quizzes, import backlog, permission denied, disabled League"
+    ],
+    "motion": "Small task cards and success feedback",
+    "tech": "Admin server role; controller off until backend validated.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S071_Quiz_Operations_Dashboard.png"
+  },
+  {
+    "id": "S072",
+    "group": "07 • Administration",
+    "title": "CSV Question Bank Library",
+    "route": "Admin → MCQ Bank",
+    "dec": "Q28 B + user refinements",
+    "summary": "Master question bank tagged with Professional Year, Subject and Topic.",
+    "layout": [
+      "Download blank CSV template, Sample CSV and Import Guide",
+      "Filter bank by Year → Subject → Topic → status",
+      "Question preview WITHOUT exposing live answer keys to students"
+    ],
+    "interact": [
+      "Download template, upload new batch, inspect draft, manage active/archived questions"
+    ],
+    "states": [
+      "Duplicated IDs, unknown year/subject, version conflict, access denied"
+    ],
+    "motion": "File pick/check progress and safe batch status",
+    "tech": "Unique IDs, validated four options and one correct answer; answer key server-side.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S072_CSV_Question_Bank_Library.png"
+  },
+  {
+    "id": "S073",
+    "group": "07 • Administration",
+    "title": "CSV Import Mapping & Validation",
+    "route": "Admin → MCQ Bank → Import",
+    "dec": "Q28 B",
+    "summary": "Import wizard separates file selection, mapping, row-level validation, preview and commit.",
+    "layout": [
+      "Source file summary and column mapping question_id, professional_year, subject, topic, question, option_a–d, correct_option",
+      "Errors table by row, duplicate IDs, blank answers, invalid options",
+      "Confirm Import only if valid; rejected rows report"
+    ],
+    "interact": [
+      "Upload, map fields, preview, fix source, commit; prevent duplicate bulk writes"
+    ],
+    "states": [
+      "Malformed CSV, special Unicode, Excel BOM, rows missing, oversized file"
+    ],
+    "motion": "Progress based on rows; no optimistic false success",
+    "tech": "Atomic/idempotent import batches with audit log and answer secrecy.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S073_CSV_Import_Mapping_Validation.png"
+  },
+  {
+    "id": "S074",
+    "group": "07 • Administration",
+    "title": "Create Quiz Wizard",
+    "route": "Admin → Create Quiz",
+    "dec": "Q28 C",
+    "summary": "Guided four-stage flow: Type/Year → Subjects/Bank → Schedule/Rules → Review/Publish.",
+    "layout": [
+      "Choose Standard or Special and target eligible Professional Year(s)",
+      "Standard exactly ONE subject; Special TWO+ admin-selected subjects, quotas by subject",
+      "Question count, duration, topics, registration/window, preview and preflight"
+    ],
+    "interact": [
+      "Save draft, select bank tags, review preview, schedule/publish eligible quiz"
+    ],
+    "states": [
+      "Insufficient unused question pool, mismatched year, overlapping schedule, incomplete rules"
+    ],
+    "motion": "Step progress and nonblocking validation feedback",
+    "tech": "Mix Special eligible subject questions into one shuffled stream; not consecutive subject blocks.",
+    "kind": "form",
+    "preview": "SCREEN_MOCKUPS/S074_Create_Quiz_Wizard.png"
+  },
+  {
+    "id": "S075",
+    "group": "07 • Administration",
+    "title": "Admin Registration Inbox & Review",
+    "route": "Admin → Registrations",
+    "dec": "Q28 D Q26",
+    "summary": "Secure Special registrant list with privacy-preserving approval workflow.",
+    "layout": [
+      "Tabs Pending / Approved / Rejected; private applicant fields in authorized detail",
+      "Student full name, email, phone/WhatsApp, roll number only for admin role",
+      "Approve/Reject with recorded reason, timestamp/audit"
+    ],
+    "interact": [
+      "Open request, verify eligibility, approve or reject, safe export only if authorized"
+    ],
+    "states": [
+      "Duplicate requests, contest closed, blocked compliance, incomplete details"
+    ],
+    "motion": "Small status badge update, no premature confirmation",
+    "tech": "Payment verification must NOT be included as backdoor fee-linked cash-prize flow; blocked by compliance.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S075_Admin_Registration_Inbox_Review.png"
+  },
+  {
+    "id": "S076",
+    "group": "07 • Administration",
+    "title": "Admin Results & Ranking Review",
+    "route": "Admin → Results",
+    "dec": "Q28 D Q27",
+    "summary": "Admin verifies genuine attempts and scoring before relevant leaderboard publication.",
+    "layout": [
+      "Quiz selector, pending/verified/flagged attempts",
+      "Participant pseudonymous name/ID, score, time, anomalies; secure details for role",
+      "Approve publish/recalculate only per audited approved policy"
+    ],
+    "interact": [
+      "Inspect attempts, pause publication, resolve suspicious statuses"
+    ],
+    "states": [
+      "Absent scoring formula, ungraded attempts, duplicate submission, dispute"
+    ],
+    "motion": "Stable tables, clear alert indication; no animation hiding anomaly",
+    "tech": "Scoring, best-vs-latest attempt and tie policy deliberately pending user approval; do not choose silently.",
+    "kind": "admin",
+    "preview": "SCREEN_MOCKUPS/S076_Admin_Results_Ranking_Review.png"
+  },
+  {
+    "id": "S077",
+    "group": "07 • Administration",
+    "title": "Admin League Feature Controls",
+    "route": "Admin → Feature Controls",
+    "dec": "Q23 Q28 D Q30 D",
+    "summary": "Server-authoritative feature flags for approved academic modules; separate League entry from hidden/blocked features.",
+    "layout": [
+      "Rows Standard Quizzes, Special compliant events, Rankings, Duels, Community CTA",
+      "Current state, dependency/health warnings, confirmation dialogs",
+      "Monetary contest capability shown as Not Available, never switchable"
+    ],
+    "interact": [
+      "Enable/disable tested compliant module; inspect deployment readiness"
+    ],
+    "states": [
+      "Unauthorized toggle, offline admin, missing server-side checks, dependency unavailable"
+    ],
+    "motion": "Immediate confirmation from server, no optimistic security toggle",
+    "tech": "Admin switches are not legal clearance; hard gate prohibited flows and PII routes.",
+    "kind": "settings",
+    "preview": "SCREEN_MOCKUPS/S077_Admin_League_Feature_Controls.png"
+  },
+  {
+    "id": "S078",
+    "group": "08 • Cross-Cutting",
+    "title": "Loading Skeletons & Empty States",
+    "route": "every feature module",
+    "dec": "Q29 A Q33 assets",
+    "summary": "Content-shaped skeleton components and distinct original AI-assisted empty illustrations matching task.",
+    "layout": [
+      "Home cards, Study rows, PDF thumbnails, Shop products, quiz results each receive matching skeleton",
+      "Empty copy explains what is missing and offers one real next action",
+      "No generic endless spinner"
+    ],
+    "interact": [
+      "Retry, clear filter, open downloads, return; depend on context"
+    ],
+    "states": [
+      "Actual loading, true empty, filtered empty, unavailable server must be different"
+    ],
+    "motion": "Subtle shimmer only if device not in reduced-motion mode; state illustration idle motion optional",
+    "tech": "Original illustrated icons/characters optimized into small assets; no fabricated records.",
+    "kind": "state",
+    "preview": "SCREEN_MOCKUPS/S078_Loading_Skeletons_Empty_States.png"
+  },
+  {
+    "id": "S079",
+    "group": "08 • Cross-Cutting",
+    "title": "Error & Offline Recovery",
+    "route": "every feature module",
+    "dec": "Q29 B Q33",
+    "summary": "Task-specific branded recovery screens; never lose drafts, scans or existing downloaded PDFs.",
+    "layout": [
+      "Original low-key error/offline character illustration",
+      "Short plain reason and actionable Retry / Open Saved Files",
+      "Safe failed download and unsynced draft warnings"
+    ],
+    "interact": [
+      "Retry with bounded backoff, open cache, retain unsaved state"
+    ],
+    "states": [
+      "Offline vs server error vs denied permission vs corrupted PDF distinguished"
+    ],
+    "motion": "Small static or looped icon, no looping heavy video",
+    "tech": "Server-timed quiz never claims pause on offline; submission status requires confirmation.",
+    "kind": "state",
+    "preview": "SCREEN_MOCKUPS/S079_Error_Offline_Recovery.png"
+  },
+  {
+    "id": "S080",
+    "group": "08 • Cross-Cutting",
+    "title": "Branded Icon & Chip Component Library",
+    "route": "global reusable widgets",
+    "dec": "Q02 Q31 Q33",
+    "summary": "Custom original coherent icon system and interaction tokens reused everywhere.",
+    "layout": [
+      "Unified 24dp icon grid and consistent stroke/visual weight",
+      "Deep Teal selected chips, Slate headings, rounded 14–18px cards",
+      "Semantic danger/disabled, loading and focus states, labels and text scaling"
+    ],
+    "interact": [
+      "Press/select/reorder, accessibility focus, long press where supported"
+    ],
+    "states": [
+      "High contrast, dark mode, missing raster assets, slow hardware"
+    ],
+    "motion": "Pressed scale / gentle color interpolation and reduced-motion static feedback",
+    "tech": "Generate original AI-assisted motifs; convert needed functional icons to production vectors; no unlicensed scraped sets.",
+    "kind": "workspace",
+    "preview": "SCREEN_MOCKUPS/S080_Branded_Icon_Chip_Component_Library.png"
+  },
+  {
+    "id": "S081",
+    "group": "08 • Cross-Cutting",
+    "title": "3D Onboarding & Personalized Animated Greeting",
+    "route": "startup/onboarding component",
+    "dec": "Q17 Q29 C Q33",
+    "summary": "Original visual character/animation system, including Welcome, [Name] and Welcome back, [Name].",
+    "layout": [
+      "One cohesive family of charming but premium academic 3D-style characters",
+      "Open animation storyboard: mascot enters → brand/name reveal → screen settles",
+      "Alternate still assets for reduced motion and faster repeated sessions"
+    ],
+    "interact": [
+      "Skip intro, proceed to app, change avatar preferences separately"
+    ],
+    "states": [
+      "Name missing, returning path, cold startup, underpowered device"
+    ],
+    "motion": "Prefer Flutter-native animation, Lottie/Rive if license/runtime available; image sequences only when performance tested",
+    "tech": "Use real displayName; voice/typing sound not required or auto-played; no slow mandatory wait.",
+    "kind": "hero",
+    "preview": "SCREEN_MOCKUPS/S081_3D_Onboarding_Personalized_Animated_Greeting.png"
+  }
+]

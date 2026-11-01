@@ -11,11 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract source
-        run: |
-          unzip -q PharmD_With_Hyzen_Source_1.3.3.zip
-          cp -a lib/. hyzen_flutter/lib/
-          cp -a android/. hyzen_flutter/android/
+      - name: Free runner disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -48,13 +53,13 @@ jobs:
         working-directory: hyzen_flutter
       - run: flutter test --no-pub --reporter expanded
         working-directory: hyzen_flutter
-      - run: flutter build apk --release --no-pub
+      - run: flutter build apk --release --no-pub --no-shrink
         working-directory: hyzen_flutter
       - name: Identify artifact
         run: sha256sum hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk > hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: PharmD_With_Hyzen_1.3.3_signed
+          name: PharmD_With_Hyzen_1.5.3_signed
           path: |
             hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk
             hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk.sha256
@@ -67,7 +72,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: PharmD_With_Hyzen_1.3.3_signed
+          name: PharmD_With_Hyzen_1.5.3_signed
           path: apk
       - name: Enable KVM
         run: |

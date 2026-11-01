@@ -1,0 +1,14 @@
+00:00 +0: loading /workspace/scratch/d8f628be0d15/implementation/hyzen_flutter/test/navigation_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: all bottom tabs load real screens
+00:02 +1: every library level resolves through the router
+00:02 +2: blog, about, contact and safe missing viewer render
+00:03 +3: Android back returns to Home from a tab and pops one library level
+00:03 +4: academic content switches when a student changes professional year
+00:03 +5: completed student profile is retained without a repeat completion prompt
+00:04 +6: student cannot enter admin routes
+00:04 +7: small phone home layout supports larger text
+00:04 +8: admin settings, import template and content editor render
+00:06 +9: representative screens visual QA
+00:10 +10: (tearDownAll)
+00:10 +10: All tests passed!
