@@ -180,7 +180,7 @@ void main() {
         );
         expect(accountAction.width, greaterThanOrEqualTo(48));
         expect(accountAction.height, greaterThanOrEqualTo(48));
-        expect(find.byType(HyzenRiveMascot), findsOneWidget);
+        expect(find.byKey(const ValueKey('home-hero-art')), findsOneWidget);
         expect(find.text('More from Hyzen'), findsNothing);
         expect(find.text('About Hyzen'), findsNothing);
         expect(find.text('Contact us'), findsNothing);
@@ -959,28 +959,15 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
-  testWidgets('compact banner keeps its artwork beside text on a 360px phone', (
-    tester,
-  ) async {
+  testWidgets('reference Home hero and positioned profile fit a 360px phone', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await open(tester, '/home');
-    final greeting = find.text('Welcome back, Ali');
-    final image = find.byWidgetPredicate(
-      (w) => w is HyzenRiveMascot && w.state == HyzenRiveState.peeking,
-    );
-    expect(greeting, findsOneWidget);
-    expect(image, findsOneWidget);
-    expect(
-      tester.getRect(image).left,
-      greaterThan(tester.getRect(greeting).left),
-    );
-    expect(
-      tester.getRect(image).top,
-      lessThan(tester.getRect(greeting).bottom + 35),
-    );
+    expect(find.byKey(const ValueKey('home-hero-art')), findsOneWidget);
+    expect(find.text('Others'), findsOneWidget);
+    expect(tester.getRect(find.byTooltip('Profile & settings')).left, lessThan(40));
     expect(tester.takeException(), isNull);
   });
   testWidgets('splash uses the dedicated loading mascot state', (tester) async {

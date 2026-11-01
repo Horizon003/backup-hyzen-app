@@ -100,10 +100,12 @@ class TabPage extends StatelessWidget {
     this.homeBackground,
     this.integratedHeader = false,
     this.headerTheme,
+    this.header,
   });
   final Widget Function(Widget child)? homeBackground;
   final bool integratedHeader;
   final ThemeData? headerTheme;
+  final Widget? header;
   final Widget? drawer;
   final String title;
   final String? subtitle;
@@ -132,7 +134,7 @@ class TabPage extends StatelessWidget {
         preferredSize: const Size.fromHeight(64),
         child: Theme(
           data: headerTheme ?? Theme.of(context),
-          child: _Bar(
+          child: header ?? _Bar(
             integrated: integratedHeader,
             onAccount: () => showAccountMenu(context),
             title: title,
