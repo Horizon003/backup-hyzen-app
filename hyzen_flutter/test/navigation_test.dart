@@ -487,6 +487,31 @@ void main() {
     }
   });
 
+  testWidgets('Downloads card panda pose differs from empty-state panda', (
+    tester,
+  ) async {
+    await open(tester, '/downloads');
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/mascot/mascot_success_wave.png',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is HyzenRiveMascot &&
+            widget.state == HyzenRiveState.downloading,
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('all app sections load real screens', (tester) async {
     for (final path in [
       '/home',

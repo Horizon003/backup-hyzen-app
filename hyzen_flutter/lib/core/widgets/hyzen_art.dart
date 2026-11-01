@@ -6,7 +6,7 @@ class HyzenArt extends StatelessWidget {
   final double size;
   @override
   Widget build(BuildContext context) {
-    if (name == 'library' || name == 'downloads') {
+    if (name == 'library' || name == 'downloads' || name == 'downloads-card') {
       final studying = name == 'library';
       final t = Theme.of(context);
       return SizedBox.square(
@@ -17,11 +17,15 @@ class HyzenArt extends StatelessWidget {
               child: Image.asset(
                 studying
                     ? 'assets/mascot/mascot_studying.png'
+                    : name == 'downloads-card'
+                    ? 'assets/mascot/mascot_success_wave.png'
                     : 'assets/mascot/mascot_downloading.png',
                 fit: BoxFit.contain,
                 cacheWidth: (size * 2).round(),
                 semanticLabel: studying
                     ? 'Hyzen panda with a study book'
+                    : name == 'downloads-card'
+                    ? 'Hyzen panda waving from the offline library card'
                     : 'Hyzen panda with an offline download tablet',
               ),
             ),

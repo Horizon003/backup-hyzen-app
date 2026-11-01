@@ -229,7 +229,7 @@ class HeroPanel extends StatelessWidget {
     final artwork = icon == Icons.school_rounded
         ? 'library'
         : icon == Icons.download_done_rounded
-        ? 'downloads'
+        ? 'downloads-card'
         : null;
     if (artwork != null) {
       return Column(
