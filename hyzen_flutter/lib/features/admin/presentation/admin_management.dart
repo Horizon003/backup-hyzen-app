@@ -737,7 +737,11 @@ Map<String, dynamic> _mergeAdminDraft(
     for (final part in parts.take(parts.length - 1)) {
       final child = target[part];
       if (child is Map) {
-        target = child.cast<String, dynamic>();
+        final next = Map<String, dynamic>.from(
+          child.cast<String, dynamic>(),
+        );
+        target[part] = next;
+        target = next;
       } else {
         final next = <String, dynamic>{};
         target[part] = next;
@@ -816,7 +820,7 @@ Color _draftColor(Object? raw, Color fallback) {
                 fields: documentFields(section),
                 initial: initial,
                 saveLabel: section == 'notice'
-                    ? 'Publish notification'
+                    ? 'Save notification'
                     : 'Save changes',
                 header: section == 'notice' || section == 'announcement'
                     ? const Padding(
@@ -835,6 +839,8 @@ Color _draftColor(Object? raw, Color fallback) {
                     : null,
                 onSave: (updates) async {
                   if (section == 'notice' &&
+                      updates['enabled'] == true &&
+                      initial['enabled'] != true &&
                       !await confirmDialog(
                         context,
                         title: 'Publish this notification?',
@@ -2355,7 +2361,7 @@ Future<void> _showAdminDraftPreview(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 480, maxHeight: 680),
         decoration: BoxDecoration(
-          color: notice ? background : card,
+          color: notice ? background : null,
           gradient: notice
               ? null
               : LinearGradient(
