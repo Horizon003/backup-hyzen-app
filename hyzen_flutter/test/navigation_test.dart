@@ -1038,6 +1038,30 @@ void main() {
     expect(find.byType(HyzenRiveMascot), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  test('accessibility preferences persist and clamp text scaling', () async {
+    final accessibility = ProviderContainer(
+      overrides: [sharedPrefsProvider.overrideWithValue(prefs)],
+    );
+    addTearDown(accessibility.dispose);
+
+    accessibility
+        .read(doublePrefProvider('pref_text_scale').notifier)
+        .set(1.2);
+    accessibility
+        .read(boolPrefProvider('pref_reduce_motion').notifier)
+        .set(true);
+
+    expect(accessibility.read(doublePrefProvider('pref_text_scale')), 1.2);
+    expect(accessibility.read(boolPrefProvider('pref_reduce_motion')), isTrue);
+    expect(prefs.getDouble('pref_text_scale'), 1.2);
+    expect(prefs.getBool('pref_reduce_motion'), isTrue);
+
+    accessibility
+        .read(doublePrefProvider('pref_text_scale').notifier)
+        .set(9);
+    expect(accessibility.read(doublePrefProvider('pref_text_scale')), 1.35);
+  });
+
   testWidgets(
     'Login remains usable at 320px with large text, both themes and keyboard',
     (tester) async {
