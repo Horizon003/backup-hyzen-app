@@ -767,6 +767,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final p = ref.watch(profileProvider).valueOrNull;
     final user = ref.watch(authStateProvider).valueOrNull;
     final mode = ref.watch(themeModeProvider);
+    final textScale = ref.watch(doublePrefProvider('pref_text_scale'));
+    final reduceMotion = ref.watch(boolPrefProvider('pref_reduce_motion'));
     final notif = ref.watch(boolPrefProvider('pref_announcements'));
     final used = ref
         .watch(downloadsProvider)
@@ -844,6 +846,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ThemeMode.system => 'Auto',
                 },
                 onTap: () => _chooseTheme(context, ref, mode),
+              ),
+            ],
+          ),
+        ],
+        if (_matches('accessibility text size font scale reduce motion animation')) ...[
+          const AccountSectionHeader('Accessibility'),
+          SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'Text size',
+                value: '${(textScale * 100).round()}%',
+                subtitle: 'Adjust text size without changing your phone settings',
+                onTap: () => _chooseTextScale(context, ref, textScale),
+              ),
+              SettingsRow(
+                title: 'Reduce motion',
+                subtitle: 'Use fewer moving transitions throughout the app',
+                trailing: AccountToggle(
+                  label: 'Reduce motion',
+                  value: reduceMotion,
+                  onChanged: (value) => ref
+                      .read(boolPrefProvider('pref_reduce_motion').notifier)
+                      .set(value),
+                ),
               ),
             ],
           ),
@@ -967,6 +993,78 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ],
     );
+  }
+}
+
+Future<void> _chooseTextScale(
+  BuildContext context,
+  WidgetRef ref,
+  double current,
+) async {
+  var selected = current;
+  final next = await showModalBottomSheet<double>(
+    context: context,
+    backgroundColor: AccountStyle.cardOf(context),
+    showDragHandle: true,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (context, setSheetState) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const AccountSectionHeader('Text size'),
+              Text(
+                '${(selected * 100).round()}% preview',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18 * selected,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Slider(
+                value: selected,
+                min: .85,
+                max: 1.35,
+                divisions: 10,
+                label: '${(selected * 100).round()}%',
+                onChanged: (value) =>
+                    setSheetState(() => selected = value),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text('Smaller'),
+                  Text('Larger'),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, 1.0),
+                      child: const Text('Reset'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context, selected),
+                      child: const Text('Apply'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  if (next != null && context.mounted) {
+    ref.read(doublePrefProvider('pref_text_scale').notifier).set(next);
   }
 }
 
