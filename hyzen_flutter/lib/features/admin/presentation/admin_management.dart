@@ -819,55 +819,81 @@ Color _draftColor(Object? raw, Color fallback) {
                     ? 'Publish notification'
                     : 'Save changes',
                 header: section == 'notice' || section == 'announcement'
-                    ? Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: HeroPanel(
-                          eyebrow: 'Student preview',
-                          title:
-                              '${initial[section == 'notice' ? 'title' : 'text'] ?? 'A message from Hyzen'}',
-                          subtitle: '${initial['body'] ?? ''}',
-                          icon: Icons.campaign_rounded,
+                    ? const Padding(
+                        padding: EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          'Preview the student-facing version before saving or publishing. Previewing never changes live content.',
                         ),
                       )
                     : null,
-                onSave: (updates) => adminAction(
-                  context,
-                  ref,
-                  () async {
-                    final changed = <String, dynamic>{
-                      for (final e in updates.entries)
-                        if (jsonEncode(getPath(initial, e.key)) !=
-                            jsonEncode(e.value))
-                          e.key: e.value,
-                    };
-                    if (section == 'notice') {
-                      await ref.read(adminRepositoryProvider).patch(key, {
-                        'fullScreenNotice': {
-                          ...initial,
-                          ...updates,
-                          'id': legacyUid('notice'),
-                          'enabled': updates['enabled'],
-                          'publishedAt': DateTime.now()
-                              .toUtc()
-                              .toIso8601String(),
-                        },
-                      });
-                    } else {
-                      if (section == 'announcement') {
-                        if (updates.containsKey('gradient.from')) {
+                onPreview: section == 'notice' || section == 'announcement'
+                    ? (updates) => _showAdminDraftPreview(
+                        context,
+                        section,
+                        _mergeAdminDraft(initial, updates),
+                      )
+                    : null,
+                onSave: (updates) async {
+                  if (section == 'notice' &&
+                      !await confirmDialog(
+                        context,
+                        title: 'Publish this notification?',
+                        message:
+                            'Students may see this notification after the server confirms the change.',
+                        confirm: 'Publish',
+                      )) {
+                    return;
+                  }
+                  if (section == 'announcement' &&
+                      updates['enabled'] == true &&
+                      initial['enabled'] != true &&
+                      !await confirmDialog(
+                        context,
+                        title: 'Publish this announcement?',
+                        message:
+                            'The announcement will become visible to students after the server confirms the change.',
+                        confirm: 'Publish',
+                      )) {
+                    return;
+                  }
+                  await adminAction(
+                    context,
+                    ref,
+                    () async {
+                      final changed = <String, dynamic>{
+                        for (final e in updates.entries)
+                          if (jsonEncode(getPath(initial, e.key)) !=
+                              jsonEncode(e.value))
+                            e.key: e.value,
+                      };
+                      if (section == 'notice') {
+                        await ref.read(adminRepositoryProvider).patch(key, {
+                          'fullScreenNotice': {
+                            ...initial,
+                            ...updates,
+                            'id': legacyUid('notice'),
+                            'enabled': updates['enabled'],
+                            'publishedAt': DateTime.now()
+                                .toUtc()
+                                .toIso8601String(),
+                          },
+                        });
+                      } else {
+                        if (section == 'announcement' &&
+                            updates.containsKey('gradient.from')) {
                           changed['backgroundColor'] = updates['gradient.from'];
                         }
+                        await ref
+                            .read(adminRepositoryProvider)
+                            .patch(key, changed);
                       }
-                      await ref
-                          .read(adminRepositoryProvider)
-                          .patch(key, changed);
-                    }
-                    await refreshContent(ref, [key]);
-                  },
-                  message: section == 'notice'
-                      ? 'Notification published'
-                      : 'Changes saved',
-                ),
+                      await refreshContent(ref, [key]);
+                    },
+                    message: section == 'notice'
+                        ? 'Notification published'
+                        : 'Changes saved',
+                  );
+                },
               ),
               if (section == 'notice')
                 Padding(
