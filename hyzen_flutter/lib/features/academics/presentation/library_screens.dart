@@ -298,6 +298,39 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
     );
   }
 
+  List<_Crumb> _breadcrumbs(Library lib) {
+    final p = widget.path;
+    if (p.isEmpty) return const [];
+    final crumbs = <_Crumb>[_Crumb(widget.kind.shortTitle, const [])];
+    final year = lib.year(p[0]);
+    if (year == null) return crumbs;
+    crumbs.add(_Crumb(year.label, [year.id]));
+    if (p.length < 2) return crumbs;
+    final semester = year.semesters.where((s) => s.id == p[1]).firstOrNull;
+    if (semester == null) return crumbs;
+    crumbs.add(_Crumb(semester.label, [year.id, semester.id]));
+    if (p.length < 3) return crumbs;
+    final subject = semester.subjects.where((s) => s.id == p[2]).firstOrNull;
+    if (subject == null) return crumbs;
+    crumbs.add(_Crumb(subject.label, [year.id, semester.id, subject.id]));
+    if (p.length < 4) return crumbs;
+    final section = subject.sections.where((s) => s.id == p[3]).firstOrNull;
+    if (section == null) return crumbs;
+    crumbs.add(
+      _Crumb(section.title, [year.id, semester.id, subject.id, section.id]),
+    );
+    if (p.length < 5) return crumbs;
+    final topic = section.topics.where((t) => t.id == p[4]).firstOrNull;
+    if (topic == null) return crumbs;
+    crumbs.add(
+      _Crumb(
+        topic.title,
+        [year.id, semester.id, subject.id, section.id, topic.id],
+      ),
+    );
+    return crumbs;
+  }
+
   _Resolved _resolve(Library lib) {
     final p = widget.path;
     final k = widget.kind;
@@ -313,7 +346,7 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
             .map(
               (y) => _Item(
                 y.label,
-                (c, col) => ResourceTile(
+                (c, col) => _FolderCard(
                   icon: Icons.workspace_premium_rounded,
                   color: col,
                   title: y.label,
@@ -338,7 +371,7 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
             .map(
               (s) => _Item(
                 s.label,
-                (c, col) => ResourceTile(
+                (c, col) => _FolderCard(
                   icon: Icons.calendar_month_rounded,
                   color: col,
                   title: s.label,
@@ -366,7 +399,7 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
             .map(
               (su) => _Item(
                 su.label,
-                (c, col) => ResourceTile(
+                (c, col) => _FolderCard(
                   icon: Icons.science_rounded,
                   color: col,
                   title: su.label,
@@ -391,7 +424,7 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
             .map(
               (sec) => _Item(
                 sec.title,
-                (c, col) => ResourceTile(
+                (c, col) => _FolderCard(
                   icon: Icons.folder_copy_rounded,
                   color: col,
                   title: sec.title,
@@ -420,7 +453,7 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
             .map(
               (tp) => _Item(
                 tp.title,
-                (c, col) => ResourceTile(
+                (c, col) => _FolderCard(
                   icon: Icons.topic_rounded,
                   color: col,
                   title: tp.title,
@@ -443,12 +476,13 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
       trail: [su.label, sec.title],
       levelName: 'Files',
       stats: [('${tp.files.length}', 'files')],
+      fileGallery: true,
       items: tp.files
           .where((f) => f.url.isNotEmpty)
           .map(
             (f) => _Item(
               f.displayTitle,
-              (c, col) => FileTile(
+              (c, col) => _StudyPdfCard(
                 file: FileRef(
                   kind: k,
                   title: f.displayTitle,
@@ -477,6 +511,7 @@ class _Resolved {
     this.title,
     this.trail = const [],
     this.stats = const [],
+    this.fileGallery = false,
   });
   factory _Resolved.missing() =>
       _Resolved(levelName: 'Not found', items: const [])..notFound = true;
@@ -485,6 +520,7 @@ class _Resolved {
   final List<String> trail;
   final List<(String, String)> stats;
   final List<_Item> items;
+  final bool fileGallery;
   bool notFound = false;
 }
 
