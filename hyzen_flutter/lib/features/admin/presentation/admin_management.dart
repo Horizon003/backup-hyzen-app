@@ -813,6 +813,7 @@ class AdminDocumentScreen extends ConsumerWidget {
                       )) {
                     return;
                   }
+                  if (!context.mounted) return;
                   if (section == 'announcement' &&
                       updates['enabled'] == true &&
                       initial['enabled'] != true &&
@@ -825,6 +826,7 @@ class AdminDocumentScreen extends ConsumerWidget {
                       )) {
                     return;
                   }
+                  if (!context.mounted) return;
                   await adminAction(
                     context,
                     ref,
@@ -1044,6 +1046,7 @@ class _AdminListState extends ConsumerState<AdminListScreen> {
         return;
       }
     }
+    if (!context.mounted) return;
     if (action == 'delete' &&
         !await confirmDialog(
           context,

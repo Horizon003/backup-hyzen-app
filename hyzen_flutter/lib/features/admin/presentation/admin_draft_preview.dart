@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/widgets/common.dart';
 import '../../../core/widgets/ui_kit.dart';
 
 Map<String, dynamic> mergeAdminDraft(

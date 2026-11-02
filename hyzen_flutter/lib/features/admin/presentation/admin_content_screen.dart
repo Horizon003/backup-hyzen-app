@@ -194,6 +194,7 @@ class _AdminContentScreenState extends ConsumerState<AdminContentScreen> {
         return;
       }
     }
+    if (!mounted) return;
     if (action == 'publish') {
       final publish = !visible;
       if (!await confirmDialog(
