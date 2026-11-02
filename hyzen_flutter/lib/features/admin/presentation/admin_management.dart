@@ -401,12 +401,14 @@ class AdminForm extends StatefulWidget {
     required this.onSave,
     this.saveLabel = 'Save changes',
     this.header,
+    this.onPreview,
     this.onlyChanged = false,
   });
   final bool onlyChanged;
   final List<AdminField> fields;
   final Map<String, dynamic> initial;
   final Future<void> Function(Map<String, dynamic>) onSave;
+  final Future<void> Function(Map<String, dynamic>)? onPreview;
   final String saveLabel;
   final Widget? header;
   @override
@@ -688,6 +690,22 @@ class _AdminFormState extends State<AdminForm> {
                     ],
                   ),
           ),
+        if (widget.onPreview != null)
+          OutlinedButton.icon(
+            onPressed: busy || upload != null
+                ? null
+                : () async {
+                    if (!form.currentState!.validate()) return;
+                    setState(() => busy = true);
+                    try {
+                      await widget.onPreview!(collect());
+                    } finally {
+                      if (mounted) setState(() => busy = false);
+                    }
+                  },
+            icon: const Icon(Icons.visibility_outlined),
+            label: const Text('Preview as student'),
+          ),
         HButton(
           label: widget.saveLabel,
           loading: busy,
@@ -704,6 +722,1745 @@ class _AdminFormState extends State<AdminForm> {
                 },
         ),
       ],
+    ),
+  );
+}
+
+Map<String, dynamic> _mergeAdminDraft(
+  Map<String, dynamic> initial,
+  Map<String, dynamic> updates,
+) {
+  final result = Map<String, dynamic>.from(initial);
+  for (final entry in updates.entries) {
+    final parts = entry.key.split('.');
+    Map<String, dynamic> target = result;
+    for (final part in parts.take(parts.length - 1)) {
+      final child = target[part];
+      if (child is Map) {
+        target = child.cast<String, dynamic>();
+      } else {
+        final next = <String, dynamic>{};
+        target[part] = next;
+        target = next;
+      }
+    }
+    target[parts.last] = entry.value;
+  }
+  return result;
+}
+
+Object? _draftValue(Map<String, dynamic> draft, String path) {
+  Object? value = draft;
+  for (final part in path.split('.')) {
+    if (value is! Map) return null;
+    value = value[part];
+  }
+  return value;
+}
+
+Color _draftColor(Object? raw, Color fallback) {
+  final value = (raw ?? '').toString().trim().replaceFirst('#', '');
+  if (!RegExp(r'^[0-9a-fA-F]{6}
+  const AdminDocumentScreen({super.key, required this.section});
+  final String section;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final key = documentKey(section), a = ref.watch(adminValueProvider(key));
+    return Scaffold(
+      appBar: HTopBar(
+        title: sectionTitle(section),
+        actions: [
+          if (section == 'settings')
+            IconButton(
+              tooltip: 'Section visibility',
+              onPressed: () => context.push('/admin/sections'),
+              icon: const Icon(Icons.toggle_on_outlined),
+            ),
+        ],
+      ),
+      body: a.when(
+        loading: () => const SkeletonList(),
+        error: (e, _) => ErrorState(
+          message: 'Could not load settings',
+          onRetry: () => ref.invalidate(adminValueProvider(key)),
+        ),
+        data: (v) {
+          final root = asMap(v),
+              initial = section == 'notice'
+                  ? asMap(root['fullScreenNotice'])
+                  : root;
+          return ListView(
+            padding: const EdgeInsets.all(HSpace.screen),
+            children: [
+              if (section == 'about')
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: () => context.push('/admin/manage/credits'),
+                      child: const Text('Team & photos'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/admin/manage/social'),
+                      child: const Text('Social links'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/admin/manage/blogs'),
+                      child: const Text('Blog posts'),
+                    ),
+                  ],
+                ),
+              AdminForm(
+                key: ValueKey(section),
+                onlyChanged: section != 'notice',
+                fields: documentFields(section),
+                initial: initial,
+                saveLabel: section == 'notice'
+                    ? 'Publish notification'
+                    : 'Save changes',
+                header: section == 'notice' || section == 'announcement'
+                    ? Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: HeroPanel(
+                          eyebrow: 'Student preview',
+                          title:
+                              '${initial[section == 'notice' ? 'title' : 'text'] ?? 'A message from Hyzen'}',
+                          subtitle: '${initial['body'] ?? ''}',
+                          icon: Icons.campaign_rounded,
+                        ),
+                      )
+                    : null,
+                onSave: (updates) => adminAction(
+                  context,
+                  ref,
+                  () async {
+                    final changed = <String, dynamic>{
+                      for (final e in updates.entries)
+                        if (jsonEncode(getPath(initial, e.key)) !=
+                            jsonEncode(e.value))
+                          e.key: e.value,
+                    };
+                    if (section == 'notice') {
+                      await ref.read(adminRepositoryProvider).patch(key, {
+                        'fullScreenNotice': {
+                          ...initial,
+                          ...updates,
+                          'id': legacyUid('notice'),
+                          'enabled': updates['enabled'],
+                          'publishedAt': DateTime.now()
+                              .toUtc()
+                              .toIso8601String(),
+                        },
+                      });
+                    } else {
+                      if (section == 'announcement') {
+                        if (updates.containsKey('gradient.from')) {
+                          changed['backgroundColor'] = updates['gradient.from'];
+                        }
+                      }
+                      await ref
+                          .read(adminRepositoryProvider)
+                          .patch(key, changed);
+                    }
+                    await refreshContent(ref, [key]);
+                  },
+                  message: section == 'notice'
+                      ? 'Notification published'
+                      : 'Changes saved',
+                ),
+              ),
+              if (section == 'notice')
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: OutlinedButton.icon(
+                    onPressed: () => adminAction(
+                      context,
+                      ref,
+                      () => ref.read(adminRepositoryProvider).patch(key, {
+                        'fullScreenNotice.enabled': false,
+                      }),
+                      message: 'Notification withdrawn',
+                    ),
+                    icon: const Icon(Icons.visibility_off_outlined),
+                    label: const Text('Withdraw current notification'),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class AdminListScreen extends ConsumerStatefulWidget {
+  const AdminListScreen({super.key, required this.section});
+  final String section;
+  @override
+  ConsumerState<AdminListScreen> createState() => _AdminListState();
+}
+
+class _AdminListState extends ConsumerState<AdminListScreen> {
+  String query = '';
+  String get key => 'pw_${widget.section}';
+  String? get nested => widget.section == 'credits' ? 'cards' : null;
+  List<AdminField> get fields => switch (widget.section) {
+    'products' => productFields,
+    'blogs' => blogFields,
+    'credits' => creditFields,
+    'social' => socialFields,
+    _ => const [],
+  };
+  Future<void> editItem([Map<String, dynamic>? item]) async {
+    final isNew = item == null;
+    final initial =
+        item ??
+        {
+          'id': legacyUid(widget.section),
+          'createdAt': DateTime.now().toUtc().toIso8601String(),
+          'order': 999,
+        };
+    final repository = ref.read(adminRepositoryProvider);
+    Future<void> commit(Map<String, dynamic> values) async {
+      await repository.changeList(key, (list) {
+        final current = list.where((m) => m['id'] == initial['id']).firstOrNull;
+        if (!isNew && current == null) {
+          throw FriendlyException(
+            'This item was removed. Refresh and try again.',
+          );
+        }
+        final next = current ?? {...initial, 'order': list.length + 1};
+        final slug = values['slug'] ?? next['slug'];
+        if (widget.section == 'blogs' &&
+            list.any((b) => b['id'] != initial['id'] && b['slug'] == slug)) {
+          throw FriendlyException('That article slug already exists.');
+        }
+        for (final e in values.entries) {
+          next[e.key] = e.value;
+        }
+        next['updatedAt'] = DateTime.now().toUtc().toIso8601String();
+        if (next['status'] == 'published' &&
+            '${next['publishedAt'] ?? ''}'.isEmpty) {
+          next['publishedAt'] = DateTime.now().toUtc().toIso8601String();
+        }
+        if (current == null) list.add(next);
+      }, nested: nested);
+      if (mounted) await refreshContent(ref, [key]);
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (c) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(c).bottom),
+        child: FractionallySizedBox(
+          heightFactor: .92,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${isNew ? 'Add' : 'Edit'} ${widget.section}',
+                  style: Theme.of(c).textTheme.titleLarge,
+                ),
+                const Gap(20),
+                AdminForm(
+                  fields: fields,
+                  initial: initial,
+                  onlyChanged: !isNew,
+                  onSave: (values) async {
+                    try {
+                      await commit(values);
+                      if (c.mounted) Navigator.pop(c);
+                      if (mounted) showHSnack(context, 'Saved');
+                    } catch (e) {
+                      if (c.mounted) {
+                        showHSnack(
+                          c,
+                          e is FriendlyException
+                              ? e.message
+                              : 'Could not save. Your edits are kept here; check connection and retry.',
+                          error: true,
+                        );
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> action(String action, Map<String, dynamic> item) async {
+    if (action == 'edit') return editItem(item);
+    if (action == 'delete' &&
+        !await confirmDialog(
+          context,
+          title: 'Delete this item?',
+          message: 'It will be removed from the platform.',
+          confirm: 'Delete',
+          destructive: true,
+        )) {
+      return;
+    }
+    if (!mounted) return;
+    await adminAction(context, ref, () async {
+      await ref.read(adminRepositoryProvider).changeList(key, (list) {
+        final i = list.indexWhere((m) => m['id'] == item['id']);
+        if (i < 0) throw FriendlyException('Item was removed. Refresh.');
+        if (action == 'delete') list.removeAt(i);
+        if (action == 'duplicate') {
+          list.insert(i + 1, {
+            ...list[i],
+            'id': legacyUid('copy'),
+            'name': '${list[i]['name']} (copy)',
+            'featured': false,
+          });
+        }
+        if (action == 'visibility') {
+          if (widget.section == 'products') {
+            list[i]['hidden'] = list[i]['hidden'] != true;
+          }
+          if (widget.section == 'blogs') {
+            list[i]['status'] = list[i]['status'] == 'published'
+                ? 'draft'
+                : 'published';
+          }
+          if (widget.section == 'social') {
+            list[i]['enabled'] = list[i]['enabled'] == false;
+          }
+        }
+        if (action == 'up' || action == 'down') {
+          final j = i + (action == 'up' ? -1 : 1);
+          if (j >= 0 && j < list.length) {
+            final v = list.removeAt(i);
+            list.insert(j, v);
+          }
+        }
+        for (var j = 0; j < list.length; j++) {
+          list[j]['order'] = j + 1;
+        }
+      }, nested: nested);
+      await refreshContent(ref, [key]);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = ref.watch(adminValueProvider(key));
+    return Scaffold(
+      appBar: HTopBar(title: sectionTitle(widget.section)),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: editItem,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add new'),
+      ),
+      body: a.when(
+        loading: () => const SkeletonList(),
+        error: (e, _) => ErrorState(
+          message: 'Could not load ${widget.section}',
+          onRetry: () => ref.invalidate(adminValueProvider(key)),
+        ),
+        data: (v) {
+          final all = asMapList(nested == null ? v : asMap(v)[nested])
+            ..sort(
+              (a, b) => (int.tryParse('${a['order']}') ?? 0).compareTo(
+                int.tryParse('${b['order']}') ?? 0,
+              ),
+            );
+          final list = all
+              .where(
+                (m) =>
+                    jsonEncode(m).toLowerCase().contains(query.toLowerCase()),
+              )
+              .toList();
+          return CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(20),
+                sliver: SliverToBoxAdapter(
+                  child: HSearchField(
+                    hint: 'Search ${widget.section}',
+                    onChanged: (v) => setState(() => query = v),
+                  ),
+                ),
+              ),
+              if (widget.section == 'credits')
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: DropdownButtonFormField<String>(
+                      initialValue: '${asMap(v)['layout'] ?? 'stack'}',
+                      decoration: const InputDecoration(
+                        labelText: 'Website team layout',
+                      ),
+                      items:
+                          [
+                                ...{
+                                  'stack',
+                                  'grid2',
+                                  'grid3',
+                                  '${asMap(v)['layout'] ?? 'stack'}',
+                                },
+                              ]
+                              .map(
+                                (s) =>
+                                    DropdownMenuItem(value: s, child: Text(s)),
+                              )
+                              .toList(),
+                      onChanged: (value) => adminAction(
+                        context,
+                        ref,
+                        () => ref.read(adminRepositoryProvider).patch(key, {
+                          'layout': value,
+                        }),
+                      ),
+                    ),
+                  ),
+                ),
+              if (list.isEmpty)
+                const SliverToBoxAdapter(
+                  child: EmptyState(
+                    icon: Icons.inbox_outlined,
+                    title: 'Nothing here yet',
+                    message: 'Add your first item with the button below.',
+                  ),
+                ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                sliver: SliverList.builder(
+                  itemCount: list.length,
+                  itemBuilder: (c, i) {
+                    final m = list[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: HCard(
+                        onTap: () => editItem(m),
+                        child: Row(
+                          children: [
+                            IconBadge(
+                              icon: widget.section == 'products'
+                                  ? Icons.inventory_2_outlined
+                                  : widget.section == 'blogs'
+                                  ? Icons.article_outlined
+                                  : Icons.person_outline_rounded,
+                              color: HColors.primary,
+                            ),
+                            const Gap(12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${m['name'] ?? m['title'] ?? m['platform'] ?? 'Item'}',
+                                    style: Theme.of(c).textTheme.titleSmall,
+                                  ),
+                                  Text(
+                                    widget.section == 'products'
+                                        ? '${money(num.tryParse('${m['price']}') ?? 0)} · ${m['stockStatus'] ?? ''}'
+                                        : '${m['status'] ?? m['role'] ?? m['url'] ?? ''}',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (m['hidden'] == true) const Text('Hidden'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              onSelected: (s) => action(s, m),
+                              itemBuilder: (_) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Text('Edit'),
+                                ),
+                                if ([
+                                  'products',
+                                  'blogs',
+                                  'social',
+                                ].contains(widget.section))
+                                  const PopupMenuItem(
+                                    value: 'visibility',
+                                    child: Text('Change visibility'),
+                                  ),
+                                if (widget.section == 'products')
+                                  const PopupMenuItem(
+                                    value: 'duplicate',
+                                    child: Text('Duplicate'),
+                                  ),
+                                const PopupMenuItem(
+                                  value: 'up',
+                                  child: Text('Move up'),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'down',
+                                  child: Text('Move down'),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class AdminOrdersScreen extends ConsumerStatefulWidget {
+  const AdminOrdersScreen({super.key});
+  @override
+  ConsumerState<AdminOrdersScreen> createState() => _OrdersState();
+}
+
+const orderStatuses = [
+  'Pending',
+  'Processing',
+  'Paid',
+  'Completed',
+  'Cancelled',
+  'Refunded',
+];
+
+class _OrdersState extends ConsumerState<AdminOrdersScreen> {
+  String query = '', status = 'All';
+  bool syncing = false;
+  Future<void> sync() async {
+    if (syncing) return;
+    setState(() => syncing = true);
+    await adminAction(context, ref, () async {
+      await ref.read(adminRepositoryProvider).syncInboxes();
+    });
+    if (mounted) setState(() => syncing = false);
+  }
+
+  Future<void> detail(Map<String, dynamic> o) async {
+    final tracking = TextEditingController(text: '${o['trackingId'] ?? ''}');
+    var selected = '${o['status'] ?? 'Pending'}';
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (c) => StatefulBuilder(
+        builder: (c, set) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(c).bottom),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${o['orderNumber'] ?? o['id']}',
+                  style: Theme.of(c).textTheme.headlineSmall,
+                ),
+                const Gap(16),
+                SelectableText(
+                  '${asMap(o['customer'])['firstName'] ?? ''} ${asMap(o['customer'])['lastName'] ?? ''}\n${asMap(o['customer'])['phone'] ?? ''}\n${asMap(o['customer'])['email'] ?? ''}\n${asMap(o['address']).values.join(', ')}',
+                ),
+                const Gap(16),
+                for (final item in asMapList(o['items']))
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('${item['name']} × ${item['qty']}'),
+                    trailing: Text(
+                      money(
+                        (num.tryParse('${item['price']}') ?? 0) *
+                            (num.tryParse('${item['qty']}') ?? 0),
+                      ),
+                    ),
+                  ),
+                Text(
+                  'Total ${money(num.tryParse('${asMap(o['totals'])['grandTotal']}') ?? 0)}',
+                  style: Theme.of(c).textTheme.titleLarge,
+                ),
+                const Gap(16),
+                DropdownButtonFormField<String>(
+                  initialValue: selected,
+                  decoration: const InputDecoration(labelText: 'Status'),
+                  items:
+                      [
+                            ...{...orderStatuses, selected},
+                          ]
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                          )
+                          .toList(),
+                  onChanged: (s) => set(() => selected = s!),
+                ),
+                const Gap(16),
+                TextField(
+                  controller: tracking,
+                  decoration: const InputDecoration(labelText: 'Tracking ID'),
+                ),
+                const Gap(20),
+                HButton(
+                  label: 'Update order',
+                  onPressed: () async {
+                    await adminAction(
+                      context,
+                      ref,
+                      () => ref.read(adminRepositoryProvider).updateOrder(
+                        '${o['id']}',
+                        {
+                          'status': selected,
+                          'trackingId': tracking.text.trim(),
+                        },
+                      ),
+                      message: 'Order updated',
+                    );
+                    if (c.mounted) Navigator.pop(c);
+                  },
+                ),
+                const Gap(8),
+                OutlinedButton.icon(
+                  onPressed: () => adminAction(context, ref, () async {
+                    const escape = HtmlEscape();
+                    final rows = asMapList(o['items'])
+                        .map(
+                          (i) =>
+                              '<tr><td>${escape.convert('${i['name']}')}</td><td>${i['qty']}</td><td>${i['price']}</td></tr>',
+                        )
+                        .join();
+                    await MediaUpload.exportText(
+                      'Invoice_${o['orderNumber'] ?? o['id']}.html',
+                      '<!doctype html><meta charset="utf-8"><title>Invoice</title><style>body{font:16px sans-serif;max-width:800px;margin:40px}td{padding:12px;border-bottom:1px solid #ddd}table{width:100%}</style><h1>PHARM D WITH HYZEN</h1><h2>Invoice ${escape.convert('${o['orderNumber']}')}</h2><p>${escape.convert(asMap(o['customer']).values.join(' · '))}</p><p>${escape.convert(asMap(o['address']).values.join(', '))}</p><table>$rows</table><h3>Total ${money(num.tryParse('${asMap(o['totals'])['grandTotal']}') ?? 0)}</h3><p>Status: ${escape.convert(selected)}</p>',
+                      mime: 'text/html',
+                    );
+                  }, message: 'Invoice exported'),
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: const Text('Export invoice'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    if (await confirmDialog(
+                          c,
+                          title: 'Delete order?',
+                          message:
+                              'The order and verification link will be removed.',
+                          confirm: 'Delete',
+                          destructive: true,
+                        ) &&
+                        c.mounted &&
+                        context.mounted) {
+                      await adminAction(
+                        c,
+                        ref,
+                        () => ref
+                            .read(adminRepositoryProvider)
+                            .updateOrder('${o['id']}', {}, remove: true),
+                      );
+                      if (c.mounted) Navigator.pop(c);
+                    }
+                  },
+                  child: const Text('Delete order'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    tracking.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = ref.watch(adminValueProvider('pw_orders'));
+    return Scaffold(
+      appBar: HTopBar(
+        title: 'Orders',
+        actions: [
+          IconButton(
+            tooltip: 'Import new orders & messages',
+            onPressed: syncing ? null : sync,
+            icon: syncing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync_rounded),
+          ),
+          IconButton(
+            tooltip: 'Export orders CSV',
+            onPressed: () => adminAction(context, ref, () async {
+              final rows = asMapList(a.valueOrNull);
+              String cell(Object? v) => '"${'$v'.replaceAll('"', '""')}"';
+              await MediaUpload.exportText(
+                'hyzen_orders.csv',
+                'Order,Status,Tracking,Name,Phone,City,Total,Date\r\n${rows.map((o) => [o['orderNumber'], o['status'], o['trackingId'], '${asMap(o['customer'])['firstName'] ?? ''} ${asMap(o['customer'])['lastName'] ?? ''}', asMap(o['customer'])['phone'], asMap(o['address'])['city'], asMap(o['totals'])['grandTotal'], o['createdAt']].map(cell).join(',')).join('\r\n')}',
+                mime: 'text/csv',
+              );
+            }),
+            icon: const Icon(Icons.download_rounded),
+          ),
+        ],
+      ),
+      body: a.when(
+        loading: () => const SkeletonList(),
+        error: (e, _) => ErrorState(
+          message: 'Could not load orders',
+          onRetry: () => ref.invalidate(adminValueProvider('pw_orders')),
+        ),
+        data: (v) {
+          final list =
+              asMapList(v)
+                  .where(
+                    (o) =>
+                        (status == 'All' || o['status'] == status) &&
+                        jsonEncode(
+                          o,
+                        ).toLowerCase().contains(query.toLowerCase()),
+                  )
+                  .toList()
+                ..sort(
+                  (a, b) => '${b['createdAt']}'.compareTo('${a['createdAt']}'),
+                );
+          return RefreshIndicator(
+            onRefresh: sync,
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                HSearchField(
+                  hint: 'Order, name, phone or tracking',
+                  onChanged: (v) => setState(() => query = v),
+                ),
+                const Gap(12),
+                DropdownButtonFormField<String>(
+                  initialValue: status,
+                  items: ['All', ...orderStatuses]
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (s) => setState(() => status = s!),
+                ),
+                const Gap(20),
+                if (list.isEmpty)
+                  const EmptyState(
+                    icon: Icons.receipt_long_rounded,
+                    title: 'No orders found',
+                    message: 'Pull to import the website order inbox.',
+                  ),
+                for (final o in list)
+                  ResourceTile(
+                    icon: Icons.receipt_long_outlined,
+                    color: HColors.primary,
+                    eyebrow: '${o['status'] ?? ''}',
+                    title: '${o['orderNumber'] ?? o['id']}',
+                    subtitle:
+                        '${asMap(o['customer'])['firstName'] ?? ''} · ${money(num.tryParse('${asMap(o['totals'])['grandTotal']}') ?? 0)}',
+                    onTap: () => detail(o),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class AdminMessagesScreen extends ConsumerWidget {
+  const AdminMessagesScreen({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final a = ref.watch(adminValueProvider('pw_messages'));
+    return Scaffold(
+      appBar: HTopBar(
+        title: 'Messages',
+        actions: [
+          IconButton(
+            tooltip: 'Import new messages',
+            onPressed: () => adminAction(context, ref, () async {
+              await ref.read(adminRepositoryProvider).syncInboxes();
+            }),
+            icon: const Icon(Icons.sync_rounded),
+          ),
+        ],
+      ),
+      body: a.when(
+        loading: () => const SkeletonList(),
+        error: (e, _) => ErrorState(
+          message: 'Could not load messages',
+          onRetry: () => ref.invalidate(adminValueProvider('pw_messages')),
+        ),
+        data: (v) {
+          final list = asMapList(
+            v,
+          )..sort((a, b) => '${b['createdAt']}'.compareTo('${a['createdAt']}'));
+          if (list.isEmpty) {
+            return const EmptyState(
+              icon: Icons.mail_outline_rounded,
+              title: 'Inbox is clear',
+              message: 'Import messages with the sync button.',
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: list.length,
+            itemBuilder: (c, i) {
+              final m = list[i];
+              return ResourceTile(
+                icon: m['read'] == true
+                    ? Icons.drafts_outlined
+                    : Icons.mark_email_unread_outlined,
+                color: HColors.primary,
+                eyebrow: '${m['name']} · ${m['read'] == true ? 'Read' : 'New'}',
+                title: '${m['subject'] ?? 'Message'}',
+                subtitle: '${m['body'] ?? ''}',
+                onTap: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  builder: (c) => SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          '${m['name']}',
+                          style: Theme.of(c).textTheme.titleLarge,
+                        ),
+                        SelectableText(
+                          '${m['email']}\n${m['whatsapp'] ?? ''}\n\n${m['subject'] ?? ''}\n\n${m['body'] ?? ''}',
+                        ),
+                        const Gap(20),
+                        HButton(
+                          label: m['read'] == true
+                              ? 'Mark unread'
+                              : 'Mark read',
+                          onPressed: () => adminAction(context, ref, () async {
+                            await ref.read(adminRepositoryProvider).changeList(
+                              'pw_messages',
+                              (l) {
+                                final row = l
+                                    .where((r) => r['id'] == m['id'])
+                                    .firstOrNull;
+                                if (row != null) {
+                                  row['read'] = m['read'] != true;
+                                }
+                              },
+                            );
+                            if (c.mounted) Navigator.pop(c);
+                          }),
+                        ),
+                        const Gap(12),
+                        OutlinedButton.icon(
+                          onPressed: () => openLink(
+                            context,
+                            'mailto:${m['email']}?subject=${Uri.encodeComponent('Re: ${m['subject'] ?? 'your message'}')}',
+                          ),
+                          icon: const Icon(Icons.reply_rounded),
+                          label: const Text('Reply by email'),
+                        ),
+                        if ('${m['whatsapp'] ?? ''}'.isNotEmpty)
+                          TextButton(
+                            onPressed: () => openLink(
+                              context,
+                              'https://wa.me/${'${m['whatsapp']}'.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst(RegExp(r'^0'), '92')}',
+                            ),
+                            child: const Text('Open WhatsApp'),
+                          ),
+                        TextButton(
+                          onPressed: () async {
+                            if (await confirmDialog(
+                                  c,
+                                  title: 'Delete message?',
+                                  message:
+                                      'This removes the message from the inbox.',
+                                  confirm: 'Delete',
+                                  destructive: true,
+                                ) &&
+                                context.mounted) {
+                              await adminAction(
+                                context,
+                                ref,
+                                () => ref
+                                    .read(adminRepositoryProvider)
+                                    .changeList(
+                                      'pw_messages',
+                                      (l) => l.removeWhere(
+                                        (r) => r['id'] == m['id'],
+                                      ),
+                                    ),
+                              );
+                              if (c.mounted) Navigator.pop(c);
+                            }
+                          },
+                          child: const Text('Delete message'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class AdminStatsScreen extends ConsumerWidget {
+  const AdminStatsScreen({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final orders = asMapList(
+          ref.watch(adminValueProvider('pw_orders')).valueOrNull,
+        ),
+        stats = asMap(ref.watch(adminValueProvider('pw_stats')).valueOrNull),
+        users = asMapList(
+          ref.watch(adminValueProvider('pw_users')).valueOrNull,
+        );
+    final revenue = orders
+        .where(
+          (o) => !['Cancelled', 'Rejected', 'Refunded'].contains(o['status']),
+        )
+        .fold<num>(
+          0,
+          (n, o) =>
+              n + (num.tryParse('${asMap(o['totals'])['grandTotal']}') ?? 0),
+        );
+    final sold = <String, int>{};
+    for (final o in orders) {
+      for (final i in asMapList(o['items'])) {
+        sold['${i['name']}'] =
+            (sold['${i['name']}'] ?? 0) + (int.tryParse('${i['qty']}') ?? 0);
+      }
+    }
+    final best = sold.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return Scaffold(
+      appBar: const HTopBar(title: 'Statistics'),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          HeroPanel(
+            eyebrow: 'Store performance',
+            title: money(revenue),
+            subtitle:
+                'Revenue excluding cancelled, rejected and refunded orders',
+            icon: Icons.insights_rounded,
+          ),
+          const Gap(20),
+          for (final pair in [
+            ('Orders', '${orders.length}'),
+            ('Website students', '${users.length}'),
+            ('Website visits', '${stats['visits'] ?? 0}'),
+            ('PDF downloads', '${stats['downloads'] ?? 0}'),
+            (
+              'Best seller',
+              best.isEmpty
+                  ? 'No sales yet'
+                  : '${best.first.key} · ${best.first.value} sold',
+            ),
+          ])
+            ResourceTile(
+              icon: Icons.bar_chart_rounded,
+              color: HColors.primary,
+              title: pair.$1,
+              subtitle: pair.$2,
+              trailing: const SizedBox.shrink(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class AdminConnectionScreen extends ConsumerStatefulWidget {
+  const AdminConnectionScreen({super.key});
+  @override
+  ConsumerState<AdminConnectionScreen> createState() => _ConnectionState();
+}
+
+class _ConnectionState extends ConsumerState<AdminConnectionScreen> {
+  String? status;
+  bool busy = false;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: const HTopBar(title: 'Connection'),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        HeroPanel(
+          eyebrow: 'Connected services',
+          title: 'Firebase + Cloudinary',
+          subtitle: ref.watch(firebaseReadyProvider)
+              ? 'Firebase initialized'
+              : 'Firebase unavailable',
+          icon: Icons.cloud_done_outlined,
+        ),
+        const Gap(20),
+        ResourceTile(
+          icon: Icons.verified_user_outlined,
+          color: HColors.primary,
+          title: 'Administrator access',
+          subtitle: ref.watch(isAdminProvider)
+              ? 'Authorized admin account'
+              : 'Access denied',
+          trailing: const SizedBox.shrink(),
+        ),
+        const ResourceTile(
+          icon: Icons.photo_library_outlined,
+          color: HColors.teal,
+          title: 'Cloudinary media',
+          subtitle: 'Photo uploads use your website’s unsigned preset.',
+          trailing: SizedBox.shrink(),
+        ),
+        const Gap(16),
+        if (status != null) Text(status!),
+        HButton(
+          label: 'Test server connection',
+          loading: busy,
+          onPressed: () async {
+            setState(() => busy = true);
+            try {
+              await ref.read(adminRepositoryProvider).read('pw_settings');
+              if (mounted) setState(() => status = 'Server read succeeded.');
+            } catch (_) {
+              if (mounted) {
+                setState(
+                  () => status =
+                      'Server read failed. Check your connection and Firebase rules.',
+                );
+              }
+            } finally {
+              if (mounted) setState(() => busy = false);
+            }
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+class AdminDataScreen extends ConsumerStatefulWidget {
+  const AdminDataScreen({super.key});
+  @override
+  ConsumerState<AdminDataScreen> createState() => _DataState();
+}
+
+class _DataState extends ConsumerState<AdminDataScreen> {
+  bool busy = false;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: const HTopBar(title: 'Data Manager'),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const HeroPanel(
+          eyebrow: 'Data tools',
+          title: 'Keep your content organised.',
+          subtitle: 'Export a backup before making large changes.',
+          icon: Icons.storage_rounded,
+        ),
+        const Gap(20),
+        HButton(
+          label: 'Export full backup',
+          loading: busy,
+          onPressed: () async {
+            setState(() => busy = true);
+            await adminAction(context, ref, () async {
+              final backup = await ref.read(adminRepositoryProvider).backup();
+              await MediaUpload.exportText(
+                'hyzen_backup.json',
+                const JsonEncoder.withIndent('  ').convert(backup),
+                mime: 'application/json',
+              );
+            }, message: 'Backup exported');
+            if (mounted) setState(() => busy = false);
+          },
+        ),
+        const Gap(12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.restore_rounded),
+          label: const Text('Restore JSON backup'),
+          onPressed: busy
+              ? null
+              : () async {
+                  try {
+                    final selected = await MediaUpload.channel
+                        .invokeListMethod<dynamic>('pickDataFiles');
+                    if (selected == null || selected.length != 1) {
+                      throw FriendlyException('Choose one JSON backup.');
+                    }
+                    final value = selected.first as Map;
+                    final decoded = jsonDecode(
+                      utf8.decode(value['bytes'] as List<int>),
+                    );
+                    if (decoded is! Map) {
+                      throw FriendlyException('Invalid backup.');
+                    }
+                    final backup = Map<String, dynamic>.from(decoded);
+                    if (!context.mounted) return;
+                    final confirmed = await confirmDialog(
+                      context,
+                      title: 'Restore ${backup.length} data sections?',
+                      message:
+                          'Selected sections will replace the current server data. Export a backup first.',
+                      confirm: 'Restore',
+                      destructive: true,
+                    );
+                    if (!confirmed || !context.mounted) return;
+                    setState(() => busy = true);
+                    await adminAction(
+                      context,
+                      ref,
+                      () => ref.read(adminRepositoryProvider).restore(backup),
+                      message: 'Backup restored',
+                    );
+                    for (final k in publicContentKeys) {
+                      ref.invalidate(contentProvider(k));
+                    }
+                    if (mounted) setState(() => busy = false);
+                  } catch (e) {
+                    if (context.mounted) {
+                      showHSnack(
+                        context,
+                        e is FriendlyException
+                            ? e.message
+                            : 'Choose a valid JSON backup.',
+                        error: true,
+                      );
+                    }
+                  }
+                },
+        ),
+        const Gap(20),
+        ResourceTile(
+          icon: Icons.upload_file_rounded,
+          color: HColors.teal,
+          title: 'Bulk academic import',
+          subtitle: 'Preview rows before adding to your libraries',
+          onTap: () => context.push('/admin/import'),
+        ),
+        ResourceTile(
+          icon: Icons.history_rounded,
+          color: HColors.primary,
+          title: 'Import history',
+          onTap: () => context.push('/admin/manage/history'),
+        ),
+      ],
+    ),
+  );
+}
+
+class AdminHistoryScreen extends ConsumerWidget {
+  const AdminHistoryScreen({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final a = ref.watch(adminValueProvider('pw_import_history'));
+    return Scaffold(
+      appBar: const HTopBar(title: 'Import history'),
+      body: a.when(
+        loading: () => const SkeletonList(),
+        error: (e, _) => ErrorState(
+          message: 'Could not load history',
+          onRetry: () =>
+              ref.invalidate(adminValueProvider('pw_import_history')),
+        ),
+        data: (v) {
+          final l = asMapList(v);
+          return l.isEmpty
+              ? const EmptyState(
+                  icon: Icons.history_rounded,
+                  title: 'No imports yet',
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    for (final m in l)
+                      ResourceTile(
+                        icon: Icons.upload_file_rounded,
+                        color: HColors.primary,
+                        title:
+                            '${m['added'] ?? 0} added · ${m['skipped'] ?? 0} skipped',
+                        subtitle:
+                            '${m['files'] ?? m['fileName'] ?? ''}\n${m['createdAt'] ?? ''}',
+                        trailing: const SizedBox.shrink(),
+                      ),
+                  ],
+                );
+        },
+      ),
+    );
+  }
+}
+
+class AdminThemeScreen extends ConsumerStatefulWidget {
+  const AdminThemeScreen({super.key});
+  @override
+  ConsumerState<AdminThemeScreen> createState() => _ThemeState();
+}
+
+class _ThemeState extends ConsumerState<AdminThemeScreen> {
+  String selected = 'green';
+  @override
+  Widget build(BuildContext context) {
+    final a = ref.watch(adminValueProvider('pw_settings'));
+    return Scaffold(
+      appBar: const HTopBar(title: 'Theme studio'),
+      body: a.when(
+        loading: () => const SkeletonList(),
+        error: (e, _) => ErrorState(
+          message: 'Could not load themes',
+          onRetry: () => ref.invalidate(adminValueProvider('pw_settings')),
+        ),
+        data: (v) {
+          final settings = asMap(v);
+          final appearance = asMap(
+            asMap(settings['themeAppearance'])[selected],
+          );
+          final logo = asMap(settings['themeLogos'])[selected];
+          final initial = {
+            'logo': logo == '__default' ? '' : logo ?? '',
+            'ring': appearance['ring'] ?? '#dff4e8',
+            'glow': appearance['glow'] ?? '#087747',
+            'glitter': appearance['glitter'] ?? '#087747',
+            'defaultTheme': settings['appTheme'] ?? 'green',
+          };
+          return ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final e in brandPalettes.entries)
+                    ChoiceChip(
+                      label: Text(e.value.$1),
+                      selected: selected == e.key,
+                      onSelected: (_) => setState(() => selected = e.key),
+                      avatar: CircleAvatar(
+                        backgroundColor: e.value.$2,
+                        radius: 9,
+                      ),
+                    ),
+                ],
+              ),
+              const Gap(20),
+              HCard(
+                color: brandPalettes[selected]!.$2,
+                child: Row(
+                  children: [
+                    const Icon(Icons.palette_outlined, color: Colors.white),
+                    const Gap(12),
+                    Expanded(
+                      child: Text(
+                        brandPalettes[selected]!.$1,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(20),
+              AdminForm(
+                key: ValueKey(selected),
+                fields: [
+                  const AdminField('logo', 'Theme logo', type: 'image'),
+                  const AdminField(
+                    'ring',
+                    'Website ring colour',
+                    type: 'color',
+                  ),
+                  const AdminField(
+                    'glow',
+                    'Website highlight colour',
+                    type: 'color',
+                  ),
+                  const AdminField(
+                    'glitter',
+                    'Website star colour',
+                    type: 'color',
+                  ),
+                  AdminField(
+                    'defaultTheme',
+                    'Default app palette',
+                    type: 'choice',
+                    options: brandPalettes.keys.toList(),
+                    fallback: 'green',
+                  ),
+                ],
+                initial: initial,
+                onSave: (m) => adminAction(
+                  context,
+                  ref,
+                  () => ref.read(adminRepositoryProvider).patch('pw_settings', {
+                    'themeLogos.$selected': '${m['logo']}'.isEmpty
+                        ? '__default'
+                        : m['logo'],
+                    'themeAppearance.$selected.ring': m['ring'],
+                    'themeAppearance.$selected.glow': m['glow'],
+                    'themeAppearance.$selected.glitter': m['glitter'],
+                    'appTheme': m['defaultTheme'],
+                  }),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class AdminLecturesScreen extends ConsumerStatefulWidget {
+  const AdminLecturesScreen({super.key});
+  @override
+  ConsumerState<AdminLecturesScreen> createState() => _LecturesState();
+}
+
+class _LecturesState extends ConsumerState<AdminLecturesScreen> {
+  final path = <String>[], trail = <String>[];
+  final children = ['semesters', 'subjects', 'topics'];
+  final labels = ['Professional year', 'Semester', 'Subject', 'Lecture'];
+  List<Map<String, dynamic>> at(List<Map<String, dynamic>> tree) {
+    var list = tree;
+    for (var i = 0; i < path.length; i++) {
+      final node = list.where((m) => m['id'] == path[i]).firstOrNull;
+      if (node == null) {
+        throw FriendlyException('Item moved or removed. Go back and refresh.');
+      }
+      final next = asMapList(node[children[i]]);
+      node[children[i]] = next;
+      list = next;
+    }
+    return list;
+  }
+
+  Future<void> edit([Map<String, dynamic>? item]) async {
+    final depth = path.length;
+    final key = depth == 3 ? 'title' : 'label';
+    final initial = item ?? {'id': legacyUid('lecture'), 'published': true};
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (c) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(c).bottom),
+        child: FractionallySizedBox(
+          heightFactor: .9,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: AdminForm(
+              fields: [
+                AdminField(key, labels[depth], required: true),
+                const AdminField(
+                  'published',
+                  'Published',
+                  type: 'bool',
+                  fallback: true,
+                ),
+                if (depth == 3) ...[
+                  const AdminField(
+                    'youtubeUrl',
+                    'YouTube video URL',
+                    type: 'url',
+                  ),
+                  const AdminField(
+                    'playlistUrl',
+                    'YouTube playlist URL',
+                    type: 'url',
+                  ),
+                  const AdminField(
+                    'externalUrl',
+                    'External video URL',
+                    type: 'url',
+                  ),
+                  const AdminField('speaker', 'Speaker'),
+                  const AdminField(
+                    'durationMin',
+                    'Duration in minutes',
+                    type: 'number',
+                  ),
+                ],
+              ],
+              initial: initial,
+              onSave: (m) async {
+                if (depth == 3 &&
+                    [
+                      'youtubeUrl',
+                      'playlistUrl',
+                      'externalUrl',
+                    ].every((k) => '${m[k] ?? ''}'.isEmpty)) {
+                  showHSnack(c, 'Add a video or playlist link.', error: true);
+                  return;
+                }
+                Navigator.pop(c, m);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    await adminAction(
+      context,
+      ref,
+      () => ref.read(adminRepositoryProvider).changeList('pw_lectures_tree', (
+        tree,
+      ) {
+        final list = at(tree);
+        final current = list.where((m) => m['id'] == initial['id']).firstOrNull;
+        if (item != null && current == null) {
+          throw FriendlyException('This item was removed.');
+        }
+        if (current != null) {
+          current.addAll(result);
+        } else {
+          list.add({
+            ...initial,
+            ...result,
+            'order': list.length + 1,
+            if (depth < 3) children[depth]: [],
+          });
+        }
+      }),
+    );
+    ref.invalidate(contentProvider('pw_lectures_tree'));
+  }
+
+  Future<void> action(String action, Map<String, dynamic> item) async {
+    if (action == 'edit') return edit(item);
+    if (action == 'delete' &&
+        !await confirmDialog(
+          context,
+          title: 'Delete ${labels[path.length].toLowerCase()}?',
+          message: 'Its nested content will also be removed.',
+          confirm: 'Delete',
+          destructive: true,
+        )) {
+      return;
+    }
+    if (!mounted) return;
+    await adminAction(
+      context,
+      ref,
+      () => ref.read(adminRepositoryProvider).changeList('pw_lectures_tree', (
+        tree,
+      ) {
+        final list = at(tree);
+        final i = list.indexWhere((m) => m['id'] == item['id']);
+        if (i < 0) return;
+        if (action == 'delete') list.removeAt(i);
+        if (action == 'publish') {
+          list[i]['published'] = list[i]['published'] == false;
+        }
+        if (action == 'up' || action == 'down') {
+          final j = i + (action == 'up' ? -1 : 1);
+          if (j >= 0 && j < list.length) {
+            final node = list.removeAt(i);
+            list.insert(j, node);
+          }
+        }
+        for (var j = 0; j < list.length; j++) {
+          list[j]['order'] = j + 1;
+        }
+      }),
+    );
+    ref.invalidate(contentProvider('pw_lectures_tree'));
+  }
+
+  void back() {
+    setState(() {
+      path.removeLast();
+      trail.removeLast();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = ref.watch(adminValueProvider('pw_lectures_tree'));
+    return PopScope(
+      canPop: path.isEmpty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && path.isNotEmpty) back();
+      },
+      child: Scaffold(
+        appBar: HTopBar(
+          title: trail.isEmpty ? 'Manage lectures' : trail.last,
+          onBack: path.isEmpty ? null : back,
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: edit,
+          icon: const Icon(Icons.add),
+          label: Text('Add ${labels[path.length]}'),
+        ),
+        body: a.when(
+          loading: () => const SkeletonList(),
+          error: (e, _) => ErrorState(
+            message: 'Could not load lectures',
+            onRetry: () =>
+                ref.invalidate(adminValueProvider('pw_lectures_tree')),
+          ),
+          data: (v) {
+            List<Map<String, dynamic>> list;
+            try {
+              list = at(asMapList(v));
+            } catch (e) {
+              return ErrorState(
+                message: 'This item has changed.',
+                onRetry: () => setState(() {
+                  path.clear();
+                  trail.clear();
+                }),
+              );
+            }
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+              children: [
+                Text(
+                  trail.join(' › '),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const Gap(16),
+                if (list.isEmpty)
+                  const EmptyState(
+                    icon: Icons.video_library_outlined,
+                    title: 'No content yet',
+                  ),
+                for (final node in list)
+                  ResourceTile(
+                    icon: path.length == 3
+                        ? Icons.play_circle_outline
+                        : Icons.folder_outlined,
+                    color: HColors.primary,
+                    eyebrow: node['published'] == false
+                        ? 'Hidden'
+                        : 'Published',
+                    title:
+                        '${node[path.length == 3 ? 'title' : 'label'] ?? 'Untitled'}',
+                    onTap: path.length == 3
+                        ? () => edit(node)
+                        : () => setState(() {
+                            path.add('${node['id']}');
+                            trail.add('${node['label']}');
+                          }),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (s) => action(s, node),
+                      itemBuilder: (_) => [
+                        for (final pair in [
+                          ('edit', 'Edit'),
+                          ('publish', 'Change visibility'),
+                          ('up', 'Move up'),
+                          ('down', 'Move down'),
+                          ('delete', 'Delete'),
+                        ])
+                          PopupMenuItem(value: pair.$1, child: Text(pair.$2)),
+                      ],
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+).hasMatch(value)) return fallback;
+  return Color(int.parse('FF$value', radix: 16));
+}
+
+Future<void> _showAdminDraftPreview(
+  BuildContext context,
+  String section,
+  Map<String, dynamic> draft,
+) async {
+  final notice = section == 'notice';
+  final title = (_draftValue(draft, notice ? 'title' : 'text') ?? '')
+      .toString()
+      .trim();
+  final body = (_draftValue(draft, notice ? 'body' : 'text') ?? '')
+      .toString()
+      .trim();
+  final eyebrow = (_draftValue(draft, 'eyebrow') ?? '').toString().trim();
+  final background = _draftColor(
+    _draftValue(draft, notice ? 'background' : 'gradient.from'),
+    notice ? const Color(0xFFF4F4F5) : const Color(0xFF222226),
+  );
+  final card = _draftColor(
+    _draftValue(draft, notice ? 'card' : 'gradient.to'),
+    notice ? Colors.white : const Color(0xFF111113),
+  );
+  final foreground = _draftColor(
+    _draftValue(draft, notice ? 'text' : 'textColor'),
+    notice ? const Color(0xFF171719) : Colors.white,
+  );
+  final accent = _draftColor(
+    _draftValue(draft, notice ? 'accent' : 'textColor'),
+    foreground,
+  );
+  final image = (_draftValue(draft, 'image') ?? '').toString().trim();
+  final primary = (
+    _draftValue(draft, notice ? 'primaryText' : 'linkText') ?? ''
+  ).toString().trim();
+  final secondary = (_draftValue(draft, 'secondaryText') ?? '')
+      .toString()
+      .trim();
+  final dismiss = (_draftValue(draft, 'dismissText') ?? 'Maybe later')
+      .toString();
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      insetPadding: const EdgeInsets.all(18),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 680),
+        decoration: BoxDecoration(
+          color: notice ? background : card,
+          gradient: notice
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [background, card],
+                ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 10, 8),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'STUDENT VIEW · PREVIEW ONLY',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close preview',
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: notice ? card : Colors.white.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: foreground.withValues(alpha: .16),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (eyebrow.isNotEmpty)
+                        Text(
+                          eyebrow,
+                          style: TextStyle(
+                            color: accent,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: .8,
+                          ),
+                        ),
+                      if (image.startsWith('https://')) ...[
+                        const SizedBox(height: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: NetImage(image, height: 150),
+                        ),
+                      ],
+                      if (title.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: foreground,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                      if (notice && body.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          body,
+                          style: TextStyle(
+                            color: foreground,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                      if (!notice && title.isEmpty)
+                        Text(
+                          'Your announcement will appear here.',
+                          style: TextStyle(color: foreground),
+                        ),
+                      if (primary.isNotEmpty) ...[
+                        const SizedBox(height: 18),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: FilledButton(
+                            onPressed: null,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: accent,
+                              foregroundColor: notice ? card : background,
+                            ),
+                            child: Text(primary),
+                          ),
+                        ),
+                      ],
+                      if (secondary.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          secondary,
+                          style: TextStyle(color: foreground),
+                        ),
+                      ],
+                      if (notice) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          dismiss,
+                          style: TextStyle(
+                            color: foreground.withValues(alpha: .72),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }
