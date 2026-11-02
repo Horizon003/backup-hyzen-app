@@ -881,8 +881,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               SettingsRow(
                 title: 'Reduce motion',
                 subtitle: 'Use fewer moving transitions throughout the app',
-                trailing: AccountToggle(
-                  label: 'Reduce motion',
+                trailing: Switch.adaptive(
                   value: reduceMotion,
                   onChanged: (value) => ref
                       .read(boolPrefProvider('pref_reduce_motion').notifier)
