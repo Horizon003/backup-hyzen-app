@@ -485,6 +485,16 @@ class WorkspaceIdentityCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
         child: Column(
           children: [
+            Text(
+              'MY WORKSPACE',
+              style: TextStyle(
+                color: muted,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 14),
             AccountAvatar(
               photoUrl: photoUrl,
               fallback: name,
