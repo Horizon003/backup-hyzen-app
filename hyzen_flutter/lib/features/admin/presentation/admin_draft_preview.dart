@@ -222,3 +222,92 @@ Future<void> showAdminDraftPreview(
     ),
   );
 }
+Future<void> showAdminBlogPreview(
+  BuildContext context,
+  Map<String, dynamic> draft,
+) async {
+  final title = (draft['title'] ?? 'Untitled article').toString().trim();
+  final author = (draft['author'] ?? 'Hyzen').toString().trim();
+  final excerpt = (draft['excerpt'] ?? '').toString().trim();
+  final html = (draft['contentHtml'] ?? '').toString();
+  final image = (draft['coverImage'] ?? '').toString().trim();
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 720),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 10, 8),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'STUDENT ARTICLE PREVIEW · NOT PUBLISHED',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .9,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close preview',
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (image.startsWith('https://'))
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: NetImage(image, height: 190),
+                      ),
+                    const SizedBox(height: 16),
+                    Text(
+                      title.isEmpty ? 'Untitled article' : title,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      author.isEmpty ? 'Hyzen' : author,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    if (excerpt.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        excerpt,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    if (html.trim().isEmpty)
+                      const Text('Article content will appear here.')
+                    else
+                      HtmlText(html),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
