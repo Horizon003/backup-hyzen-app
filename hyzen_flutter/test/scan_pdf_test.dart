@@ -75,9 +75,10 @@ void main() {
       await tester.tap(find.text('Scan'));
       await tester.pumpAndSettle();
       expect(scanned, isTrue);
-      expect(find.text('2 pages'), findsOneWidget);
-      expect(find.byTooltip('Crop / filter page 1'), findsOneWidget);
-      expect(find.byTooltip('Rotate page 2'), findsOneWidget);
+      expect(find.text('Page 1 of 2'), findsOneWidget);
+      expect(find.text('Crop'), findsOneWidget);
+      expect(find.text('Rotate'), findsOneWidget);
+      expect(find.text('Keep scanning'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
@@ -117,13 +118,14 @@ void main() {
         const ProviderScope(child: MaterialApp(home: ScanPdfScreen())),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Scan'));
+      await tester.tap(find.byKey(const ValueKey('scan-more')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Scan'));
+      await tester.tap(find.byKey(const ValueKey('scan-more')));
       await tester.pumpAndSettle();
-      expect(find.text('Page 1'), findsOneWidget);
-      expect(find.text('Page 2'), findsOneWidget);
-      expect(find.byTooltip('Remove page 1'), findsOneWidget);
+      expect(find.text('Page 1 of 2'), findsOneWidget);
+      // Numbered thumbnail badges in the page strip.
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
@@ -139,13 +141,13 @@ void main() {
         const ProviderScope(child: MaterialApp(home: ScanPdfScreen())),
       );
       await tester.pumpAndSettle();
-      expect(find.text('2 pages'), findsOneWidget);
+      expect(find.text('Page 1 of 2'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
         const ProviderScope(child: MaterialApp(home: ScanPdfScreen())),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Page 2'), findsOneWidget);
+      expect(find.text('Page 1 of 2'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
@@ -166,11 +168,11 @@ void main() {
         const ProviderScope(child: MaterialApp(home: ScanPdfScreen())),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Scan'));
+      await tester.tap(find.byKey(const ValueKey('scan-more')));
       await tester.pumpAndSettle();
       expect(find.text('Choose gallery images instead.'), findsOneWidget);
       expect(find.byTooltip('Choose gallery images'), findsOneWidget);
-      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('Straighten'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
@@ -250,7 +252,8 @@ void main() {
       final saved = container.read(pdfStudioHistoryProvider).single;
       expect(saved.operationBadge, 'SCANNED');
       expect(saved.pageCount, 1);
-      expect(saved.displayName, 'Scanned notes.pdf');
+      expect(saved.displayName, startsWith('Office Workspace '));
+      expect(saved.displayName, endsWith('.pdf'));
       expect(events.indexOf('clear'), greaterThan(events.indexOf('pageCount')));
       expect(tester.takeException(), isNull);
     },
@@ -275,7 +278,7 @@ void main() {
       await tester.tap(find.text('Save PDF'));
       await tester.pumpAndSettle();
       expect(cleared, isFalse);
-      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('Straighten'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
