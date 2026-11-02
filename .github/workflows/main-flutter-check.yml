@@ -58,6 +58,21 @@ jobs:
           flutter-version: '3.35.4'
           channel: stable
           cache: true
+      - name: Restore owner signing key
+        working-directory: hyzen_flutter
+        env:
+          KEYSTORE_BASE64: ${{ secrets.HYZEN_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.HYZEN_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.HYZEN_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.HYZEN_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS"
+          mkdir -p android/signing
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/signing/hyzen-release.jks
+          chmod 600 android/signing/hyzen-release.jks
+          printf 'storeFile=signing/hyzen-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > android/key.properties
+          chmod 600 android/key.properties
       - name: Dependencies
         working-directory: hyzen_flutter
         run: flutter pub get
