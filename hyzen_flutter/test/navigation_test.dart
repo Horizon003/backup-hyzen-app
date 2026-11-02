@@ -1021,7 +1021,17 @@ void main() {
   testWidgets('onboarding mounts a semantic mascot state for every page', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: WelcomeScreen()));
+    final tutorialContainer = ProviderContainer(
+      overrides: [sharedPrefsProvider.overrideWithValue(prefs)],
+    );
+    addTearDown(tutorialContainer.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: tutorialContainer,
+        child: const MaterialApp(home: WelcomeScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
     expect(find.byType(HyzenRiveMascot), findsOneWidget);
     await tester.drag(find.byType(PageView), const Offset(-500, 0));
     await tester.pumpAndSettle();
