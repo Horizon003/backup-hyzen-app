@@ -38,3 +38,12 @@ jobs:
       - name: Tests
         working-directory: hyzen_flutter
         run: flutter test --no-pub -r expanded
+      - name: Build browser preview (no APK)
+        working-directory: hyzen_flutter
+        run: flutter build web --release --no-pub --base-href "/pharm-d-with-hyzen/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hyzen-web-preview-pr-${{ github.event.number || github.run_number }}
+          path: hyzen_flutter/build/web
+          retention-days: 14
+          if-no-files-found: error
