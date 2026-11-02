@@ -163,10 +163,12 @@ class WorkspaceBar extends StatelessWidget {
     this.onHome,
     this.onSmart,
     this.smartTooltip = 'Smart tools',
+    this.smartIcon,
   });
   final String title;
   final VoidCallback? onEditTitle, onHome, onSmart;
   final String smartTooltip;
+  final IconData? smartIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -234,24 +236,34 @@ class WorkspaceBar extends StatelessWidget {
             IconButton(
               tooltip: smartTooltip,
               onPressed: onSmart,
-              icon: SizedBox(
-                width: 30,
-                height: 30,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      left: 0,
-                      top: 2,
-                      child: Icon(Icons.article_outlined, color: ink, size: 25),
+              icon: smartIcon != null
+                  ? Icon(smartIcon, color: ink, size: 27)
+                  : SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            left: 0,
+                            top: 2,
+                            child: Icon(
+                              Icons.article_outlined,
+                              color: ink,
+                              size: 25,
+                            ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Icon(
+                              Icons.auto_awesome,
+                              color: ink,
+                              size: 13,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Icon(Icons.auto_awesome, color: ink, size: 13),
-                    ),
-                  ],
-                ),
-              ),
             ),
             const SizedBox(width: 4),
           ],
