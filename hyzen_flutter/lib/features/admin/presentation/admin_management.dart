@@ -968,7 +968,26 @@ class _AdminListState extends ConsumerState<AdminListScreen> {
                   fields: fields,
                   initial: initial,
                   onlyChanged: !isNew,
+                  onPreview: widget.section == 'blogs'
+                      ? (values) => showAdminBlogPreview(
+                          c,
+                          mergeAdminDraft(initial, values),
+                        )
+                      : null,
                   onSave: (values) async {
+                    if (widget.section == 'blogs' &&
+                        values['status'] == 'published' &&
+                        initial['status'] != 'published' &&
+                        !await confirmDialog(
+                          c,
+                          title: 'Publish this article?',
+                          message:
+                              'The article will become visible in the student blog after the save is confirmed.',
+                          confirm: 'Publish',
+                        )) {
+                      return;
+                    }
+                    if (!c.mounted) return;
                     try {
                       await commit(values);
                       if (c.mounted) Navigator.pop(c);
@@ -996,6 +1015,22 @@ class _AdminListState extends ConsumerState<AdminListScreen> {
 
   Future<void> action(String action, Map<String, dynamic> item) async {
     if (action == 'edit') return editItem(item);
+    if (action == 'preview' && widget.section == 'blogs') {
+      return showAdminBlogPreview(context, item);
+    }
+    if (widget.section == 'blogs' && action == 'visibility') {
+      final publish = item['status'] != 'published';
+      if (!await confirmDialog(
+        context,
+        title: publish ? 'Publish this article?' : 'Hide this article?',
+        message: publish
+            ? 'Students will be able to read this article after the server confirms the change.'
+            : 'The article will no longer appear in the student blog.',
+        confirm: publish ? 'Publish' : 'Hide',
+      )) {
+        return;
+      }
+    }
     if (action == 'delete' &&
         !await confirmDialog(
           context,
@@ -1176,6 +1211,11 @@ class _AdminListState extends ConsumerState<AdminListScreen> {
                                   value: 'edit',
                                   child: Text('Edit'),
                                 ),
+                                if (widget.section == 'blogs')
+                                  const PopupMenuItem(
+                                    value: 'preview',
+                                    child: Text('Preview as student'),
+                                  ),
                                 if ([
                                   'products',
                                   'blogs',
