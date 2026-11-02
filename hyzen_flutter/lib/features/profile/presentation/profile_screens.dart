@@ -806,9 +806,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     tooltip: 'Clear search',
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () => setState(_search.clear),
-                  ),
+                ),
           ),
         ),
+        const SizedBox(height: 20),
+        SettingsCard(
+          raised: true,
+          children: [
+            SettingsRow(
+              title: 'Show announcements',
+              trailing: AccountToggle(
+                label: 'Show announcements',
+                value: notif,
+                onChanged: (v) => ref
+                    .read(boolPrefProvider('pref_announcements').notifier)
+                    .set(v),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
         if (_matches(
           'personal academic professional year profile app updates release',
         )) ...[
@@ -879,16 +896,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const AccountSectionHeader('Notifications'),
           SettingsCard(
             children: [
-              SettingsRow(
-                title: 'Show announcements',
-                trailing: AccountToggle(
-                  label: 'Show announcements',
-                  value: notif,
-                  onChanged: (v) => ref
-                      .read(boolPrefProvider('pref_announcements').notifier)
-                      .set(v),
-                ),
-              ),
               SettingsRow(
                 title: 'Notification inbox',
                 onTap: () => context.push('/notifications'),
