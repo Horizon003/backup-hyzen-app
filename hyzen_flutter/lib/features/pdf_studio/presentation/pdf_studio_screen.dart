@@ -3,41 +3,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/providers.dart';
 
-import '../../../core/theme/tokens.dart';
 import '../../../core/utils/media_upload.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/ui_kit.dart';
-import '../../../core/widgets/surfaces.dart';
 import '../../downloads/domain/download_record.dart';
-import '../../shell/app_shell.dart';
 import '../../viewer/external_files.dart';
 import '../../viewer/offline_pdf.dart';
 import '../../viewer/reader_chrome.dart';
 import '../data/pdf_studio_repository.dart';
 import '../data/studio_file_item.dart';
 import 'studio_tools_screen.dart';
+import 'office_file_actions.dart';
+import 'office_ui.dart';
+import '../../../core/widgets/main_dock.dart';
 import 'studio_export_sheet.dart';
 import 'studio_annotation_screen.dart';
 
-enum _StudioFilter { all, scanned, edited, mergedSplit, docs, external }
-
-String _studioMime(String path) => switch (path.split('.').last.toLowerCase()) {
-  'pdf' => 'application/pdf',
-  'doc' => 'application/msword',
-  'docx' =>
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'ppt' => 'application/vnd.ms-powerpoint',
-  'pptx' =>
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'xls' => 'application/vnd.ms-excel',
-  'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'txt' => 'text/plain',
-  'md' => 'text/markdown',
-  'jpg' || 'jpeg' => 'image/jpeg',
-  'png' => 'image/png',
-  'webp' => 'image/webp',
-  _ => 'application/octet-stream',
-};
+enum _StudioFilter { all, starred, scanned, edited, mergedSplit, docs }
 
 class PdfStudioScreen extends ConsumerStatefulWidget {
   const PdfStudioScreen({super.key});
@@ -47,18 +29,23 @@ class PdfStudioScreen extends ConsumerStatefulWidget {
 }
 
 class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
+  static const _titleKey = 'office_workspace_title';
+  static const _defaultTitle = 'Office Workspace: Pharm D with Hyzen';
   _StudioFilter _filter = _StudioFilter.all;
   String _query = '';
+
   bool _matches(StudioFileItem file) {
     final filterMatch = switch (_filter) {
       _StudioFilter.all => true,
+      _StudioFilter.starred => file.isStarred,
       _StudioFilter.scanned =>
         file.sourceType.contains('SCAN') || file.operationBadge == 'SCANNED',
       _StudioFilter.edited => file.operationBadge == 'EDITED',
       _StudioFilter.mergedSplit =>
-        file.operationBadge == 'MERGED' || file.operationBadge == 'SPLIT',
+        file.operationBadge == 'MERGED' ||
+            file.operationBadge == 'SPLIT' ||
+            file.operationBadge == 'EXTRACTED',
       _StudioFilter.docs => file.fileCategory == 'DOC',
-      _StudioFilter.external => file.sourceType == 'EXTERNAL_INTENT',
     };
     return filterMatch &&
         (_query.isEmpty ||
@@ -67,422 +54,580 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
                 .contains(_query.toLowerCase()));
   }
 
-  void _openTool(StudioTool tool) =>
-      Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute<void>(builder: (_) => StudioToolsScreen(tool: tool)),
-      );
+  Future<void> _renameWorkspace(String current) async {
+    final value = await askOfficeText(
+      context,
+      title: 'Workspace name',
+      initial: current,
+      label: 'Name',
+    );
+    if (value == null) return;
+    final prefs = ref.read(sharedPrefsProvider);
+    if (value.trim().isEmpty) {
+      await prefs.remove(_titleKey);
+    } else {
+      await prefs.setString(_titleKey, value.trim());
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _saveExternal(ExternalDocument file) async {
+    try {
+      final item = await ref
+          .read(pdfStudioHistoryProvider.notifier)
+          .importFile(
+            file.path,
+            originalFileName: file.title,
+            sourceType: 'EXTERNAL_INTENT',
+            operationBadge: 'IMPORTED',
+          );
+      await ref
+          .read(sharedPrefsProvider)
+          .setString('external_studio_${file.id}', item.id);
+      if (mounted) {
+        showHSnack(context, 'Saved to Office Workspace');
+        openStudioReader(context, item);
+      }
+    } catch (_) {
+      if (mounted) {
+        showHSnack(
+          context,
+          'Could not copy this file into Studio.',
+          error: true,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final history = ref
-        .watch(pdfStudioHistoryProvider)
-        .where(_matches)
-        .toList();
+    final all = ref.watch(pdfStudioHistoryProvider);
+    final prefs = ref.watch(sharedPrefsProvider);
+    final title = prefs.getString(_titleKey) ?? _defaultTitle;
     final external = ref.watch(externalHistoryProvider);
-    final knownPaths = ref
-        .watch(pdfStudioHistoryProvider)
-        .map((item) => item.internalFilePath)
-        .toSet();
-    final notImported =
-        _filter == _StudioFilter.all || _filter == _StudioFilter.external
-        ? external
-              .where(
-                (item) =>
-                    !knownPaths.contains(item.path) &&
-                    !ref
-                        .read(pdfStudioHistoryProvider)
-                        .any(
-                          (f) =>
-                              f.id ==
-                              ref
-                                  .read(sharedPrefsProvider)
-                                  .getString('external_studio_${item.id}'),
-                        ),
-              )
-              .toList()
-        : const <ExternalDocument>[];
-    final theme = Theme.of(context);
+    final known = {for (final f in all) f.internalFilePath};
+    final knownIds = {for (final f in all) f.id};
+    final notImported = external
+        .where(
+          (d) =>
+              !known.contains(d.path) &&
+              !knownIds.contains(prefs.getString('external_studio_${d.id}')),
+        )
+        .toList();
+    final latest = all.isEmpty ? null : all.first;
+    final rest = all.skip(1).where(_matches).toList();
+    final canvas = OfficeColors.canvas(context);
 
-    return TabPage(
-      title: 'Office Workspace',
-      headerTheme: theme.copyWith(
-        textTheme: theme.textTheme.copyWith(
-          titleLarge: theme.textTheme.titleLarge?.copyWith(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
+    return Scaffold(
+      backgroundColor: canvas,
+      body: Column(
+        children: [
+          const OfficeBrandHeader(),
+          WorkspaceBar(
+            title: title,
+            onEditTitle: () => _renameWorkspace(title),
+            onHome: () => context.go('/home'),
+            onSmart: () => showOfficeToolsSheet(context),
+            smartTooltip: 'Create & PDF tools',
           ),
-        ),
-      ),
-      subtitle: 'Read · Edit · Study · Succeed',
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: HSpace.screen),
-          sliver: SliverList.list(
-            children: [
-              const Gap(12),
-              Text('CREATE & IMPORT', style: theme.textTheme.labelLarge),
-              const Gap(14),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final cards = [
-                    _WorkspaceAction(
-                      title: 'Scan document',
-                      subtitle: 'Use camera',
-                      icon: Icons.document_scanner_outlined,
-                      filled: true,
-                      onTap: () => context.push('/create-pdf?source=camera'),
-                    ),
-                    _WorkspaceAction(
-                      title: 'From images',
-                      subtitle: 'Convert gallery photos',
-                      icon: Icons.photo_library_outlined,
-                      onTap: () => context.push('/create-pdf?source=gallery'),
-                    ),
-                  ];
-                  return MediaQuery.textScalerOf(context).scale(1) > 1.3
-                      ? Column(
-                          children: [
-                            for (final card in cards)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: card,
-                              ),
-                          ],
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: latest == null
+                      ? _EmptyWorkspace(
+                          onCreate: () => showOfficeToolsSheet(context),
                         )
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: cards[0]),
-                            const SizedBox(width: 12),
-                            Expanded(child: cards[1]),
-                          ],
-                        );
-                },
-              ),
-              const Gap(12),
-              HCard(
-                radius: 20,
-                onTap: () => _openTool(StudioTool.open),
-                child: Row(
-                  children: [
-                    const Icon(Icons.picture_as_pdf_outlined, size: 30),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      : _LatestFileCard(file: latest),
+                ),
+                if (all.length > 1) ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+                      child: Text(
+                        'All files',
+                        style: TextStyle(
+                          color: OfficeColors.ink(context),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _OfficeSearch(
+                        onChanged: (v) => setState(() => _query = v),
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 52,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
                         children: [
-                          Text('Open PDF', style: theme.textTheme.titleLarge),
-                          const Gap(4),
-                          const Text('Read or edit an existing file'),
+                          for (final f in _StudioFilter.values)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: _FilterPill(
+                                label: switch (f) {
+                                  _StudioFilter.all => 'All',
+                                  _StudioFilter.starred => 'Starred',
+                                  _StudioFilter.scanned => 'Scanned',
+                                  _StudioFilter.edited => 'Edited',
+                                  _StudioFilter.mergedSplit => 'Combined',
+                                  _StudioFilter.docs => 'Docs',
+                                },
+                                selected: _filter == f,
+                                onTap: () => setState(() => _filter = f),
+                              ),
+                            ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right),
-                  ],
+                  ),
+                  if (rest.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'No matching documents',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: OfficeColors.muted(context)),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverList.builder(
+                      itemCount: rest.length,
+                      itemBuilder: (_, i) => _FileRow(file: rest[i]),
+                    ),
+                ],
+                if (notImported.isNotEmpty) ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
+                      child: Text(
+                        'Opened with PHARM D WITH HYZEN',
+                        style: TextStyle(
+                          color: OfficeColors.ink(context),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverList.builder(
+                    itemCount: notImported.length,
+                    itemBuilder: (_, i) {
+                      final d = notImported[i];
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                        ),
+                        leading: Icon(
+                          documentIconForName(d.title),
+                          color: OfficeColors.ink(context),
+                        ),
+                        title: Text(
+                          d.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: OfficeColors.ink(context)),
+                        ),
+                        subtitle: Text(
+                          'Device file · ${officeRelativeDate(d.openedAt)}',
+                          style: TextStyle(color: OfficeColors.muted(context)),
+                        ),
+                        trailing: IconButton(
+                          tooltip: 'Save to Office Workspace',
+                          icon: Icon(
+                            Icons.save_alt_rounded,
+                            color: OfficeColors.ink(context),
+                          ),
+                          onPressed: () => _saveExternal(d),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                SliverToBoxAdapter(
+                  child: SizedBox(height: MainDock.contentInset(context) + 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Navy circular action from the mockup: create / import a document.
+class _CreateFab extends StatelessWidget {
+  const _CreateFab();
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: 'Create or import a document',
+    excludeSemantics: true,
+    child: Material(
+      color: OfficeColors.navy,
+      shape: const CircleBorder(),
+      elevation: 6,
+      shadowColor: const Color(0x55000000),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () => showOfficeToolsSheet(context),
+        child: const SizedBox.square(
+          dimension: 86,
+          child: Icon(
+            Icons.drive_file_move_outline,
+            color: Colors.white,
+            size: 40,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _LatestFileCard extends ConsumerWidget {
+  const _LatestFileCard({required this.file});
+  final StudioFileItem file;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ink = OfficeColors.ink(context);
+    final name = file.displayName.replaceFirst(
+      RegExp(r'\.pdf$', caseSensitive: false),
+      '',
+    );
+    final actions = [
+      (Icons.ios_share_rounded, 'Share', () => shareStudioFile(context, file)),
+      (
+        Icons.edit_note_rounded,
+        'Edit text',
+        () => editStudioText(context, file),
+      ),
+      (
+        Icons.image_outlined,
+        isStudioPdf(file) ? 'Save as JPEG' : 'Save a copy',
+        () => saveStudioFileAsJpeg(context, file),
+      ),
+      (
+        Icons.more_horiz_rounded,
+        'More',
+        () => showOfficeFileMore(context, ref, file),
+      ),
+    ];
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 96),
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: ink,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-              const Gap(16),
-              Text('QUICK TOOLS', style: theme.textTheme.labelLarge),
-              const Gap(14),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final tools = [
-                    (StudioTool.merge, Icons.copy_outlined, 'Merge PDFs'),
-                    (StudioTool.organize, Icons.folder_outlined, 'Organize'),
-                    (
-                      StudioTool.extract,
-                      Icons.document_scanner_outlined,
-                      'Extract pages',
+              const SizedBox(height: 3),
+              Text(
+                '${officeRelativeDate(file.lastOpenedAt ?? file.updatedAt)} • ${formatBytes(file.fileSizeBytes)}',
+                style: TextStyle(
+                  color: OfficeColors.muted(context),
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Semantics(
+                    button: true,
+                    label: 'Open $name',
+                    child: GestureDetector(
+                      onTap: () => openStudioReader(context, file),
+                      child: SizedBox(
+                        width: 196,
+                        height: 196,
+                        child: OfficeFileThumbnail(
+                          path: file.internalFilePath,
+                          version: file.updatedAt.toIso8601String(),
+                          fallbackIcon: documentIconForName(file.displayName),
+                        ),
+                      ),
                     ),
-                  ];
-                  return Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final tool in tools)
-                        SizedBox(
-                          width: MediaQuery.textScalerOf(context).scale(1) > 1.3
-                              ? constraints.maxWidth
-                              : (constraints.maxWidth - 16) / 3,
-                          child: HCard(
-                            radius: 20,
-                            onTap: () => _openTool(tool.$1),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 18,
-                              horizontal: 8,
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(tool.$2, size: 27),
-                                const Gap(10),
-                                Text(
-                                  tool.$3,
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.titleSmall,
-                                ),
-                              ],
+                  ),
+                  const SizedBox(width: 22),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final a in actions)
+                          InkWell(
+                            onTap: a.$3,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              child: Row(
+                                children: [
+                                  Icon(a.$1, size: 25, color: ink),
+                                  const SizedBox(width: 14),
+                                  Flexible(
+                                    child: Text(
+                                      a.$2,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: ink,
+                                        fontSize: 17,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              const Gap(16),
-              SectionHeader(
-                title: 'Recent Files',
-                action: 'See all',
-                onAction: () => showModalBottomSheet<void>(
-                  context: context,
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  showDragHandle: true,
-                  builder: (_) => SizedBox(
-                    height: MediaQuery.sizeOf(context).height * .75,
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        Text(
-                          'All workspace files',
-                          style: theme.textTheme.titleLarge,
-                        ),
-                        const Gap(16),
-                        if (ref.read(pdfStudioHistoryProvider).isEmpty)
-                          const Text('No recent documents'),
-                        for (final file in ref.read(pdfStudioHistoryProvider))
-                          _StudioHistoryTile(file: file),
                       ],
                     ),
                   ),
-                ),
+                ],
               ),
-              const Gap(10),
-              HSearchField(
-                hint: 'Search documents',
-                onChanged: (value) => setState(() => _query = value),
-              ),
-              const Gap(HSpace.sm),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final filter in _StudioFilter.values)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 5),
-                        child: ChoiceChip(
-                          label: Text(switch (filter) {
-                            _StudioFilter.all => 'All',
-                            _StudioFilter.scanned => 'Scanned',
-                            _StudioFilter.edited => 'Edited',
-                            _StudioFilter.mergedSplit => 'Merged',
-                            _StudioFilter.docs => 'Docs',
-                            _StudioFilter.external => 'External (saved)',
-                          }),
-                          selected: _filter == filter,
-                          selectedColor: theme.brightness == Brightness.dark
-                              ? const Color(0xFF48484C)
-                              : const Color(0xFF1C1C1E),
-                          labelStyle: TextStyle(
-                            color: _filter == filter
-                                ? Colors.white
-                                : theme.colorScheme.onSurface,
-                          ),
-                          checkmarkColor: Colors.white,
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          onSelected: (_) => setState(() => _filter = filter),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const Gap(HSpace.sm),
-              if (history.isEmpty && notImported.isEmpty)
-                HCard(
-                  radius: 22,
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      const Gap(12),
-                      Icon(
-                        Icons.file_copy_outlined,
-                        size: 60,
-                        color: theme.colorScheme.onSurfaceVariant.withValues(
-                          alpha: .45,
-                        ),
-                      ),
-                      const Gap(20),
-                      Text(
-                        'No recent documents',
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      const Gap(8),
-                      const Text(
-                        'Your scans and PDFs will appear here',
-                        textAlign: TextAlign.center,
-                      ),
-                      const Gap(20),
-                      OutlinedButton.icon(
-                        onPressed: () => _openTool(StudioTool.open),
-                        icon: const Icon(Icons.folder_outlined),
-                        label: const Text('Browse files'),
-                      ),
-                      const Gap(8),
-                    ],
-                  ),
-                ),
-              for (final file in history) _StudioHistoryTile(file: file),
-              if (notImported.isNotEmpty) ...[
-                const Gap(HSpace.md),
-                Text(
-                  'Opened with PHARM D WITH HYZEN',
-                  style: theme.textTheme.titleMedium,
-                ),
-                Text('Recent device files', style: theme.textTheme.bodySmall),
-                const Gap(HSpace.xs),
-                for (final file in notImported)
-                  ResourceTile(
-                    icon: Icons.file_present_rounded,
-                    color: HColors.primary,
-                    eyebrow: 'DEVICE IMPORT',
-                    title: file.title,
-                    subtitle:
-                        'Opened ${file.openedAt.toLocal().toString().split('.').first}',
-                    trailing: IconButton(
-                      tooltip: 'Save to Office Workspace workspace',
-                      icon: const Icon(Icons.save_alt_rounded),
-                      onPressed: () async {
-                        try {
-                          final item = await ref
-                              .read(pdfStudioHistoryProvider.notifier)
-                              .importFile(
-                                file.path,
-                                originalFileName: file.title,
-                                sourceType: 'EXTERNAL_INTENT',
-                                operationBadge: 'IMPORTED',
-                              );
-                          await ref
-                              .read(sharedPrefsProvider)
-                              .setString('external_studio_${file.id}', item.id);
-                          if (context.mounted) {
-                            showHSnack(context, 'Saved to Office Workspace');
-                            context.push('/pdf-studio/viewer/${item.id}');
-                          }
-                        } catch (_) {
-                          if (context.mounted) {
-                            showHSnack(
-                              context,
-                              'Could not copy this file into Studio.',
-                              error: true,
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ),
-              ],
-              const Gap(HSpace.md),
             ],
           ),
         ),
+        const Positioned(right: 14, top: 8, child: _CreateFab()),
       ],
     );
   }
 }
 
-class _StudioHistoryTile extends ConsumerWidget {
-  const _StudioHistoryTile({required this.file});
+class _FileRow extends ConsumerWidget {
+  const _FileRow({required this.file});
   final StudioFileItem file;
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ResourceTile(
-    icon: documentIconForName(file.displayName),
-    color: documentColorForName(file.displayName),
-    eyebrow: '${file.operationBadge} · ${file.fileCategory}',
-    title: file.displayName,
-    subtitle:
-        '${formatBytes(file.fileSizeBytes)} · ${file.pageCount > 0 ? '${file.pageCount} pages' : 'Document'}',
-    badge: file.isStarred
-        ? const StatusPill(
-            label: 'Starred',
-            color: HColors.warning,
-            icon: Icons.star_rounded,
-          )
-        : null,
-    onTap: () => context.push('/pdf-studio/viewer/${file.id}'),
-    trailing: PopupMenuButton<String>(
-      tooltip: 'Document actions',
-      onSelected: (action) async {
-        if (action == 'star') {
-          await ref
-              .read(pdfStudioHistoryProvider.notifier)
-              .setStarred(file.id, !file.isStarred);
-        } else if (action == 'rename') {
-          final controller = TextEditingController(text: file.displayName);
-          final name = await showDialog<String>(
-            context: context,
-            builder: (dialogContext) => AlertDialog(
-              title: const Text('Rename document'),
-              content: TextField(
-                controller: controller,
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'Display name'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ink = OfficeColors.ink(context);
+    return InkWell(
+      onTap: () => openStudioReader(context, file),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 50,
+              height: 62,
+              child: OfficeFileThumbnail(
+                path: file.internalFilePath,
+                version: file.updatedAt.toIso8601String(),
+                fallbackIcon: documentIconForName(file.displayName),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () =>
-                      Navigator.pop(dialogContext, controller.text),
-                  child: const Text('Save'),
-                ),
-              ],
             ),
-          );
-          controller.dispose();
-          if (name != null) {
-            await ref
-                .read(pdfStudioHistoryProvider.notifier)
-                .rename(file.id, name);
-          }
-        } else if (action == 'export') {
-          await showStudioExportSheet(context, file);
-        } else if (action == 'delete') {
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (dialogContext) => AlertDialog(
-              title: const Text('Delete workspace copy?'),
-              content: Text(
-                '“${file.displayName}” will be deleted from Studio.',
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          file.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: ink,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (file.isStarred) ...[
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 17,
+                          color: Color(0xFFF5A524),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    [
+                      officeRelativeDate(file.lastOpenedAt ?? file.updatedAt),
+                      formatBytes(file.fileSizeBytes),
+                      if (file.pageCount > 0)
+                        '${file.pageCount} page${file.pageCount == 1 ? '' : 's'}',
+                    ].join(' • '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: OfficeColors.muted(context),
+                      fontSize: 13.5,
+                    ),
+                  ),
+                ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(dialogContext, true),
-                  child: const Text('Delete'),
-                ),
-              ],
             ),
-          );
-          if (confirm == true) {
-            await ref.read(pdfStudioHistoryProvider.notifier).delete(file.id);
-          }
-        }
-      },
-      itemBuilder: (_) => [
-        PopupMenuItem(
-          value: 'star',
-          child: Text(file.isStarred ? 'Remove star' : 'Star document'),
+            IconButton(
+              tooltip: 'Document actions',
+              icon: Icon(Icons.more_vert_rounded, color: ink),
+              onPressed: () => showOfficeFileMore(context, ref, file),
+            ),
+          ],
         ),
-        const PopupMenuItem(value: 'rename', child: Text('Rename')),
-        const PopupMenuItem(value: 'export', child: Text('Export to device')),
-        const PopupMenuItem(value: 'delete', child: Text('Delete from Studio')),
+      ),
+    );
+  }
+}
+
+class _OfficeSearch extends StatelessWidget {
+  const _OfficeSearch({required this.onChanged});
+  final ValueChanged<String> onChanged;
+  @override
+  Widget build(BuildContext context) => TextField(
+    onChanged: onChanged,
+    textInputAction: TextInputAction.search,
+    style: TextStyle(color: OfficeColors.ink(context)),
+    decoration: InputDecoration(
+      hintText: 'Search documents',
+      hintStyle: TextStyle(color: OfficeColors.muted(context)),
+      prefixIcon: Icon(
+        Icons.search_rounded,
+        color: OfficeColors.muted(context),
+      ),
+      filled: true,
+      fillColor: OfficeColors.page(context),
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(vertical: 13),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide(color: OfficeColors.divider(context)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide(color: OfficeColors.divider(context)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: const BorderSide(color: OfficeColors.blue, width: 1.6),
+      ),
+    ),
+  );
+}
+
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: selected,
+    child: Material(
+      color: selected ? OfficeColors.blue : OfficeColors.page(context),
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: selected ? OfficeColors.blue : OfficeColors.divider(context),
+        ),
+      ),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : OfficeColors.ink(context),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _EmptyWorkspace extends StatelessWidget {
+  const _EmptyWorkspace({required this.onCreate});
+  final VoidCallback onCreate;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(24, 40, 24, 12),
+    child: Column(
+      children: [
+        Icon(
+          Icons.description_outlined,
+          size: 64,
+          color: OfficeColors.muted(context),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'No recent documents',
+          style: TextStyle(
+            color: OfficeColors.ink(context),
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Scan pages, convert photos or open a PDF to start.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: OfficeColors.muted(context)),
+        ),
+        const SizedBox(height: 22),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                style: officeOutlineStyle(context),
+                onPressed: () => context.push('/create-pdf?source=gallery'),
+                icon: const Icon(Icons.photo_library_outlined),
+                label: const Text('From images'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                style: officePrimaryStyle(),
+                onPressed: () => context.push('/create-pdf?source=camera'),
+                icon: const Icon(Icons.document_scanner_outlined),
+                label: const Text('Scan'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextButton.icon(
+          onPressed: onCreate,
+          icon: const Icon(Icons.apps_rounded),
+          label: const Text('More tools'),
+        ),
       ],
     ),
   );
@@ -578,7 +723,7 @@ class _PdfStudioFileViewerScreenState
           await MediaUpload.shareDocument(
             active.internalFilePath,
             active.displayName,
-            _studioMime(active.internalFilePath),
+            studioMime(active.internalFilePath),
           );
         } catch (_) {
           if (context.mounted) {
@@ -677,56 +822,6 @@ class _PdfStudioFileViewerScreenState
         path: active.internalFilePath,
         tools: _tools,
         initialPage: widget.initialPage,
-      ),
-    );
-  }
-}
-
-class _WorkspaceAction extends StatelessWidget {
-  const _WorkspaceAction({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-    this.filled = false,
-  });
-  final String title, subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool filled;
-  @override
-  Widget build(BuildContext context) {
-    final ink = filled ? Colors.white : Theme.of(context).colorScheme.onSurface;
-    return HCard(
-      radius: 22,
-      color: filled ? const Color(0xFF1C1C1E) : null,
-      padding: const EdgeInsets.all(12),
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: 64 * MediaQuery.textScalerOf(context).scale(1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 24, color: ink),
-            const Gap(10),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: ink,
-                fontWeight: FontWeight.w800, fontSize: 15,
-              ),
-            ),
-            const Gap(4),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: ink.withValues(alpha: .72), fontSize: 11,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
