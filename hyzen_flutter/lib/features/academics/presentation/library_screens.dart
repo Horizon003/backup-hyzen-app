@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,8 @@ import '../../../core/widgets/ui_kit.dart';
 import '../../content/data/content_providers.dart';
 import '../../downloads/data/downloads_controller.dart';
 import '../../downloads/domain/download_record.dart';
+import '../../academics/data/drive_gateway.dart';
+import '../../pdf_studio/data/studio_pdf_engine.dart';
 import '../../shell/app_shell.dart';
 import '../domain/models.dart';
 import '../../../app/safe_nav.dart';
@@ -159,6 +162,7 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
     } else {
       final loaded = async.value!;
       final r = _resolve(loaded.data);
+      final breadcrumbs = _breadcrumbs(loaded.data);
       title = r.title ?? kind.title;
       subtitle = r.trail.isEmpty ? kind.blurb : r.trail.join(' \u203a ');
       final q = _q.toLowerCase();
@@ -186,6 +190,45 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                     color: color,
                     stats: r.stats,
                   ),
+                  if (widget.path.isNotEmpty && breadcrumbs.isNotEmpty) ...[
+                    const Gap(HSpace.sm),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (var i = 0; i < breadcrumbs.length; i++) ...[
+                            if (i > 0)
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            TextButton(
+                              onPressed: i == breadcrumbs.length - 1
+                                  ? null
+                                  : () => context.go(
+                                      '/study/${kind.name}${breadcrumbs[i].path.isEmpty ? '' : '/${breadcrumbs[i].path.join('/') }'}',
+                                    ),
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 2,
+                                ),
+                              ),
+                              child: Text(
+                                breadcrumbs[i].title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                   const Gap(HSpace.md),
                   if (r.items.length > 6) ...[
                     HSearchField(
@@ -215,10 +258,33 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                       : 'Try a different word.',
                 ),
               )
+            else if (r.fileGallery)
+              SliverPadding(
+                padding: const EdgeInsets.only(bottom: HSpace.md),
+                sliver: SliverGrid.builder(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 220,
+                    mainAxisExtent: 252,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                  ),
+                  itemCount: items.length,
+                  itemBuilder: (_, i) => items[i].build(context, color),
+                ),
+              )
             else
-              SliverList.builder(
-                itemCount: items.length,
-                itemBuilder: (_, i) => items[i].build(context, color),
+              SliverPadding(
+                padding: const EdgeInsets.only(bottom: HSpace.md),
+                sliver: SliverGrid.builder(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 250,
+                    mainAxisExtent: 148,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                  ),
+                  itemCount: items.length,
+                  itemBuilder: (_, i) => items[i].build(context, color),
+                ),
               ),
           ],
         ),
