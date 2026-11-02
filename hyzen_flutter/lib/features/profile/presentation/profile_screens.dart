@@ -814,6 +814,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         )) ...[
           const AccountSectionHeader('Personal & academic'),
           SettingsCard(
+            raised: true,
             children: [
               if (_matches('professional year profile academic'))
                 SettingsRow(
@@ -874,7 +875,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ],
-        if (_matches('notifications announcements')) ...[
+        ...[
           const AccountSectionHeader('Notifications'),
           SettingsCard(
             children: [
