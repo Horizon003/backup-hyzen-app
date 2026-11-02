@@ -562,7 +562,9 @@ class CartScreen extends ConsumerWidget {
                   title: 'Your cart is empty',
                   action: HButton(
                     label: 'Browse shop',
-                    onPressed: () => context.pushReplacement('/shop'),
+                    // /cart is a root route; go() returns to the existing shell instead
+                    // of pushing a duplicate shell (GlobalKey crash).
+                    onPressed: () => context.go('/shop'),
                   ),
                 ),
               for (final i in cart)

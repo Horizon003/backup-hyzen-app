@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../content/data/content_providers.dart';
 import '../../../core/utils/links.dart';
+import '../../../app/safe_nav.dart';
 
 /// Account overlay promotions. Admin-managed image slots are rendered first;
 /// the existing catalog/offline cards remain as a safe fallback.
@@ -101,7 +101,7 @@ class _ProfilePromotionsState extends ConsumerState<ProfilePromotions> {
                         ? null
                         : () {
                             if (slide.route!.startsWith('/')) {
-                              context.push(slide.route!);
+                              context.open(slide.route!);
                             } else {
                               openLink(context, slide.route!);
                             }

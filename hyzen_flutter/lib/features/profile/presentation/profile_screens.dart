@@ -26,6 +26,7 @@ import '../../downloads/domain/download_record.dart';
 import '../../home/data/recent_controller.dart';
 import '../../content/data/content_source.dart';
 import 'widgets/account_widgets.dart';
+import '../../../app/safe_nav.dart';
 
 Future<void> logout(BuildContext context, WidgetRef ref) async {
   if (!await confirmDialog(
@@ -63,7 +64,7 @@ class ProfileScreen extends ConsumerWidget {
       if (onNavigate != null) {
         onNavigate!(path);
       } else {
-        context.push(path);
+        context.open(path);
       }
     }
 
@@ -165,7 +166,7 @@ class AccountInfoScreen extends ConsumerWidget {
     final user = ref.watch(authStateProvider).valueOrNull;
     final name = _accountName(p, user?.displayName, ref.watch(isAdminProvider));
     final announcements = ref.watch(boolPrefProvider('pref_announcements'));
-    void edit() => context.push('/profile/edit');
+    void edit() => context.open('/profile/edit');
     return AccountPage(
       title: 'Account info',
       onBack: () => _accountBack(context),
@@ -250,7 +251,7 @@ class AccountInfoScreen extends ConsumerWidget {
           children: [
             SettingsRow(
               title: 'Security',
-              onTap: () => context.push('/settings'),
+              onTap: () => context.open('/settings'),
             ),
             SettingsRow(
               title: 'Privacy',
@@ -781,7 +782,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           name: _accountName(p, user?.displayName, ref.watch(isAdminProvider)),
           subtitle: 'Account info',
           photoUrl: p?.photoUrl ?? user?.photoURL,
-          onTap: () => context.push('/profile/info'),
+          onTap: () => context.open('/profile/info'),
         ),
         const SizedBox(height: 20),
         TextField(
@@ -811,7 +812,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   value: ReferenceData.yearLabel(
                     ref.watch(professionalYearProvider),
                   ),
-                  onTap: () => context.push('/profile/edit'),
+                  onTap: () => context.open('/profile/edit'),
                 ),
               if (_matches('app updates release'))
                 SettingsRow(

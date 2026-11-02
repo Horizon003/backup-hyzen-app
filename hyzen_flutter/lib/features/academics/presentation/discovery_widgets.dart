@@ -8,6 +8,7 @@ import '../../content/data/content_providers.dart';
 import '../../search/data/search_index.dart';
 import '../domain/models.dart';
 import 'library_screens.dart';
+import '../../../app/safe_nav.dart';
 
 class LibraryShortcuts extends ConsumerWidget {
   const LibraryShortcuts({super.key});
@@ -115,7 +116,7 @@ class SubjectDiscovery extends ConsumerWidget {
               return HCard(
                 radius: HRadius.lg,
                 padding: const EdgeInsets.all(12),
-                onTap: () => context.push(h.route),
+                onTap: () => context.open(h.route),
                 child: Row(
                   children: [
                     Icon(
@@ -149,7 +150,7 @@ class SubjectDiscovery extends ConsumerWidget {
             final h = subjects[i];
             final color = colors[i % 4];
             return HCard(
-              onTap: () => context.push(h.route),
+              onTap: () => context.open(h.route),
               padding: const EdgeInsets.all(14),
               color: Theme.of(context).brightness == Brightness.light
                   ? Color.alphaBlend(color.withValues(alpha: .08), Colors.white)

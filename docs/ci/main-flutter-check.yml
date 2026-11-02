@@ -1,0 +1,35 @@
+name: Main Flutter analyze and tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'hyzen_flutter/**'
+      - '.github/workflows/main-flutter-check.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-flutter-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: hyzen_flutter
+      - name: Analyze
+        working-directory: hyzen_flutter
+        run: flutter analyze --no-pub
+      - name: Tests
+        working-directory: hyzen_flutter
+        run: flutter test --no-pub -r expanded

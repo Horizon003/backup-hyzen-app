@@ -16,6 +16,7 @@ import '../../downloads/domain/download_record.dart';
 import '../../shell/app_shell.dart';
 import '../data/search_index.dart';
 import '../data/ocr_index.dart';
+import '../../../app/safe_nav.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key, this.focusSearch = false});
@@ -205,7 +206,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     } else if (h.type == HitType.lecture && h.url != null) {
                       openLink(c, h.url!);
                     } else {
-                      c.push(h.route);
+                      c.open(h.route);
                     }
                   },
                 );

@@ -12,6 +12,7 @@ import '../../app/providers.dart';
 import '../../core/widgets/profile_avatar.dart';
 import '../profile/presentation/profile_screens.dart';
 import '../profile/presentation/widgets/account_widgets.dart';
+import '../../app/safe_nav.dart';
 
 /// Authenticated shell: Material navigation with Android back handling.
 class AppShell extends StatelessWidget {
@@ -386,7 +387,7 @@ Future<void> showAccountMenu(BuildContext context) {
           onClose: () => Navigator.pop(sheetContext),
           onNavigate: (path) {
             Navigator.pop(sheetContext);
-            router.push(path);
+            openRoute(router, path);
           },
         ),
       ),

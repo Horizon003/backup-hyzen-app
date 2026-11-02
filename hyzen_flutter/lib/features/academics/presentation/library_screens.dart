@@ -13,6 +13,7 @@ import '../../downloads/data/downloads_controller.dart';
 import '../../downloads/domain/download_record.dart';
 import '../../shell/app_shell.dart';
 import '../domain/models.dart';
+import '../../../app/safe_nav.dart';
 
 Color kindColor(LibraryKind k) => switch (k) {
   LibraryKind.notes => HColors.notes,
@@ -57,7 +58,7 @@ class StudyHubScreen extends ConsumerWidget {
                 icon: Icons.school_rounded,
               ),
               TextButton.icon(
-                onPressed: () => context.push('/profile/edit'),
+                onPressed: () => context.open('/profile/edit'),
                 icon: const Icon(Icons.tune_rounded),
                 label: const Text('Change professional year'),
               ),

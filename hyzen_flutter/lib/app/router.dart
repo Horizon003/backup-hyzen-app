@@ -160,19 +160,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/pdf-studio',
                 builder: (_, __) => const PdfStudioScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'viewer/:fileId',
-                    builder: (_, state) => PdfStudioFileViewerScreen(
-                      fileId: state.pathParameters['fileId']!,
-                      initialPage:
-                          int.tryParse(
-                            state.uri.queryParameters['page'] ?? '',
-                          ) ??
-                          1,
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -246,6 +233,20 @@ final routerProvider = Provider<GoRouter>((ref) {
                     .read(externalHistoryProvider)
                     .where((d) => d.id == s.uri.queryParameters['id'])
                     .firstOrNull,
+        ),
+      ),
+      // The Studio reader is a full-screen root route, NOT a shell branch
+      // child. It is opened from root routes (/create-pdf, /viewer,
+      // /imported-viewer, tool screens); pushing a shell child from there made
+      // go_router build a second StatefulShellRoute with the same navigator
+      // GlobalKeys, which crashed release builds with the framework.dart
+      // `_dependents.isEmpty` / notifyClients descendant assertions.
+      GoRoute(
+        path: '/pdf-studio/viewer/:fileId',
+        builder: (_, state) => PdfStudioFileViewerScreen(
+          fileId: state.pathParameters['fileId']!,
+          initialPage:
+              int.tryParse(state.uri.queryParameters['page'] ?? '') ?? 1,
         ),
       ),
       GoRoute(
