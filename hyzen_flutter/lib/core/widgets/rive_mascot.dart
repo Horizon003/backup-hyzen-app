@@ -48,7 +48,8 @@ class HyzenRiveMascot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
-      future: _hasRiveAsset(),
+      future: _riveAvailable,
+      initialData: _riveKnown,
       builder: (context, snapshot) {
         if (snapshot.data != true) {
           return HyzenMascot(
@@ -74,6 +75,12 @@ class HyzenRiveMascot extends StatelessWidget {
       },
     );
   }
+
+  // Checked once per process; previously every rebuild re-read the bundle.
+  static bool? _riveKnown;
+  static final Future<bool> _riveAvailable = _hasRiveAsset().then(
+    (v) => _riveKnown = v,
+  );
 
   static Future<bool> _hasRiveAsset() async {
     try {

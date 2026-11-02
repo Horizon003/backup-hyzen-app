@@ -12,24 +12,30 @@ import 'providers.dart';
 /// Initialise only what the first frame needs. No artificial delay.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
-  var firebaseReady = false;
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    firebaseReady = true;
-  } catch (e) {
-    if (kDebugMode) debugPrint('Firebase init failed: $e');
+  // Firebase, preferences and Hive are independent: start them together so
+  // cold start waits for the slowest one instead of the sum of all three.
+  Future<bool> firebase() async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('Firebase init failed: $e');
+      return false;
+    }
   }
-  final results = await Future.wait([
+
+  final results = await Future.wait<Object?>([
+    firebase(),
     SharedPreferences.getInstance(),
     Boxes.init(),
   ]);
   runApp(
     ProviderScope(
       overrides: [
-        sharedPrefsProvider.overrideWithValue(results[0] as SharedPreferences),
-        firebaseReadyProvider.overrideWithValue(firebaseReady),
+        sharedPrefsProvider.overrideWithValue(results[1] as SharedPreferences),
+        firebaseReadyProvider.overrideWithValue(results[0] as bool),
       ],
       child: const HyzenApp(),
     ),

@@ -141,6 +141,12 @@ class _HyzenMascotState extends State<HyzenMascot>
               width: widget.size,
               height: widget.size * 1.5,
               fit: BoxFit.contain,
+              // Decode at display size only; full-resolution decode of the
+              // pose pack was the main cause of slow first frames.
+              cacheWidth: (widget.size * MediaQuery.devicePixelRatioOf(context))
+                  .round()
+                  .clamp(64, 640),
+              gaplessPlayback: true,
               filterQuality: FilterQuality.medium,
             ),
           ),
