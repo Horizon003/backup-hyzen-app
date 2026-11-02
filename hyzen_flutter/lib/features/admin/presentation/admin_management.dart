@@ -1046,7 +1046,7 @@ class _AdminListState extends ConsumerState<AdminListScreen> {
         return;
       }
     }
-    if (!context.mounted) return;
+    if (!mounted) return;
     if (action == 'delete' &&
         !await confirmDialog(
           context,
