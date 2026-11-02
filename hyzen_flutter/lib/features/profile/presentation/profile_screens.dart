@@ -778,11 +778,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       title: 'Settings',
       onBack: () => _accountBack(context),
       children: [
-        AccountProfileCard(
+        WorkspaceIdentityCard(
           name: _accountName(p, user?.displayName, ref.watch(isAdminProvider)),
-          subtitle: 'Account info',
+          subtitle: [
+            if (p?.rollNumber?.trim().isNotEmpty == true) p!.rollNumber!,
+            if (email?.trim().isNotEmpty == true) email!,
+          ].join(' · '),
+          year: ReferenceData.yearLabel(
+            ref.watch(professionalYearProvider),
+          ),
           photoUrl: p?.photoUrl ?? user?.photoURL,
-          onTap: () => context.open('/profile/info'),
+          onEditProfile: () => context.open('/profile/edit'),
+          onChangeYear: () => context.open('/profile/edit'),
         ),
         const SizedBox(height: 20),
         TextField(
@@ -921,6 +928,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   await ref.read(recentProvider.notifier).clear();
                   if (context.mounted) showHSnack(context, 'History cleared');
                 },
+              ),
+            ],
+          ),
+        ],
+        if (_matches('tutorial guide walkthrough help')) ...[
+          const AccountSectionHeader('Help & support'),
+          SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'Replay app tutorial',
+                subtitle: 'A quick guide to your study library and offline files',
+                onTap: () => context.push('/tutorial'),
+              ),
+              SettingsRow(
+                title: 'Contact support',
+                onTap: () => context.push('/contact'),
               ),
             ],
           ),
