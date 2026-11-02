@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -209,7 +211,7 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                               onPressed: i == breadcrumbs.length - 1
                                   ? null
                                   : () => context.go(
-                                      '/study/${kind.name}${breadcrumbs[i].path.isEmpty ? '' : '/${breadcrumbs[i].path.join('/') }'}',
+                                      '/study/${kind.name}${breadcrumbs[i].path.isEmpty ? '' : '/${breadcrumbs[i].path.join('/')}'}',
                                     ),
                               style: TextButton.styleFrom(
                                 visualDensity: VisualDensity.compact,
@@ -484,7 +486,6 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                   url: f.url,
                   trail: trail,
                 ),
-                color: col,
               ),
             ),
           )
