@@ -502,7 +502,6 @@ class _Crumb {
 
 class _FolderCard extends StatelessWidget {
   const _FolderCard({
-    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
