@@ -348,7 +348,6 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                 y.label,
                 (c, col) => _FolderCard(
                   icon: Icons.workspace_premium_rounded,
-                  color: col,
                   title: y.label,
                   subtitle:
                       '${y.semesters.length} semesters \u00b7 ${y.subjectCount} subjects \u00b7 ${y.fileCount} files',
@@ -373,7 +372,6 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                 s.label,
                 (c, col) => _FolderCard(
                   icon: Icons.calendar_month_rounded,
-                  color: col,
                   title: s.label,
                   subtitle:
                       '${s.subjects.length} subjects \u00b7 ${s.fileCount} files',
@@ -401,7 +399,6 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                 su.label,
                 (c, col) => _FolderCard(
                   icon: Icons.science_rounded,
-                  color: col,
                   title: su.label,
                   subtitle:
                       '${su.sections.length} sections \u00b7 ${su.fileCount} files',
@@ -426,7 +423,6 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                 sec.title,
                 (c, col) => _FolderCard(
                   icon: Icons.folder_copy_rounded,
-                  color: col,
                   title: sec.title,
                   subtitle:
                       '${sec.topics.length} topics \u00b7 ${sec.fileCount} files',
@@ -455,7 +451,6 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                 tp.title,
                 (c, col) => _FolderCard(
                   icon: Icons.topic_rounded,
-                  color: col,
                   title: tp.title,
                   subtitle:
                       '${tp.files.length} file${tp.files.length == 1 ? '' : 's'}',
@@ -496,6 +491,286 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
           .toList(),
     );
   }
+}
+
+class _Crumb {
+  const _Crumb(this.title, this.path);
+  final String title;
+  final List<String> path;
+}
+
+class _FolderCard extends StatelessWidget {
+  const _FolderCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title, subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ink = theme.colorScheme.onSurface;
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Material(
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: theme.dividerColor.withValues(alpha: .7)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: ink.withValues(alpha: .07),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: ink, size: 22),
+              ),
+              const Spacer(),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: ink,
+                  fontSize: 14,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: muted, fontSize: 11, height: 1.2),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StudyPdfCard extends ConsumerWidget {
+  const _StudyPdfCard({required this.file});
+  final FileRef file;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final record = ref.watch(downloadForUrlProvider(file.url));
+    final localPath = record?.isAvailableOffline == true
+        ? record!.localPath
+        : null;
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: theme.dividerColor.withValues(alpha: .7)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/viewer', extra: file),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(9, 9, 9, 5),
+                child: _StudyPdfPreview(
+                  key: ValueKey(localPath ?? file.url),
+                  url: file.url,
+                  localPath: localPath,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(11, 8, 11, 2),
+              child: Text(
+                file.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(11, 0, 11, 10),
+              child: Text(
+                record?.isAvailableOffline == true
+                    ? 'Saved offline'
+                    : 'PDF document',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RenderedStudyPage {
+  const _RenderedStudyPage(this.bytes);
+  final Uint8List bytes;
+}
+
+class _ResolvedStudyThumbnail {
+  const _ResolvedStudyThumbnail(this.request);
+  final DocumentRequest request;
+}
+
+class _StudyPdfPreview extends StatefulWidget {
+  const _StudyPdfPreview({
+    super.key,
+    required this.url,
+    this.localPath,
+  });
+
+  final String url;
+  final String? localPath;
+
+  @override
+  State<_StudyPdfPreview> createState() => _StudyPdfPreviewState();
+}
+
+class _StudyPdfPreviewState extends State<_StudyPdfPreview> {
+  late Future<Object?> _preview;
+
+  @override
+  void initState() {
+    super.initState();
+    _preview = _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StudyPdfPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url ||
+        oldWidget.localPath != widget.localPath) {
+      _preview = _load();
+    }
+  }
+
+  Future<Object?> _load() async {
+    final path = widget.localPath;
+    if (!kIsWeb && path != null && path.toLowerCase().endsWith('.pdf')) {
+      try {
+        final page = await StudioPdfEngine.renderPage(path, 0);
+        return _RenderedStudyPage(page.bytes);
+      } catch (_) {
+        // Try the Drive-generated real thumbnail below.
+      }
+    }
+    try {
+      return _ResolvedStudyThumbnail(
+        await DriveGateway.instance.resolve(widget.url),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _unavailable(BuildContext context) {
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest
+            .withValues(alpha: .45),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.image_not_supported_outlined, color: muted, size: 26),
+              const SizedBox(height: 6),
+              Text(
+                'Preview unavailable',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: muted, fontSize: 10),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Object?>(
+    future: _preview,
+    builder: (context, snapshot) {
+      final value = snapshot.data;
+      if (value is _RenderedStudyPage) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: ColoredBox(
+            color: Colors.white,
+            child: Image.memory(
+              value.bytes,
+              fit: BoxFit.contain,
+              gaplessPlayback: true,
+            ),
+          ),
+        );
+      }
+      if (value is _ResolvedStudyThumbnail) {
+        final url = value.request.thumbnailUrl;
+        if (url != null && url.startsWith('https://')) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              url,
+              headers: value.request.headers,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => _unavailable(context),
+              loadingBuilder: (context, child, progress) => progress == null
+                  ? child
+                  : const Center(
+                      child: CircularProgressIndicator.adaptive(
+                        strokeWidth: 2,
+                      ),
+                    ),
+            ),
+          );
+        }
+      }
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(
+          child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+        );
+      }
+      return _unavailable(context);
+    },
+  );
 }
 
 class _Item {
