@@ -870,14 +870,27 @@ class AdminDocumentScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: OutlinedButton.icon(
-                    onPressed: () => adminAction(
-                      context,
-                      ref,
-                      () => ref.read(adminRepositoryProvider).patch(key, {
-                        'fullScreenNotice.enabled': false,
-                      }),
-                      message: 'Notification withdrawn',
-                    ),
+                    onPressed: () async {
+                      if (!await confirmDialog(
+                        context,
+                        title: 'Withdraw this notification?',
+                        message:
+                            'Students will stop seeing the current full-screen notification.',
+                        confirm: 'Withdraw',
+                        destructive: true,
+                      )) {
+                        return;
+                      }
+                      if (!context.mounted) return;
+                      await adminAction(
+                        context,
+                        ref,
+                        () => ref.read(adminRepositoryProvider).patch(key, {
+                          'fullScreenNotice.enabled': false,
+                        }),
+                        message: 'Notification withdrawn',
+                      );
+                    },
                     icon: const Icon(Icons.visibility_off_outlined),
                     label: const Text('Withdraw current notification'),
                   ),
