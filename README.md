@@ -169,7 +169,7 @@ Students, developers, testers, and accessibility-minded contributors are welcome
 2. Read [CONTRIBUTING.md](CONTRIBUTING.md).
 3. Make a focused change, run analysis/tests, and open a pull request.
 
-Found a vulnerability? Please follow [SECURITY.md](SECURITY.md) rather than posting secrets in public issues.
+Found a vulnerability? Please follow [SECURITY.md](SECURITY.md) rather than posting secrets in public issues. A [limited public-source security review](docs/SECURITY_REVIEW_2026-11-03.md) summarizes checks and unresolved verification steps.
 
 ## ⚖️ License and artwork
 
