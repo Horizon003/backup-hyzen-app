@@ -1,0 +1,29 @@
+# Local secrets / owner-only release credentials
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+**/key.properties
+**/*.jks
+**/*.keystore
+**/*.p12
+**/*.pfx
+**/*.pem
+**/*service-account*.json
+**/*service_account*.json
+**/*credentials-private*.json
+**/local.properties
+
+# Development outputs
+**/.dart_tool/
+**/.gradle/
+**/build/
+**/coverage/
+**/.DS_Store
+**/*.log
+
+# Do not commit personal or production signing backups.
+private-signing/
+**/private-signing/
