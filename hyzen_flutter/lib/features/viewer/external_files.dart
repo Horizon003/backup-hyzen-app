@@ -87,6 +87,7 @@ class _ExternalOpenGateState extends ConsumerState<ExternalOpenGate>
     with WidgetsBindingObserver {
   static const _channel = MethodChannel('com.hyzen.pharmd/external_files');
   static const _camera = MethodChannel('com.hyzen.pharmd/camera_pages');
+  static const _session = MethodChannel('com.hyzen.pharmd/session');
   bool _draining = false;
 
   @override
@@ -94,8 +95,15 @@ class _ExternalOpenGateState extends ConsumerState<ExternalOpenGate>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      _session.setMethodCallHandler((call) async {
+        if (call.method == 'launcherOpened' && mounted) {
+          ref.read(sessionRevisionProvider.notifier).state++;
+          ref.read(routerProvider).go('/home');
+        }
+      });
       _channel.setMethodCallHandler((call) async {
-        if (call.method == 'incomingStarted') ref.read(documentHandoffProvider.notifier).state = true;
+        if (call.method == 'incomingStarted')
+          ref.read(documentHandoffProvider.notifier).state = true;
         if (call.method == 'incomingAvailable') await _drain();
       });
       _camera.setMethodCallHandler((call) async {
@@ -139,14 +147,16 @@ class _ExternalOpenGateState extends ConsumerState<ExternalOpenGate>
               .push('/imported-viewer?id=${document.id}', extra: document);
         }
       }
-      if (items.isEmpty) await _recoverCamera();
+      // Drafts are recovered when Office is opened; cold launch stays on Home.
     } catch (_) {
       // Native channel is absent on web/test platforms.
     } finally {
       _draining = false;
       try {
-        final importing = await _channel.invokeMethod<bool>('isImporting') ?? false;
-        if (mounted) ref.read(documentHandoffProvider.notifier).state = importing;
+        final importing =
+            await _channel.invokeMethod<bool>('isImporting') ?? false;
+        if (mounted)
+          ref.read(documentHandoffProvider.notifier).state = importing;
       } catch (_) {
         if (mounted) ref.read(documentHandoffProvider.notifier).state = false;
       }
@@ -185,6 +195,7 @@ class _ExternalOpenGateState extends ConsumerState<ExternalOpenGate>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      _session.setMethodCallHandler(null);
       _channel.setMethodCallHandler(null);
       _camera.setMethodCallHandler(null);
     }
@@ -219,7 +230,8 @@ class _ImportedViewerScreenState extends ConsumerState<ImportedViewerScreen> {
     final files = ref.read(pdfStudioHistoryProvider);
     final linked = prefs.getString('external_studio_${doc.id}');
     for (final file in files) {
-      if (file.id == linked && await ref.read(studioStorageProvider).exists(file.internalFilePath)) {
+      if (file.id == linked &&
+          await ref.read(studioStorageProvider).exists(file.internalFilePath)) {
         if (mounted) setState(() => _savedId = file.id);
         if (mounted) context.replace('/pdf-studio/viewer/${file.id}');
         return;
@@ -227,8 +239,9 @@ class _ImportedViewerScreenState extends ConsumerState<ImportedViewerScreen> {
     }
     for (final file in files.where((f) => f.originalFileName == doc.title)) {
       try {
-        final hash = await const MethodChannel('com.hyzen.pharmd/external_files')
-            .invokeMethod<String>('fingerprint', {'path': file.internalFilePath});
+        final hash = await const MethodChannel(
+          'com.hyzen.pharmd/external_files',
+        ).invokeMethod<String>('fingerprint', {'path': file.internalFilePath});
         if (hash == doc.id) {
           await prefs.setString('external_studio_${doc.id}', file.id);
           if (mounted) context.replace('/pdf-studio/viewer/${file.id}');
@@ -246,34 +259,82 @@ class _ImportedViewerScreenState extends ConsumerState<ImportedViewerScreen> {
         context.replace('/pdf-studio/viewer/$_savedId');
         return;
       }
-      final item = await ref.read(pdfStudioHistoryProvider.notifier).importFile(
-        doc.path, originalFileName: doc.title, sourceType: 'EXTERNAL_INTENT', operationBadge: 'IMPORTED');
-      await ref.read(sharedPrefsProvider).setString('external_studio_${doc.id}', item.id);
+      final item = await ref
+          .read(pdfStudioHistoryProvider.notifier)
+          .importFile(
+            doc.path,
+            originalFileName: doc.title,
+            sourceType: 'EXTERNAL_INTENT',
+            operationBadge: 'IMPORTED',
+          );
+      await ref
+          .read(sharedPrefsProvider)
+          .setString('external_studio_${doc.id}', item.id);
       _savedId = item.id;
       if (mounted) {
         showHSnack(context, 'Copy saved. PDF tools are ready.');
         context.replace('/pdf-studio/viewer/${item.id}');
       }
     } catch (_) {
-      if (mounted) showHSnack(context, 'Could not save this copy. Please retry.', error: true);
-    } finally { if (mounted) setState(() => _saving = false); }
+      if (mounted)
+        showHSnack(
+          context,
+          'Could not save this copy. Please retry.',
+          error: true,
+        );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final doc = widget.document;
-    if (doc == null) return const Scaffold(body: Center(child: Text('Document unavailable')));
+    if (doc == null)
+      return const Scaffold(body: Center(child: Text('Document unavailable')));
     return ReaderScaffold(
       title: doc.title,
       banner: _saving ? const LinearProgressIndicator(minHeight: 2) : null,
-      onShare: () => MediaUpload.shareDocument(doc.path, doc.title, 'application/octet-stream'),
+      onShare: () => MediaUpload.shareDocument(
+        doc.path,
+        doc.title,
+        'application/octet-stream',
+      ),
       actions: [
-        ReaderAction('Save copy & enable tools', Icons.save_as_outlined, () => _saveToStudio(doc)),
-        ReaderAction('Save As', Icons.save_alt_rounded, () => MediaUpload.exportDocument(doc.path, doc.title, 'application/octet-stream')),
-        ReaderAction('Pages view', Icons.grid_view_rounded, () => _tools.run('pages', context)),
-        ReaderAction('Search', Icons.search_rounded, () => _tools.run('search', context)),
-        ReaderAction('Zoom in', Icons.zoom_in_rounded, () => _tools.run('in', context)),
-        ReaderAction('Zoom out', Icons.zoom_out_rounded, () => _tools.run('out', context)),
+        ReaderAction(
+          'Save copy & enable tools',
+          Icons.save_as_outlined,
+          () => _saveToStudio(doc),
+        ),
+        ReaderAction(
+          'Save As',
+          Icons.save_alt_rounded,
+          () => MediaUpload.exportDocument(
+            doc.path,
+            doc.title,
+            'application/octet-stream',
+          ),
+        ),
+        ReaderAction(
+          'Pages view',
+          Icons.grid_view_rounded,
+          () => _tools.run('pages', context),
+        ),
+        ReaderAction(
+          'Search',
+          Icons.search_rounded,
+          () => _tools.run('search', context),
+        ),
+        ReaderAction(
+          'Zoom in',
+          Icons.zoom_in_rounded,
+          () => _tools.run('in', context),
+        ),
+        ReaderAction(
+          'Zoom out',
+          Icons.zoom_out_rounded,
+          () => _tools.run('out', context),
+        ),
       ],
       child: OfflinePdf(path: doc.path, tools: _tools),
     );

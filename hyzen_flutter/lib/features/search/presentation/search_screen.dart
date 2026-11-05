@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../app/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -51,6 +52,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final session = '${ref.watch(sessionRevisionProvider)}:${ref.watch(searchRevisionProvider)}';
+    ref.listen(sessionRevisionProvider, (_, __) {
+      setState(() {
+        _q = '';
+        _only = null;
+      });
+    });
+    ref.listen(searchRevisionProvider, (_, __) {
+      setState(() { _q = ''; _only = null; });
+    });
     final index = ref.watch(searchIndexProvider);
     ref.watch(ocrIndexProvider);
     final hits = [
@@ -90,6 +101,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 HSearchField(
+                  key: ValueKey(session),
                   hint: 'Subjects, topics, files\u2026',
                   autofocus: widget.focusSearch,
                   onChanged: (v) => setState(() => _q = v),

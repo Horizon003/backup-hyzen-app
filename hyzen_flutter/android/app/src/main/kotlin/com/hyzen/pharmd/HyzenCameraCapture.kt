@@ -69,6 +69,15 @@ class ScanDraftStore(private val context: Context) {
         val current = pages(); require(path in current)
         if (original(path) != null) {
             val m = meta(path); m.put("rotation", (m.optInt("rotation", 0) + 90) % 360)
+            m.optJSONArray("marks")?.let { marks ->
+                for (i in 0 until marks.length()) {
+                    val points = marks.getJSONObject(i).getJSONArray("points")
+                    for (j in 0 until points.length()) {
+                        val xy = points.getJSONArray(j)
+                        points.put(j, JSONArray(listOf(1.0 - xy.getDouble(1), xy.getDouble(0))))
+                    }
+                }
+            }
             val out = File.createTempFile("page_", ".jpg", folder)
             try { render(original(path)!!, m, out) } catch (e: Throwable) { out.delete(); throw e }
             check(prefs.edit().putString(metaKey(out.path), m.toString()).remove(metaKey(path))
@@ -182,6 +191,8 @@ class ScanDraftStore(private val context: Context) {
             b.recycle(); b = f
             val marks = m.optJSONArray("marks")
             if (marks != null) {
+                val mutable = b.copy(Bitmap.Config.ARGB_8888, true)
+                b.recycle(); b = mutable
                 val canvas = Canvas(b)
                 for (i in 0 until marks.length()) {
                     val mark = marks.getJSONObject(i)

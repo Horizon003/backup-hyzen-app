@@ -329,6 +329,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+  var lastPath = router.routeInformationProvider.value.uri.path;
+  void resetSearchOnEntry() {
+    final path = router.routeInformationProvider.value.uri.path;
+    if (path == '/search' && lastPath != path) {
+      ref.read(searchRevisionProvider.notifier).state++;
+    }
+    lastPath = path;
+  }
+  router.routeInformationProvider.addListener(resetSearchOnEntry);
+  ref.onDispose(() => router.routeInformationProvider.removeListener(resetSearchOnEntry));
   ref.onDispose(router.dispose);
   return router;
 });

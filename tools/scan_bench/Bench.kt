@@ -17,7 +17,8 @@ fun main(args: Array<String>) {
         val w = img.width; val h = img.height
         val argb = img.getRGB(0, 0, w, h, null, 0, w)
         val t0 = System.nanoTime()
-        val q = ScanVision.detect(ScanVision.grayFromArgb(argb, w, h, 1400))
+        val fast = args.contains("--live")
+        val q = ScanVision.detect(ScanVision.grayFromArgb(argb, w, h, if (fast) 640 else 1400), refine = !fast, fast = fast)
         val ms = (System.nanoTime() - t0) / 1e6
         val g = gt[f.name]
         if (q == null) { miss++; out.append("${f.name}: MISS  ${"%.0f".format(ms)}ms\n"); continue }
@@ -32,6 +33,7 @@ fun main(args: Array<String>) {
         out.append("\n")
     }
     print(out)
+    check(miss == 0 && bad == 0) { "Detection accuracy regressed: $miss missing, $bad inaccurate" }
     errs.sort()
     if (errs.isNotEmpty()) println("GT images: ${errs.size + miss}  accurate(<1.5%diag)=$ok  inaccurate=$bad  missed=$miss  median=${"%.2f".format(errs[errs.size/2])}%")
 }

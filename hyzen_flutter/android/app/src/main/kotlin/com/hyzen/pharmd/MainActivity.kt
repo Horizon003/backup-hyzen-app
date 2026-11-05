@@ -20,6 +20,7 @@ class MainActivity : FlutterActivity() {
     private var externalFiles: HyzenExternalFiles? = null
     private var studioPdfEngine: StudioPdfEngine? = null
     private var documentScanner: HyzenDocumentScanner? = null
+    private var sessionChannel: MethodChannel? = null
     private var cameraCapture: HyzenCameraCapture? = null
     private val pickCode = 8711
     private val saveCode = 8712
@@ -33,6 +34,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        sessionChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.hyzen.pharmd/session")
         HyzenUpdater(this, flutterEngine.dartExecutor.binaryMessenger)
         externalFiles = HyzenExternalFiles(this, flutterEngine.dartExecutor.binaryMessenger)
         studioPdfEngine = StudioPdfEngine(this, flutterEngine)
@@ -289,6 +291,9 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
+            sessionChannel?.invokeMethod("launcherOpened", null)
+        }
         externalFiles?.receive(intent)
     }
 }

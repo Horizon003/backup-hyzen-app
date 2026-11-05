@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../notifications/notifications_screen.dart';
+import '../home/presentation/home_background.dart';
 import '../updates/update_ui.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,12 +16,12 @@ import '../profile/presentation/widgets/account_widgets.dart';
 import '../../app/safe_nav.dart';
 
 /// Authenticated shell: Material navigation with Android back handling.
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final idx = navigationShell.currentIndex;
     final path = GoRouterState.of(context).uri.path;
     final account = path.startsWith('/profile') || path == '/settings';
@@ -69,7 +70,11 @@ class AppShell extends StatelessWidget {
             ],
           ),
         );
-        if (leave == true) await SystemNavigator.pop();
+        if (leave == true) {
+          ref.read(sessionRevisionProvider.notifier).state++;
+          navigationShell.goBranch(0, initialLocation: true);
+          await SystemNavigator.pop();
+        }
       },
       child: Scaffold(
         extendBody: true,
@@ -135,14 +140,16 @@ class TabPage extends StatelessWidget {
         preferredSize: const Size.fromHeight(64),
         child: Theme(
           data: headerTheme ?? Theme.of(context),
-          child: header ?? _Bar(
-            integrated: integratedHeader,
-            onAccount: () => showAccountMenu(context),
-            title: title,
-            subtitle: subtitle,
-            actions: actions,
-            showMenu: drawer != null,
-          ),
+          child:
+              header ??
+              _Bar(
+                integrated: integratedHeader,
+                onAccount: () => showAccountMenu(context),
+                title: title,
+                subtitle: subtitle,
+                actions: actions,
+                showMenu: drawer != null,
+              ),
         ),
       ),
       body: homeBackground != null
@@ -155,7 +162,8 @@ class TabPage extends StatelessWidget {
                       child: scroll,
                     ),
             )
-          : HBackground(
+          : HomeAtmosphere(
+              content: true,
               child: onRefresh == null
                   ? scroll
                   : RefreshIndicator(

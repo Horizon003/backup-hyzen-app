@@ -120,6 +120,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController();
   final _pw = TextEditingController();
   final _pwFocus = FocusNode();
+  bool _showForm = false;
   bool _busy = false;
   String? _error;
 
@@ -162,6 +163,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    if (!_showForm)
+      return AccountChoiceScreen(
+        onLogin: () => setState(() => _showForm = true),
+      );
     final heroHeight = (MediaQuery.sizeOf(context).height * .32).clamp(
       220.0,
       310.0,
@@ -206,9 +211,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 tooltip: 'Back',
                                 color: Colors.black,
                                 icon: const Icon(Icons.arrow_back_rounded),
-                                onPressed: () => context.canPop()
-                                    ? context.pop()
-                                    : context.go('/welcome'),
+                                onPressed: () => setState(() {
+                                  _showForm = false;
+                                  _error = null;
+                                  _pw.clear();
+                                }),
                               ),
                             ),
                             const Spacer(),
@@ -495,6 +502,64 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ],
                 ),
               ),
+      ),
+    );
+  }
+}
+
+class AccountChoiceScreen extends StatelessWidget {
+  const AccountChoiceScreen({super.key, required this.onLogin});
+  final VoidCallback onLogin;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/welcome'),
+        ),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.all(24),
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.asset(
+                    'assets/auth/login_panda.webp',
+                    height: 210,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Welcome to PHARM D WITH HYZEN',
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Choose how you want to continue.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: onLogin,
+                  child: const Text('Already a user? Log in'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => context.push('/register/personal'),
+                  child: const Text('Create account'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

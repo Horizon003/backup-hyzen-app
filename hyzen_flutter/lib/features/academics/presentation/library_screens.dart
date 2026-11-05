@@ -51,11 +51,9 @@ class StudyHubScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: HSpace.screen),
           sliver: SliverList.list(
             children: [
-              HeroPanel(
-                eyebrow: 'Your library',
-                title: 'Every library, at your fingertips.',
-                subtitle: 'Your notes, videos and exam practice in one place.',
-                icon: Icons.school_rounded,
+              Text(
+                'Your libraries',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
               TextButton.icon(
                 onPressed: () => context.open('/profile/edit'),

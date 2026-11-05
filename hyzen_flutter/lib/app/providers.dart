@@ -150,3 +150,27 @@ final boolPrefProvider = NotifierProvider.family<BoolPref, bool, String>(
 
 /// Convenience to keep `unawaited` import used in features.
 void fireAndForget(Future<void> f) => unawaited(f);
+
+class TextSizeNotifier extends Notifier<int> {
+  static const sizes = [12, 13, 14, 16, 18];
+  @override
+  int build() {
+    final value = ref.watch(sharedPrefsProvider).getInt('app_text_size');
+    return sizes.contains(value) ? value! : 13;
+  }
+
+  Future<void> set(int value) async {
+    if (!sizes.contains(value)) return;
+    await ref.read(sharedPrefsProvider).setInt('app_text_size', value);
+    state = value;
+  }
+}
+
+final textSizeProvider = NotifierProvider<TextSizeNotifier, int>(
+  TextSizeNotifier.new,
+);
+
+/// Changes only when the user explicitly closes the app or starts a new session.
+final sessionRevisionProvider = StateProvider<int>((ref) => 0);
+
+final searchRevisionProvider = StateProvider<int>((ref) => 0);

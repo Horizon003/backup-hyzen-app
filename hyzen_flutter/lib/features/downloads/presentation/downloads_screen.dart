@@ -79,15 +79,15 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: HSpace.screen),
           sliver: SliverList.list(
             children: [
-              HeroPanel(
-                eyebrow: 'Offline library',
-                title: '${all.where((r) => r.isReady).length} saved files',
-                subtitle: kIsWeb
-                    ? 'Save Offline is available in the Android app.'
-                    : 'Stored privately on this device.',
-                icon: Icons.download_done_rounded,
-                stats: [(formatBytes(used), 'used')],
+              Text(
+                '${all.where((r) => r.isReady).length} saved files · ${formatBytes(used)}',
+                style: t.textTheme.titleSmall,
               ),
+              if (kIsWeb)
+                Text(
+                  'Offline downloads are available in the Android app.',
+                  style: t.textTheme.bodySmall,
+                ),
               const Gap(HSpace.md),
               HSearchField(
                 hint: 'Search downloads',

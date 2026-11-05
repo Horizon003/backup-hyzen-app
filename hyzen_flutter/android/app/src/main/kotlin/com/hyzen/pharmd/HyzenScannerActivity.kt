@@ -283,7 +283,7 @@ class HyzenScannerActivity : ComponentActivity() {
         if (ready) takePicture(manual = false)
     }
 
-    private fun takePicture(manual: Boolean) {
+    private fun takePicture(@Suppress("UNUSED_PARAMETER") manual: Boolean) {
         val cap = capture ?: return
         if (busy) return
         if (store.pages().size >= 30) { status.text = "30 page limit · tap Next"; return }
@@ -297,7 +297,7 @@ class HyzenScannerActivity : ComponentActivity() {
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                 try {
                     store.addCaptured(raw.path, quad?.toList())
-                    main.post { busy = false; capturedQuad = quad; awaitingNextPage = !manual; stableSince = System.currentTimeMillis(); refreshStrip(); status.text = "Page added · next page" }
+                    main.post { busy = false; capturedQuad = quad; awaitingNextPage = auto; stableSince = System.currentTimeMillis(); refreshStrip(); status.text = "Page added · next page" }
                 } catch (_: Throwable) {
                     main.post { busy = false; status.text = "Could not save page – try again" }
                 } finally { raw.delete() }

@@ -19,14 +19,34 @@ class HyzenApp extends ConsumerWidget {
       darkTheme: AppTheme.dark(ref.watch(paletteColorProvider)),
       themeMode: ref.watch(themeModeProvider),
       routerConfig: ref.watch(routerProvider),
-      builder: (context, child) =>
-          ColoredBox(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: _AppTextScaler(
+            MediaQuery.textScalerOf(context),
+            ref.watch(textSizeProvider) / 13,
+          ),
+        ),
+        child: ColoredBox(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1080),
               child: ExternalOpenGate(child: child ?? const SizedBox.shrink()),
-            )),
+            ),
           ),
+        ),
+      ),
     );
   }
+}
+
+class _AppTextScaler extends TextScaler {
+  const _AppTextScaler(this.system, this.factor);
+  final TextScaler system;
+  final double factor;
+  @override
+  double scale(double fontSize) => system.scale(fontSize * factor);
+  @override
+  double get textScaleFactor => scale(14) / 14;
 }

@@ -825,7 +825,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ],
-        if (_matches('appearance theme light dark auto')) ...[
+        if (_matches('appearance theme light dark auto text size font')) ...[
           const AccountSectionHeader('Appearance'),
           SettingsCard(
             children: [
@@ -837,6 +837,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ThemeMode.system => 'Auto',
                 },
                 onTap: () => _chooseTheme(context, ref, mode),
+              ),
+              SettingsRow(
+                title: 'Text size',
+                value: '${ref.watch(textSizeProvider)}',
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  showDragHandle: true,
+                  builder: (sheet) => SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const ListTile(
+                          title: Text('Text size'),
+                          subtitle: Text(
+                            '13 is the default. Device accessibility settings still apply.',
+                          ),
+                        ),
+                        for (final size in TextSizeNotifier.sizes)
+                          ListTile(
+                            title: Text(
+                              '$size',
+                              style: TextStyle(fontSize: size.toDouble()),
+                            ),
+                            trailing: size == ref.read(textSizeProvider)
+                                ? const Icon(Icons.check_rounded)
+                                : null,
+                            onTap: () {
+                              ref.read(textSizeProvider.notifier).set(size);
+                              Navigator.pop(sheet);
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

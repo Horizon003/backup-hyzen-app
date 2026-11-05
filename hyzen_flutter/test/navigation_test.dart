@@ -787,6 +787,10 @@ void main() {
       await tester.pumpAndSettle();
       guest.read(routerProvider).go('/login');
       await tester.pumpAndSettle();
+      expect(find.byType(TextFormField), findsNothing);
+      await tester.ensureVisible(find.text('Already a user? Log in'));
+      await tester.tap(find.text('Already a user? Log in'));
+      await tester.pumpAndSettle();
       expect(find.text('Welcome to PHARM D WITH HYZEN'), findsOneWidget);
       expect(find.byKey(const ValueKey('login-panda-hero')), findsOneWidget);
       expect(find.byType(MainDock), findsNothing);
@@ -1055,6 +1059,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       guest.read(routerProvider).go('/login');
+      await tester.pumpAndSettle();
+      expect(find.byType(TextFormField), findsNothing);
+      await tester.ensureVisible(find.text('Already a user? Log in'));
+      await tester.tap(find.text('Already a user? Log in'));
       await tester.pumpAndSettle();
       for (final mode in [ThemeMode.light, ThemeMode.dark]) {
         guest.read(themeModeProvider.notifier).set(mode);

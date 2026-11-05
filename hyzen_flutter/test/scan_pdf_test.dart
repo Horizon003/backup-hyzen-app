@@ -172,7 +172,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Choose gallery images instead.'), findsOneWidget);
       expect(find.byTooltip('Choose gallery images'), findsOneWidget);
-      expect(find.text('Straighten'), findsOneWidget);
+      expect(find.text('Auto detect'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
@@ -239,8 +239,11 @@ void main() {
       );
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Save PDF'));
+      await tester.pumpAndSettle();
+      expect(find.text('File name'), findsOneWidget);
       await tester.runAsync(() async {
-        await tester.tap(find.text('Save PDF'));
+        await tester.tap(find.text('Save')); 
         for (var i = 0; i < 100; i++) {
           await Future<void>.delayed(const Duration(milliseconds: 10));
           if (events.contains('clear')) break;
@@ -252,7 +255,7 @@ void main() {
       final saved = container.read(pdfStudioHistoryProvider).single;
       expect(saved.operationBadge, 'SCANNED');
       expect(saved.pageCount, 1);
-      expect(saved.displayName, startsWith('Office Workspace '));
+      expect(saved.displayName, startsWith('Scan '));
       expect(saved.displayName, endsWith('.pdf'));
       expect(events.indexOf('clear'), greaterThan(events.indexOf('pageCount')));
       expect(tester.takeException(), isNull);
@@ -277,8 +280,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save PDF'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
       expect(cleared, isFalse);
-      expect(find.text('Straighten'), findsOneWidget);
+      expect(find.text('Auto detect'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
