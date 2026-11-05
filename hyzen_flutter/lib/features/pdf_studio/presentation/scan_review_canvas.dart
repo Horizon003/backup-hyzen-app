@@ -2,30 +2,27 @@ import 'package:flutter/material.dart';
 
 import 'office_ui.dart';
 
-/// Large scanned-page preview. In crop mode it shows the blue frame with four
-/// round corner handles and four pill edge handles from the approved design.
+/// Original-photo preview with four independent perspective-crop corners.
 class ScanReviewCanvas extends StatelessWidget {
   const ScanReviewCanvas({
     super.key,
     required this.path,
     required this.crop,
-    required this.rect,
-    required this.onRect,
+    required this.quad,
+    required this.onQuad,
   });
   final String path;
   final bool crop;
-  final Rect rect;
-  final ValueChanged<Rect> onRect;
+  final List<Offset> quad;
+  final ValueChanged<List<Offset>> onQuad;
 
-  void _drag(int i, Offset d, Size size) {
-    final dx = d.dx / size.width, dy = d.dy / size.height;
-    var l = rect.left, t = rect.top, r = rect.right, b = rect.bottom;
-    const min = .12;
-    if (i == 0 || i == 6 || i == 7) l = (l + dx).clamp(0, r - min);
-    if (i == 2 || i == 3 || i == 4) r = (r + dx).clamp(l + min, 1);
-    if (i == 0 || i == 1 || i == 2) t = (t + dy).clamp(0, b - min);
-    if (i == 4 || i == 5 || i == 6) b = (b + dy).clamp(t + min, 1);
-    onRect(Rect.fromLTRB(l, t, r, b));
+  void _drag(int index, Offset delta, Size size) {
+    final next = [...quad];
+    next[index] = Offset(
+      (quad[index].dx + delta.dx / size.width).clamp(0, 1),
+      (quad[index].dy + delta.dy / size.height).clamp(0, 1),
+    );
+    if (validCropQuad(next)) onQuad(next);
   }
 
   @override
@@ -57,16 +54,7 @@ class ScanReviewCanvas extends StatelessWidget {
               final size = box.biggest;
               Offset at(double x, double y) =>
                   Offset(x * size.width, y * size.height);
-              final points = [
-                at(rect.left, rect.top),
-                at(rect.center.dx, rect.top),
-                at(rect.right, rect.top),
-                at(rect.right, rect.center.dy),
-                at(rect.right, rect.bottom),
-                at(rect.center.dx, rect.bottom),
-                at(rect.left, rect.bottom),
-                at(rect.left, rect.center.dy),
-              ];
+              final points = [for (final p in quad) at(p.dx, p.dy)];
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -99,17 +87,15 @@ class ScanReviewCanvas extends StatelessWidget {
                   if (crop) ...[
                     Positioned.fill(
                       child: IgnorePointer(
-                        child: CustomPaint(painter: _CropFrame(rect)),
+                        child: CustomPaint(painter: _CropFrame(quad)),
                       ),
                     ),
-                    for (var i = 0; i < 8; i++)
+                    for (var i = 0; i < 4; i++)
                       Positioned(
                         left: points[i].dx - 22,
                         top: points[i].dy - 22,
                         child: Semantics(
-                          label: i.isEven
-                              ? 'Corner crop handle ${i ~/ 2 + 1}'
-                              : 'Edge crop handle',
+                          label: 'Corner crop handle ${i + 1}',
                           child: GestureDetector(
                             key: ValueKey('crop-handle-$i'),
                             behavior: HitTestBehavior.opaque,
@@ -117,10 +103,7 @@ class ScanReviewCanvas extends StatelessWidget {
                             child: SizedBox.square(
                               dimension: 44,
                               child: Center(
-                                child: _Handle(
-                                  corner: i.isEven,
-                                  vertical: i == 3 || i == 7,
-                                ),
+                                child: _Handle(corner: true, vertical: false),
                               ),
                             ),
                           ),
@@ -154,25 +137,25 @@ class _Handle extends StatelessWidget {
 }
 
 class _CropFrame extends CustomPainter {
-  _CropFrame(this.rect);
-  final Rect rect;
+  _CropFrame(this.quad);
+  final List<Offset> quad;
   @override
   void paint(Canvas canvas, Size size) {
-    final r = Rect.fromLTRB(
-      rect.left * size.width,
-      rect.top * size.height,
-      rect.right * size.width,
-      rect.bottom * size.height,
-    );
+    final outline = Path()
+      ..moveTo(quad[0].dx * size.width, quad[0].dy * size.height);
+    for (final point in quad.skip(1)) {
+      outline.lineTo(point.dx * size.width, point.dy * size.height);
+    }
+    outline.close();
     canvas.drawPath(
       Path()
         ..fillType = PathFillType.evenOdd
         ..addRect(Offset.zero & size)
-        ..addRect(r),
+        ..addPath(outline, Offset.zero),
       Paint()..color = const Color(0x66000000),
     );
-    canvas.drawRect(
-      r,
+    canvas.drawPath(
+      outline,
       Paint()
         ..color = OfficeColors.blue
         ..style = PaintingStyle.stroke
@@ -181,7 +164,7 @@ class _CropFrame extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _CropFrame old) => old.rect != rect;
+  bool shouldRepaint(covariant _CropFrame old) => old.quad != quad;
 }
 
 /// Numbered thumbnail strip (long-press and drag to reorder).
@@ -201,11 +184,11 @@ class ScanThumbStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: 132,
+    height: 84,
     child: ReorderableListView.builder(
       scrollDirection: Axis.horizontal,
       buildDefaultDragHandles: false,
-      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       itemCount: pages.length,
       onReorder: (from, to) => onReorder(from, to > from ? to - 1 : to),
       proxyDecorator: (child, _, __) =>
@@ -224,7 +207,7 @@ class ScanThumbStrip extends StatelessWidget {
               onDoubleTap: () => onOptions(i),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                width: 116,
+                width: 62,
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: OfficeColors.dark(context)
@@ -244,7 +227,7 @@ class ScanThumbStrip extends StatelessWidget {
                     Positioned.fill(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
+                          horizontal: 4,
                           vertical: 4,
                         ),
                         child: OfficeFileThumbnail(
@@ -308,7 +291,7 @@ class ScanPill extends StatelessWidget {
         customBorder: const StadiumBorder(),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -320,7 +303,7 @@ class ScanPill extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: ink,
-                  fontSize: 17,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -362,4 +345,27 @@ class ScanRoundButton extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Reject crossed or collapsed corners without constraining a corner to a rectangle.
+bool validCropQuad(List<Offset> points) {
+  if (points.length != 4 ||
+      points.any(
+        (p) =>
+            !p.dx.isFinite ||
+            !p.dy.isFinite ||
+            p.dx < 0 ||
+            p.dx > 1 ||
+            p.dy < 0 ||
+            p.dy > 1,
+      ))
+    return false;
+  var area = 0.0;
+  for (var i = 0; i < 4; i++) {
+    final a = points[i], b = points[(i + 1) % 4], c = points[(i + 2) % 4];
+    final cross = (b.dx - a.dx) * (c.dy - b.dy) - (b.dy - a.dy) * (c.dx - b.dx);
+    if (cross <= .00001) return false;
+    area += a.dx * b.dy - b.dx * a.dy;
+  }
+  return area / 2 > .01;
 }

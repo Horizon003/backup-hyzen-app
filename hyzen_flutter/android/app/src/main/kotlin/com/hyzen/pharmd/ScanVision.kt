@@ -99,20 +99,15 @@ object ScanVision {
     }
 
     fun downscale(g: Gray, maxSide: Int): Gray {
-        val f = max(1, ceil(max(g.w, g.h) / maxSide.toDouble()).toInt())
-        if (f == 1) return g
-        val ow = max(1, g.w / f); val oh = max(1, g.h / f)
-        val out = FloatArray(ow * oh)
-        val inv = 1f / (f * f)
-        for (oy in 0 until oh) for (ox in 0 until ow) {
-            var s = 0f
-            for (dy in 0 until f) {
-                val row = (oy * f + dy) * g.w + ox * f
-                for (dx in 0 until f) s += g.px[row + dx]
-            }
-            out[oy * ow + ox] = s * inv
-        }
-        return Gray(ow, oh, out)
+        if (max(g.w, g.h) <= maxSide) return g
+        // Exact resampling: ceil-based integer decimation used to turn a
+        // 320px live frame into 160px when the detector requested 280px.
+        val scale = maxSide.toDouble() / max(g.w, g.h)
+        val ow = max(2, (g.w * scale).roundToInt())
+        val oh = max(2, (g.h * scale).roundToInt())
+        return Gray(ow, oh, FloatArray(ow * oh) { i ->
+            g.sample((i % ow + .5) * g.w / ow - .5, (i / ow + .5) * g.h / oh - .5).toFloat()
+        })
     }
 
     fun blur(g: Gray): Gray {
@@ -154,7 +149,7 @@ object ScanVision {
         var acc = 0; var high = 40f
         val target = (count * 0.86).toInt()
         for (i in hist.indices) { acc += hist[i]; if (acc >= target) { high = i.toFloat(); break } }
-        high = high.coerceIn(18f, 220f)
+        high = high.coerceIn(12f, 140f)
         val low = high * 0.42f
         val nms = FloatArray(w * h)
         for (y in 1 until h - 1) for (x in 1 until w - 1) {
@@ -467,23 +462,18 @@ object ScanVision {
      * @param fast live-preview mode (smaller image, fewer hypotheses, no refine)
      */
     fun detect(source: Gray, refine: Boolean = true, fast: Boolean = false): Quad? {
-        val small = blur(downscale(source, if (fast) 280 else 360))
+        val small = blur(downscale(source, if (fast) 420 else 520))
         val e = edges(small)
-        val lines = hough(e, if (fast) 14 else 20)
+        val lines = hough(e, if (fast) 20 else 28)
         val hyps = ArrayList<DoubleArray>()
         val minSep = min(small.w, small.h) * 0.20
-        val cx = small.w / 2.0; val cy = small.h / 2.0
         val pairs = ArrayList<IntArray>()
         for (i in lines.indices) for (j in i + 1 until lines.size) {
             val a = lines[i]; val b = lines[j]
             if (angleDiff(a.t, b.t) > 30 * PI / 180) continue
-            val da = a.c * cx + a.s * cy - a.r
-            val db = b.c * cx + b.s * cy - b.r
-            // centre must lie between the two lines
             val sameDir = cos(a.t - b.t) > 0
-            val between = if (sameDir) da * db < 0 else da * db > 0
-            if (!between) continue
-            if (abs(da) + abs(db) < minSep) continue
+            val separation = abs(a.r - if (sameDir) b.r else -b.r)
+            if (separation < minSep) continue
             pairs.add(intArrayOf(i, j))
         }
         for (p in pairs.indices) for (q in p + 1 until pairs.size) {
@@ -669,7 +659,7 @@ object ScanVision {
                     var r = ((c shr 16) and 255) * k; var g = ((c shr 8) and 255) * k; var b = (c and 255) * k
                     val l = 0.299f * r + 0.587f * g + 0.114f * b
                     r = l + (r - l) * 1.2f; g = l + (g - l) * 1.2f; b = l + (b - l) * 1.2f
-                    r = (r - 30f) * 1.14f; g = (g - 30f) * 1.14f; b = (b - 30f) * 1.14f
+                    r = (r - 24f) * 1.16f; g = (g - 24f) * 1.16f; b = (b - 24f) * 1.16f
                     argb[i] = (c and -0x1000000) or (clamp(r) shl 16) or (clamp(g) shl 8) or clamp(b)
                 }
                 "gray" -> for (i in 0 until n) {

@@ -32,6 +32,12 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.camera.core.Camera
+import androidx.camera.core.AspectRatio
+import androidx.camera.core.FocusMeteringAction
+import androidx.camera.view.transform.ImageProxyTransformFactory
+import androidx.camera.view.transform.CoordinateTransform
+import androidx.camera.view.transform.OutputTransform
+import android.view.MotionEvent
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
@@ -70,7 +76,10 @@ class HyzenScannerActivity : ComponentActivity() {
     private var camera: Camera? = null
     private var auto = true
     private var flash = false
-    private var busy = false
+    @Volatile private var busy = false
+    private var awaitingNextPage = false
+    private var capturedQuad: DoubleArray? = null
+    private var missingFrames = 0
     private var stableSince = 0L
     private var lastQuad: DoubleArray? = null
     private var lastDetectAt = 0L
@@ -110,6 +119,15 @@ class HyzenScannerActivity : ComponentActivity() {
         preview = PreviewView(this).apply {
             scaleType = PreviewView.ScaleType.FIT_CENTER
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        }
+        preview.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                camera?.cameraControl?.startFocusAndMetering(
+                    FocusMeteringAction.Builder(preview.meteringPointFactory.createPoint(event.x, event.y)).build()
+                )
+                preview.performClick()
+            }
+            true
         }
         root.addView(preview, FrameLayout.LayoutParams(-1, -1))
         overlay = QuadOverlay(this)
@@ -153,7 +171,7 @@ class HyzenScannerActivity : ComponentActivity() {
             setOnClickListener { takePicture(manual = true) }
         }
         controls.addView(shutter, FrameLayout.LayoutParams(dp(74f).toInt(), dp(74f).toInt(), Gravity.CENTER))
-        done = pill("Done", TEAL).apply { setOnClickListener { finishWithPages() } }
+        done = pill("Next", TEAL).apply { setOnClickListener { finishWithPages() } }
         controls.addView(done, FrameLayout.LayoutParams(-2, -2, Gravity.END or Gravity.CENTER_VERTICAL).apply { rightMargin = dp(18f).toInt() })
         bottom.addView(controls, LinearLayout.LayoutParams(-1, dp(92f).toInt()).apply { topMargin = dp(6f).toInt() })
         root.addView(bottom, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
@@ -180,12 +198,14 @@ class HyzenScannerActivity : ComponentActivity() {
         future.addListener({
             try {
                 val provider = future.get()
-                val previewUse = Preview.Builder().build().also { it.surfaceProvider = preview.surfaceProvider }
+                val previewUse = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3).build().also { it.surfaceProvider = preview.surfaceProvider }
                 capture = ImageCapture.Builder()
-                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                    .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .setJpegQuality(92)
                     .build()
                 val analysis = ImageAnalysis.Builder()
+                    .setTargetAspectRatio(AspectRatio.RATIO_4_3)
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
                 analysis.setAnalyzer(analysisExecutor) { analyse(it) }
@@ -207,24 +227,39 @@ class HyzenScannerActivity : ComponentActivity() {
             val buf = plane.buffer
             val bytes = ByteArray(buf.remaining()); buf.get(bytes)
             val rot = image.imageInfo.rotationDegrees
-            val gray = ScanVision.grayFromLuma(bytes, image.width, image.height, plane.rowStride, plane.pixelStride, rot, 320)
+            val gray = ScanVision.grayFromLuma(bytes, image.width, image.height, plane.rowStride, plane.pixelStride, rot, 640)
             val q = ScanVision.detect(gray, refine = false, fast = true)
             val uprightW = if (rot % 180 == 0) image.width else image.height
             val uprightH = if (rot % 180 == 0) image.height else image.width
-            main.post { onDetection(q?.pts, uprightW, uprightH) }
+            val transform = ImageProxyTransformFactory().apply {
+                isUsingRotationDegrees = true
+            }.getOutputTransform(image)
+            main.post { onDetection(q?.pts, uprightW, uprightH, transform) }
         } catch (_: Throwable) {
         } finally { analysing = false; image.close() }
     }
 
     @SuppressLint("SetTextI18n")
-    private fun onDetection(q: DoubleArray?, w: Int, h: Int) {
+    private fun onDetection(q: DoubleArray?, w: Int, h: Int, transform: OutputTransform) {
         if (isFinishing || busy) return
-        overlay.setFrame(w, h)
+        overlay.setFrame(preview.width, preview.height)
         val now = System.currentTimeMillis()
         if (q == null) {
+            missingFrames++
+            if (missingFrames < 3) return
+            awaitingNextPage = false
             overlay.setQuad(null, false); lastQuad = null; stableSince = 0
             status.text = "Looking for document edges…"
             return
+        }
+        missingFrames = 0
+        if (awaitingNextPage) {
+            if (capturedQuad?.let { ScanVision.cornerDistance(it, q) > .07 } == true) {
+                awaitingNextPage = false; stableSince = now
+            } else {
+                status.text = "Page added · turn the page or tap shutter"
+                return
+            }
         }
         val prev = lastQuad
         val moved = prev == null || ScanVision.cornerDistance(prev, q) > 0.025
@@ -232,7 +267,13 @@ class HyzenScannerActivity : ComponentActivity() {
         lastQuad = q
         val stable = now - stableSince
         val ready = auto && stable > 900
-        overlay.setQuad(q, !moved && stable > 400)
+        val target = preview.outputTransform
+        if (target != null && preview.width > 0 && preview.height > 0) {
+            val points = FloatArray(8) { (q[it] * if (it % 2 == 0) w else h).toFloat() }
+            CoordinateTransform(transform, target).mapPoints(points)
+            val display = DoubleArray(8) { points[it].toDouble() / if (it % 2 == 0) preview.width else preview.height }
+            overlay.setQuad(display, !moved && stable > 400)
+        }
         status.text = when {
             !auto -> "Document found · tap shutter"
             ready -> "Capturing…"
@@ -245,7 +286,7 @@ class HyzenScannerActivity : ComponentActivity() {
     private fun takePicture(manual: Boolean) {
         val cap = capture ?: return
         if (busy) return
-        if (store.pages().size >= 30) { status.text = "30 page limit · tap Done"; return }
+        if (store.pages().size >= 30) { status.text = "30 page limit · tap Next"; return }
         busy = true
         val quad = lastQuad?.copyOf()
         shutter.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
@@ -256,7 +297,7 @@ class HyzenScannerActivity : ComponentActivity() {
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                 try {
                     store.addCaptured(raw.path, quad?.toList())
-                    main.post { busy = false; stableSince = System.currentTimeMillis() + 900; refreshStrip(); status.text = "Page added · next page" }
+                    main.post { busy = false; capturedQuad = quad; awaitingNextPage = !manual; stableSince = System.currentTimeMillis(); refreshStrip(); status.text = "Page added · next page" }
                 } catch (_: Throwable) {
                     main.post { busy = false; status.text = "Could not save page – try again" }
                 } finally { raw.delete() }
@@ -273,6 +314,7 @@ class HyzenScannerActivity : ComponentActivity() {
         val pages = store.pages()
         counter.text = "${pages.size} page${if (pages.size == 1) "" else "s"}"
         done.alpha = if (pages.isEmpty()) .6f else 1f
+        done.isEnabled = pages.isNotEmpty() && !busy
         strip.removeAllViews()
         saveExecutor.execute {
             val thumbs = pages.takeLast(12).map { path ->
@@ -297,6 +339,7 @@ class HyzenScannerActivity : ComponentActivity() {
     }
 
     private fun finishWithPages() {
+        if (busy) { status.text = "Finishing this page…"; return }
         setResult(Activity.RESULT_OK)
         finish()
     }

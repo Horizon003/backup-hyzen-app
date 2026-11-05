@@ -44,25 +44,17 @@ class ScanDraftStore(private val context: Context) {
         return pages()
     }
     fun add(paths: List<String>): List<String> {
-        val current = pages().toMutableList()
-        require(current.size + paths.size <= 30) { "Choose up to 30 pages per PDF." }
-        val created = mutableListOf<File>()
+        val before = pages()
+        require(before.size + paths.size <= 30) { "Choose up to 30 pages per PDF." }
         try {
             for (path in paths) {
                 val file = File(path).canonicalFile
                 require(file.path.startsWith(context.filesDir.canonicalPath + "/") || file.path.startsWith(context.cacheDir.canonicalPath + "/")) { "Choose a local image." }
                 require(file.length() in 1..(40L * 1024 * 1024)) { "Choose an image under 40 MB." }
-                val bitmap = StudioImages.load(file.path, 1800)
-                try {
-                    val output = File.createTempFile("page_", ".jpg", folder)
-                    created.add(output)
-                    output.outputStream().use { check(bitmap.compress(Bitmap.CompressFormat.JPEG, 88, it)) }
-                    current.add(output.path)
-                } finally { bitmap.recycle() }
+                addCaptured(file.path, null)
             }
-            save(current)
-            return current
-        } catch (e: Throwable) { created.forEach { it.delete() }; throw e }
+            return pages()
+        } catch (e: Throwable) { replace(before); throw e }
     }
     fun replace(paths: List<String>): List<String> {
         val current = pages()
@@ -152,7 +144,7 @@ class ScanDraftStore(private val context: Context) {
         meta(page).optString("orig").takeIf { it.isNotEmpty() }?.let { File(origFolder, it) }?.takeIf { it.isFile }
 
     /** Camera capture: keep the original, append a perspective-corrected page. */
-    fun addCaptured(rawPath: String, quad: List<Double>?): List<String> {
+    fun addCaptured(rawPath: String, @Suppress("UNUSED_PARAMETER") quad: List<Double>?): List<String> {
         val current = pages().toMutableList()
         require(current.size < 30) { "Save these 30 pages before scanning more." }
         val orig = File.createTempFile("orig_", ".jpg", origFolder)
@@ -161,11 +153,9 @@ class ScanDraftStore(private val context: Context) {
             try { orig.outputStream().use { check(upright.compress(Bitmap.CompressFormat.JPEG, 92, it)) } } finally { upright.recycle() }
             // Refine the live-preview quad on the full photo for accuracy.
             val refined = try { ScanBitmaps.detect(orig.path) } catch (_: Throwable) { null }
-            val q = when {
-                refined != null && (quad == null || ScanVision.cornerDistance(refined.toDoubleArray(), quad.toDoubleArray()) < 0.08) -> refined
-                quad != null && ScanVision.validQuad(quad) -> quad
-                else -> refined ?: FULL
-            }
+            // Still-photo coordinates are authoritative. Preview buffers may
+            // have a different sensor crop; never apply their quad to the JPEG.
+            val q = refined?.takeIf { ScanVision.validQuad(it) } ?: FULL
             val page = File.createTempFile("page_", ".jpg", folder)
             val m = org.json.JSONObject().put("orig", orig.name).put("quad", org.json.JSONArray(q))
                 .put("filter", "magic").put("brightness", 0).put("contrast", 0).put("rotation", 0)
@@ -190,12 +180,33 @@ class ScanDraftStore(private val context: Context) {
             }
             val f = ScanBitmaps.enhance(b, m.optString("filter", "original"), m.optInt("brightness", 0), m.optInt("contrast", 0))
             b.recycle(); b = f
+            val marks = m.optJSONArray("marks")
+            if (marks != null) {
+                val canvas = Canvas(b)
+                for (i in 0 until marks.length()) {
+                    val mark = marks.getJSONObject(i)
+                    val points = mark.getJSONArray("points")
+                    val path = android.graphics.Path()
+                    for (j in 0 until points.length()) {
+                        val point = points.getJSONArray(j)
+                        val x = point.getDouble(0).toFloat() * b.width
+                        val y = point.getDouble(1).toFloat() * b.height
+                        if (j == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                    val high = mark.optBoolean("highlight")
+                    canvas.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = if (high) 0x66FFC107 else 0xFF182A61.toInt()
+                        strokeWidth = b.width * if (high) .035f else .005f
+                        style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
+                    })
+                }
+            }
             out.outputStream().use { check(b.compress(Bitmap.CompressFormat.JPEG, 90, it)) }
         } finally { b.recycle() }
     }
 
     /** Re-render pages from originals with new crop / filter. Returns new list. */
-    fun adjust(paths: List<String>, quad: List<Double>?, filter: String?, brightness: Int?, contrast: Int?): List<String> {
+    fun adjust(paths: List<String>, quad: List<Double>?, filter: String?, brightness: Int?, contrast: Int?, marks: List<Map<String, Any?>>? = null): List<String> {
         val current = pages()
         require(paths.isNotEmpty() && paths.all { it in current })
         require(filter == null || filter in setOf("original", "magic", "gray", "bw", "contrast"))
@@ -211,6 +222,20 @@ class ScanDraftStore(private val context: Context) {
                     orig = File.createTempFile("orig_", ".jpg", origFolder); created.add(orig)
                     File(path).copyTo(orig, overwrite = true)
                     m.put("orig", orig.name).put("quad", org.json.JSONArray(FULL)).put("rotation", 0)
+                }
+                if (marks != null) {
+                    val existing = m.optJSONArray("marks") ?: JSONArray()
+                    require(existing.length() + marks.size <= 500)
+                    for (mark in marks) {
+                        val points = mark["points"] as? List<*> ?: error("Missing points")
+                        require(points.size in 1..20000)
+                        for (point in points) {
+                            val xy = point as? List<*> ?: error("Invalid point")
+                            require(xy.size == 2 && xy.all { it is Number && it.toDouble().isFinite() && it.toDouble() in 0.0..1.0 })
+                        }
+                        existing.put(org.json.JSONObject(mark))
+                    }
+                    m.put("marks", existing)
                 }
                 if (quad != null) m.put("quad", org.json.JSONArray(quad))
                 if (filter != null) m.put("filter", if (filter == "contrast") "magic" else filter)
@@ -229,7 +254,7 @@ class ScanDraftStore(private val context: Context) {
             replacements.keys.forEach { File(it).delete() }
             return next
         } catch (t: Throwable) {
-            created.filter { it.parentFile == folder }.forEach { it.delete() }
+            created.forEach { it.delete() }
             throw t
         }
     }
@@ -310,6 +335,7 @@ class HyzenCameraCapture(private val activity: MainActivity, messenger: BinaryMe
                             call.argument<Int>("brightness"),
                             call.argument<Int>("contrast"),
                         )
+                        "annotate" -> store.adjust(listOf(call.argument<String>("path") ?: ""), null, null, null, null, call.argument<List<Map<String, Any?>>>("marks") ?: emptyList())
                         "pageInfo" -> store.pageInfo(call.argument<String>("path") ?: "")
                         "detect" -> store.detectIn(call.argument<String>("path") ?: "")
                         "edit" -> store.edit(call.argument<List<String>>("paths") ?: emptyList(), call.argument<String>("filter") ?: "original", call.argument<List<Double>>("crop"))
