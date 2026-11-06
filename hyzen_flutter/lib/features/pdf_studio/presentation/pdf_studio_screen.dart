@@ -15,7 +15,7 @@ import '../data/studio_file_item.dart';
 import 'studio_tools_screen.dart';
 import 'office_file_actions.dart';
 import 'office_ui.dart';
-import '../../../core/widgets/main_dock.dart';
+import '../../shell/app_shell.dart';
 import 'studio_export_sheet.dart';
 import 'studio_annotation_screen.dart';
 
@@ -29,8 +29,6 @@ class PdfStudioScreen extends ConsumerStatefulWidget {
 }
 
 class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
-  static const _titleKey = 'office_workspace_title';
-  static const _defaultTitle = 'Office Workspace: Pharm D with Hyzen';
   _StudioFilter _filter = _StudioFilter.all;
   String _query = '';
 
@@ -52,23 +50,6 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
             '${file.displayName} ${file.originalFileName}'
                 .toLowerCase()
                 .contains(_query.toLowerCase()));
-  }
-
-  Future<void> _renameWorkspace(String current) async {
-    final value = await askOfficeText(
-      context,
-      title: 'Workspace name',
-      initial: current,
-      label: 'Name',
-    );
-    if (value == null) return;
-    final prefs = ref.read(sharedPrefsProvider);
-    if (value.trim().isEmpty) {
-      await prefs.remove(_titleKey);
-    } else {
-      await prefs.setString(_titleKey, value.trim());
-    }
-    if (mounted) setState(() {});
   }
 
   Future<void> _saveExternal(ExternalDocument file) async {
@@ -103,7 +84,6 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
   Widget build(BuildContext context) {
     final all = ref.watch(pdfStudioHistoryProvider);
     final prefs = ref.watch(sharedPrefsProvider);
-    final title = prefs.getString(_titleKey) ?? _defaultTitle;
     final external = ref.watch(externalHistoryProvider);
     final known = {for (final f in all) f.internalFilePath};
     final knownIds = {for (final f in all) f.id};
@@ -114,304 +94,150 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
               !knownIds.contains(prefs.getString('external_studio_${d.id}')),
         )
         .toList();
-    final latest = all.isEmpty ? null : all.first;
-    final rest = all.skip(1).where(_matches).toList();
-    final canvas = OfficeColors.canvas(context);
+    final rest = all.where(_matches).toList();
 
-    return Scaffold(
-      backgroundColor: canvas,
-      body: Column(
-        children: [
-          const OfficeBrandHeader(),
-          WorkspaceBar(
-            title: title,
-            onEditTitle: () => _renameWorkspace(title),
-            onHome: () => context.go('/home'),
-            onSmart: () => showOfficeToolsSheet(context),
-            smartTooltip: 'Create & PDF tools',
-          ),
-          Expanded(
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: latest == null
-                      ? _EmptyWorkspace(
-                          onCreate: () => showOfficeToolsSheet(context),
-                        )
-                      : _LatestFileCard(file: latest),
+    return TabPage(
+      title: 'Office Workspace',
+      subtitle: 'Scan, edit and organise',
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          sliver: SliverToBoxAdapter(
+            child: Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => context.push('/create-pdf?source=camera'),
+                    icon: const Icon(Icons.document_scanner_outlined, size: 20),
+                    label: const Text('Scan pages'),
+                  ),
                 ),
-                if (all.length > 1) ...[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-                      child: Text(
-                        'All files',
-                        style: TextStyle(
-                          color: OfficeColors.ink(context),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => showOfficeToolsSheet(context),
+                    icon: const Icon(Icons.add_rounded, size: 20),
+                    label: const Text('Create / import'),
                   ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _OfficeSearch(
-                        onChanged: (v) => setState(() => _query = v),
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 52,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                        children: [
-                          for (final f in _StudioFilter.values)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: _FilterPill(
-                                label: switch (f) {
-                                  _StudioFilter.all => 'All',
-                                  _StudioFilter.starred => 'Starred',
-                                  _StudioFilter.scanned => 'Scanned',
-                                  _StudioFilter.edited => 'Edited',
-                                  _StudioFilter.mergedSplit => 'Combined',
-                                  _StudioFilter.docs => 'Docs',
-                                },
-                                selected: _filter == f,
-                                onTap: () => setState(() => _filter = f),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (rest.isEmpty)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          'No matching documents',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: OfficeColors.muted(context)),
-                        ),
-                      ),
-                    )
-                  else
-                    SliverList.builder(
-                      itemCount: rest.length,
-                      itemBuilder: (_, i) => _FileRow(file: rest[i]),
-                    ),
-                ],
-                if (notImported.isNotEmpty) ...[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
-                      child: Text(
-                        'Opened with PHARM D WITH HYZEN',
-                        style: TextStyle(
-                          color: OfficeColors.ink(context),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SliverList.builder(
-                    itemCount: notImported.length,
-                    itemBuilder: (_, i) {
-                      final d = notImported[i];
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                        ),
-                        leading: Icon(
-                          documentIconForName(d.title),
-                          color: OfficeColors.ink(context),
-                        ),
-                        title: Text(
-                          d.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: OfficeColors.ink(context)),
-                        ),
-                        subtitle: Text(
-                          'Device file · ${officeRelativeDate(d.openedAt)}',
-                          style: TextStyle(color: OfficeColors.muted(context)),
-                        ),
-                        trailing: IconButton(
-                          tooltip: 'Save to Office Workspace',
-                          icon: Icon(
-                            Icons.save_alt_rounded,
-                            color: OfficeColors.ink(context),
-                          ),
-                          onPressed: () => _saveExternal(d),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-                SliverToBoxAdapter(
-                  child: SizedBox(height: MainDock.contentInset(context) + 12),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Navy circular action from the mockup: create / import a document.
-class _CreateFab extends StatelessWidget {
-  const _CreateFab();
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: 'Create or import a document',
-    excludeSemantics: true,
-    child: Material(
-      color: OfficeColors.navy,
-      shape: const CircleBorder(),
-      elevation: 6,
-      shadowColor: const Color(0x55000000),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () => showOfficeToolsSheet(context),
-        child: const SizedBox.square(
-          dimension: 86,
-          child: Icon(
-            Icons.drive_file_move_outline,
-            color: Colors.white,
-            size: 40,
-          ),
         ),
-      ),
-    ),
-  );
-}
-
-class _LatestFileCard extends ConsumerWidget {
-  const _LatestFileCard({required this.file});
-  final StudioFileItem file;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ink = OfficeColors.ink(context);
-    final name = file.displayName.replaceFirst(
-      RegExp(r'\.pdf$', caseSensitive: false),
-      '',
-    );
-    final actions = [
-      (Icons.ios_share_rounded, 'Share', () => shareStudioFile(context, file)),
-      (
-        Icons.edit_note_rounded,
-        'Edit text',
-        () => editStudioText(context, file),
-      ),
-      (
-        Icons.image_outlined,
-        isStudioPdf(file) ? 'Save as JPEG' : 'Save a copy',
-        () => saveStudioFileAsJpeg(context, file),
-      ),
-      (
-        Icons.more_horiz_rounded,
-        'More',
-        () => showOfficeFileMore(context, ref, file),
-      ),
-    ];
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 96),
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: ink,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                '${officeRelativeDate(file.lastOpenedAt ?? file.updatedAt)} • ${formatBytes(file.fileSizeBytes)}',
+        if (all.isEmpty)
+          const SliverToBoxAdapter(child: _EmptyWorkspace()),
+        if (all.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+              child: Text(
+                'All files',
                 style: TextStyle(
-                  color: OfficeColors.muted(context),
-                  fontSize: 15,
+                  color: OfficeColors.ink(context),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 14),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _OfficeSearch(
+                onChanged: (v) => setState(() => _query = v),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 52,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
                 children: [
-                  Semantics(
-                    button: true,
-                    label: 'Open $name',
-                    child: GestureDetector(
-                      onTap: () => openStudioReader(context, file),
-                      child: SizedBox(
-                        width: 196,
-                        height: 196,
-                        child: OfficeFileThumbnail(
-                          path: file.internalFilePath,
-                          version: file.updatedAt.toIso8601String(),
-                          fallbackIcon: documentIconForName(file.displayName),
-                        ),
+                  for (final f in _StudioFilter.values)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _FilterPill(
+                        label: switch (f) {
+                          _StudioFilter.all => 'All',
+                          _StudioFilter.starred => 'Starred',
+                          _StudioFilter.scanned => 'Scanned',
+                          _StudioFilter.edited => 'Edited',
+                          _StudioFilter.mergedSplit => 'Combined',
+                          _StudioFilter.docs => 'Docs',
+                        },
+                        selected: _filter == f,
+                        onTap: () => setState(() => _filter = f),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 22),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (final a in actions)
-                          InkWell(
-                            onTap: a.$3,
-                            borderRadius: BorderRadius.circular(10),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 11),
-                              child: Row(
-                                children: [
-                                  Icon(a.$1, size: 25, color: ink),
-                                  const SizedBox(width: 14),
-                                  Flexible(
-                                    child: Text(
-                                      a.$2,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: ink,
-                                        fontSize: 17,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-        const Positioned(right: 14, top: 8, child: _CreateFab()),
+          if (rest.isEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'No matching documents',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: OfficeColors.muted(context)),
+                ),
+              ),
+            )
+          else
+            SliverList.builder(
+              itemCount: rest.length,
+              itemBuilder: (_, i) => _FileRow(file: rest[i]),
+            ),
+        ],
+        if (notImported.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
+              child: Text(
+                'Opened with PHARM D WITH HYZEN',
+                style: TextStyle(
+                  color: OfficeColors.ink(context),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          SliverList.builder(
+            itemCount: notImported.length,
+            itemBuilder: (_, i) {
+              final d = notImported[i];
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                leading: Icon(
+                  documentIconForName(d.title),
+                  color: OfficeColors.ink(context),
+                ),
+                title: Text(
+                  d.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: OfficeColors.ink(context)),
+                ),
+                subtitle: Text(
+                  'Device file · ${officeRelativeDate(d.openedAt)}',
+                  style: TextStyle(color: OfficeColors.muted(context)),
+                ),
+                trailing: IconButton(
+                  tooltip: 'Save to Office Workspace',
+                  icon: Icon(
+                    Icons.save_alt_rounded,
+                    color: OfficeColors.ink(context),
+                  ),
+                  onPressed: () => _saveExternal(d),
+                ),
+              );
+            },
+          ),
+        ],
       ],
     );
   }
@@ -430,8 +256,8 @@ class _FileRow extends ConsumerWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 50,
-              height: 62,
+              width: 40,
+              height: 50,
               child: OfficeFileThumbnail(
                 path: file.internalFilePath,
                 version: file.updatedAt.toIso8601String(),
@@ -452,7 +278,7 @@ class _FileRow extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: ink,
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -479,7 +305,7 @@ class _FileRow extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: OfficeColors.muted(context),
-                      fontSize: 13.5,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -546,10 +372,12 @@ class _FilterPill extends StatelessWidget {
     button: true,
     selected: selected,
     child: Material(
-      color: selected ? OfficeColors.blue : OfficeColors.page(context),
+      color: selected ? OfficeColors.ink(context) : OfficeColors.page(context),
       shape: StadiumBorder(
         side: BorderSide(
-          color: selected ? OfficeColors.blue : OfficeColors.divider(context),
+          color: selected
+              ? OfficeColors.ink(context)
+              : OfficeColors.divider(context),
         ),
       ),
       child: InkWell(
@@ -561,7 +389,9 @@ class _FilterPill extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                color: selected ? Colors.white : OfficeColors.ink(context),
+                color: selected
+                    ? OfficeColors.page(context)
+                    : OfficeColors.ink(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -573,8 +403,7 @@ class _FilterPill extends StatelessWidget {
 }
 
 class _EmptyWorkspace extends StatelessWidget {
-  const _EmptyWorkspace({required this.onCreate});
-  final VoidCallback onCreate;
+  const _EmptyWorkspace();
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(24, 40, 24, 12),
@@ -599,34 +428,6 @@ class _EmptyWorkspace extends StatelessWidget {
           'Scan pages, convert photos or open a PDF to start.',
           textAlign: TextAlign.center,
           style: TextStyle(color: OfficeColors.muted(context)),
-        ),
-        const SizedBox(height: 22),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                style: officeOutlineStyle(context),
-                onPressed: () => context.push('/create-pdf?source=gallery'),
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('From images'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton.icon(
-                style: officePrimaryStyle(),
-                onPressed: () => context.push('/create-pdf?source=camera'),
-                icon: const Icon(Icons.document_scanner_outlined),
-                label: const Text('Scan'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        TextButton.icon(
-          onPressed: onCreate,
-          icon: const Icon(Icons.apps_rounded),
-          label: const Text('More tools'),
         ),
       ],
     ),

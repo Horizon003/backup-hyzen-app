@@ -8,10 +8,9 @@ import '../../viewer/document_bytes.dart';
 import '../../viewer/document_flow.dart';
 import '../data/pdf_studio_repository.dart';
 import '../data/studio_pdf_engine.dart';
-import 'office_file_actions.dart';
 import 'office_ui.dart';
 import 'scan_review_canvas.dart';
-import 'studio_annotation_screen.dart';
+import 'scan_annotation_sheet.dart';
 
 Future<void> showCreatePdf(BuildContext context) async {
   final router = GoRouter.of(context);
@@ -58,11 +57,12 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     with WidgetsBindingObserver {
   static const _camera = MethodChannel('com.hyzen.pharmd/camera_pages');
   final _name = TextEditingController(
-    text: 'Office Workspace ${officeDate(DateTime.now())}',
+    text: 'Scan ${officeDate(DateTime.now())}',
   );
-  static const _full = Rect.fromLTRB(0, 0, 1, 1);
+  static const _full = [Offset(0, 0), Offset(1, 0), Offset(1, 1), Offset(0, 1)];
   bool _crop = false;
-  Rect _cropRect = _full;
+  List<Offset> _quad = _full;
+  String? _original;
   List<String> _pages = [];
   int _selectedPage = 0;
   bool _busy = true;
@@ -241,7 +241,7 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
       });
     }
   });
-  Future<void> _save({bool edit = false}) => _work(() async {
+  Future<void> _save() => _work(() async {
     if (_pages.isEmpty) return;
     final path = await StudioPdfEngine.imagesToPdf(_pages);
     final count = await StudioPdfEngine.pageCount(path);
@@ -261,18 +261,15 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
         .read(pdfStudioHistoryProvider.notifier)
         .updatePageCount(item.id, count);
     if (_android) await _camera.invokeMethod<bool>('clear');
-    if (edit) {
-      if (!mounted) return;
-      final navigator = Navigator.of(context, rootNavigator: true);
-      context.replace('/pdf-studio/viewer/${item.id}');
-      navigator.push(
-        MaterialPageRoute<void>(
-          builder: (_) => StudioAnnotationScreen(file: item),
-        ),
-      );
-      return;
-    }
     if (mounted) {
+      // The PDF is durable now. Do not let a cancelled/failed share reuse pages
+      // whose native draft files have already been cleared.
+      setState(() {
+        _pages = [];
+        _selectedPage = 0;
+        _crop = false;
+        _busy = false;
+      });
       final action = await showModalBottomSheet<String>(
         context: context,
         showDragHandle: true,
@@ -317,18 +314,30 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
         ),
       );
       if (!mounted) return;
-      if (action == 'share') {
-        await MediaUpload.shareDocument(
-          item.internalFilePath,
-          item.displayName,
-          'application/pdf',
-        );
-      } else if (action == 'locate') {
-        await MediaUpload.exportDocument(
-          item.internalFilePath,
-          item.displayName,
-          'application/pdf',
-        );
+      try {
+        if (action == 'share') {
+          await MediaUpload.shareDocument(
+            item.internalFilePath,
+            item.displayName,
+            'application/pdf',
+          );
+        } else if (action == 'locate') {
+          await MediaUpload.exportDocument(
+            item.internalFilePath,
+            item.displayName,
+            'application/pdf',
+          );
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'PDF saved. Try sharing again from the document menu.',
+              ),
+            ),
+          );
+        }
       }
       if (mounted) context.replace('/pdf-studio/viewer/${item.id}');
     }
@@ -351,18 +360,6 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     _selectedPage = next.isEmpty ? 0 : _selectedPage.clamp(0, next.length - 1);
   });
 
-  Future<void> _rename() async {
-    final v = await askOfficeText(
-      context,
-      title: 'PDF name',
-      initial: _name.text,
-      label: 'Name',
-    );
-    if (v != null && v.trim().isNotEmpty && mounted) {
-      setState(() => _name.text = v.trim());
-    }
-  }
-
   /// Replaces the selected page with a fresh capture at the same position.
   Future<void> _retake() async {
     if (_busy || _pages.isEmpty) return;
@@ -382,65 +379,85 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     if (mounted) setState(() => _selectedPage = index);
   }
 
-  Future<void> _applyCrop() async {
-    final rect = _cropRect;
-    if (_pages.isEmpty || rect == _full) return;
-    final path = _pages[_sel];
+  Future<bool> _applyCrop() async {
+    if (_pages.isEmpty) return false;
+    var success = false;
     await _work(() async {
-      final next = await _camera.invokeListMethod<String>('edit', {
-        'paths': [path],
-        'filter': 'original',
-        'crop': [rect.left, rect.top, rect.right, rect.bottom],
+      final next = await _camera.invokeListMethod<String>('adjust', {
+        'paths': [_pages[_sel]],
+        'quad': [
+          for (final p in _quad) ...[p.dx, p.dy],
+        ],
       });
-      if (mounted && next != null) _setPages(next);
+      if (mounted && next != null) {
+        _setPages(next);
+        setState(() => _crop = false);
+        success = true;
+      }
     });
-    if (mounted) setState(() => _cropRect = _full);
+    return success;
   }
 
   Future<void> _toggleCrop() async {
     if (_crop) {
       await _applyCrop();
-      if (mounted) setState(() => _crop = false);
-    } else {
-      setState(() {
-        _crop = true;
-        _cropRect = _full;
-      });
+      return;
     }
-  }
-
-  /// Auto-detects the paper edges and perspective-corrects the page.
-  Future<void> _straighten() async {
-    if (_pages.isEmpty) return;
-    final path = _pages[_sel];
     await _work(() async {
       final info = await _camera.invokeMapMethod<String, dynamic>('pageInfo', {
-        'path': path,
+        'path': _pages[_sel],
       });
-      final original = info?['original'] is String
-          ? info!['original'] as String
-          : path;
+      final values = (info?['quad'] as List?)?.cast<num>();
+      if (!mounted) return;
+      setState(() {
+        _original = info?['original'] as String? ?? _pages[_sel];
+        _quad = values?.length == 8
+            ? [
+                for (var i = 0; i < 8; i += 2)
+                  Offset(values![i].toDouble(), values[i + 1].toDouble()),
+              ]
+            : _full;
+        _crop = true;
+      });
+    });
+  }
+
+  /// Re-detect the ORIGINAL photo and let the user inspect corners before Apply.
+  Future<void> _autoDetect() async {
+    if (_pages.isEmpty || _busy) return;
+    if (!_crop) await _toggleCrop();
+    if (!_crop || !mounted) return;
+    await _work(() async {
       final quad = await _camera.invokeListMethod<double>('detect', {
-        'path': original,
+        'path': _original,
       });
       if (quad == null || quad.length != 8) {
         throw PlatformException(
           code: 'edges',
-          message: 'Page edges were not found. Drag the crop handles instead.',
+          message: 'Edges are unclear. Move each corner onto the page.',
         );
       }
-      final next = await _camera.invokeListMethod<String>('adjust', {
-        'paths': [path],
-        'quad': quad,
+      final points = [
+        for (var i = 0; i < 8; i += 2) Offset(quad[i], quad[i + 1]),
+      ];
+      if (mounted && validCropQuad(points)) setState(() => _quad = points);
+    });
+  }
+
+  Future<void> _annotate() async {
+    if (_busy || _pages.isEmpty) return;
+    final path = _pages[_sel];
+    final marks = await Navigator.of(context).push<List<Map<String, dynamic>>>(
+      MaterialPageRoute(builder: (_) => ScanAnnotationScreen(path: path)),
+    );
+    if (marks == null || marks.isEmpty || !mounted) return;
+    await _work(() async {
+      final next = await _camera.invokeListMethod<String>('annotate', {
+        'path': path,
+        'marks': marks,
       });
       if (mounted && next != null) _setPages(next);
     });
-    if (mounted) {
-      setState(() {
-        _crop = false;
-        _cropRect = _full;
-      });
-    }
   }
 
   Future<void> _filters() async {
@@ -490,91 +507,6 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     });
   }
 
-  Future<void> _adjust() async {
-    if (_pages.isEmpty || _busy) return;
-    final path = _pages[_sel];
-    var brightness = 0.0, contrast = 0.0;
-    try {
-      final info = await _camera.invokeMapMethod<String, dynamic>('pageInfo', {
-        'path': path,
-      });
-      brightness = ((info?['brightness'] as num?) ?? 0).toDouble();
-      contrast = ((info?['contrast'] as num?) ?? 0).toDouble();
-    } catch (_) {}
-    if (!mounted) return;
-    final ok = await showOfficeSheet<bool>(
-      context,
-      (sheet) => StatefulBuilder(
-        builder: (c, set) {
-          final label = TextStyle(
-            color: OfficeColors.ink(c),
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          );
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Brightness  ${brightness.round()}', style: label),
-                Slider(
-                  value: brightness,
-                  min: -100,
-                  max: 100,
-                  divisions: 40,
-                  activeColor: OfficeColors.blue,
-                  onChanged: (v) => set(() => brightness = v),
-                ),
-                Text('Contrast  ${contrast.round()}', style: label),
-                Slider(
-                  value: contrast,
-                  min: -100,
-                  max: 100,
-                  divisions: 40,
-                  activeColor: OfficeColors.blue,
-                  onChanged: (v) => set(() => contrast = v),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: officeOutlineStyle(c),
-                        onPressed: () => set(() {
-                          brightness = 0;
-                          contrast = 0;
-                        }),
-                        child: const Text('Reset'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        style: officePrimaryStyle(),
-                        onPressed: () => Navigator.pop(sheet, true),
-                        child: const Text('Apply'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-    if (ok != true || !mounted) return;
-    await _work(() async {
-      final next = await _camera.invokeListMethod<String>('adjust', {
-        'paths': [path],
-        'brightness': brightness.round(),
-        'contrast': contrast.round(),
-      });
-      if (mounted && next != null) _setPages(next);
-    });
-  }
-
   Future<void> _pageOptions(int i) async {
     if (_busy || i >= _pages.length) return;
     final action = await showOfficeSheet<String>(
@@ -583,6 +515,12 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
         shrinkWrap: true,
         padding: const EdgeInsets.only(bottom: 12),
         children: [
+          if (_android)
+            OfficeSheetItem(
+              icon: Icons.cameraswitch_outlined,
+              label: 'Retake page',
+              onTap: () => Navigator.pop(sheet, 'retake'),
+            ),
           if (i > 0)
             OfficeSheetItem(
               icon: Icons.arrow_back_rounded,
@@ -611,6 +549,9 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     );
     if (action == null || !mounted) return;
     switch (action) {
+      case 'retake':
+        setState(() => _selectedPage = i);
+        await _retake();
       case 'left' || 'right':
         final to = action == 'left' ? i - 1 : i + 1;
         final next = [..._pages];
@@ -624,12 +565,49 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     }
   }
 
-  Future<void> _finish({bool edit = false}) async {
-    if (_crop) {
-      await _applyCrop();
-      if (mounted) setState(() => _crop = false);
-    }
-    if (mounted) await _save(edit: edit);
+  Future<void> _finish() async {
+    if (_busy || _pages.isEmpty) return;
+    if (_crop && !await _applyCrop()) return;
+    if (!mounted) return;
+    final name = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheet) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            MediaQuery.viewInsetsOf(sheet).bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Save PDF', style: Theme.of(sheet).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _name,
+                autofocus: true,
+                maxLength: 100,
+                decoration: const InputDecoration(labelText: 'File name'),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (v) => Navigator.pop(sheet, v),
+              ),
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: () => Navigator.pop(sheet, _name.text),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (name == null || !mounted) return;
+    _name.text = _cleanFileName(name);
+    await _save();
   }
 
   Widget _emptyState(BuildContext context) => Center(
@@ -674,26 +652,35 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
     final idle = !_busy && has;
     final tools = [
       (
-        Icons.cameraswitch_outlined,
-        'Retake',
-        idle && _android ? _retake : null,
-        false,
+        Icons.crop_rounded,
+        'Crop',
+        idle && _android ? _toggleCrop : null,
+        _crop,
       ),
-      (Icons.crop_rounded, 'Crop', idle ? _toggleCrop : null, _crop),
       (
         Icons.rotate_right_rounded,
         'Rotate',
-        idle ? () => _rotate(_pages[sel]) : null,
+        idle && !_crop && _android ? () => _rotate(_pages[sel]) : null,
         false,
       ),
       (
-        Icons.edit_note_rounded,
-        'Edit text',
-        idle ? () => _finish(edit: true) : null,
+        Icons.tune_rounded,
+        'Filters',
+        idle && !_crop && _android ? _filters : null,
         false,
       ),
-      (Icons.blur_circular_rounded, 'Filters', idle ? _filters : null, false),
-      (Icons.brightness_6_outlined, 'Adjust', idle ? _adjust : null, false),
+      (
+        Icons.draw_outlined,
+        'Annotate',
+        idle && !_crop && _android ? _annotate : null,
+        false,
+      ),
+      (
+        Icons.delete_outline_rounded,
+        'Delete',
+        idle && !_crop ? () => _replace([..._pages]..removeAt(sel)) : null,
+        false,
+      ),
     ];
     return PopScope(
       canPop: false,
@@ -702,17 +689,23 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
       },
       child: Scaffold(
         backgroundColor: OfficeColors.canvas(context),
+        appBar: AppBar(
+          title: Text(_crop ? 'Adjust corners' : 'Review scan'),
+          leading: IconButton(
+            tooltip: 'Back',
+            onPressed: _busy ? null : _back,
+            icon: const Icon(Icons.arrow_back_rounded),
+          ),
+          actions: [
+            IconButton(
+              tooltip: 'Choose gallery images',
+              onPressed: _busy || _crop ? null : _gallery,
+              icon: const Icon(Icons.add_photo_alternate_outlined),
+            ),
+          ],
+        ),
         body: Column(
           children: [
-            const OfficeBrandHeader(),
-            WorkspaceBar(
-              title: _name.text,
-              onEditTitle: _busy ? null : _rename,
-              onHome: _back,
-              onSmart: _busy ? null : _gallery,
-              smartIcon: Icons.add_photo_alternate_outlined,
-              smartTooltip: 'Choose gallery images',
-            ),
             SizedBox(
               height: 2,
               child: _busy
@@ -747,7 +740,7 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
               child: !has
                   ? _emptyState(context)
                   : GestureDetector(
-                      onHorizontalDragEnd: _crop
+                      onHorizontalDragEnd: _crop || _busy
                           ? null
                           : (d) {
                               final v = d.primaryVelocity ?? 0;
@@ -758,27 +751,31 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                               }
                             },
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(30, 22, 30, 14),
+                        padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
                         child: ScanReviewCanvas(
                           key: ValueKey(_pages[sel]),
-                          path: _pages[sel],
+                          path: _crop
+                              ? (_original ?? _pages[sel])
+                              : _pages[sel],
                           crop: _crop,
-                          rect: _cropRect,
-                          onRect: (r) => setState(() => _cropRect = r),
+                          quad: _quad,
+                          onQuad: (q) {
+                            if (!_busy) setState(() => _quad = q);
+                          },
                         ),
                       ),
                     ),
             ),
-            if (has && (_crop || count == 1))
+            if (has)
               Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: ScanPill(
-                  label: 'Straighten',
+                  label: 'Auto detect',
                   icon: Icons.grid_on_rounded,
-                  onTap: _busy ? null : _straighten,
+                  onTap: _busy || !_android ? null : _autoDetect,
                 ),
               ),
-            if (has && !_crop && count > 1) ...[
+            if (has && !_crop) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                 child: Row(
@@ -786,40 +783,47 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                     ScanRoundButton(
                       icon: Icons.chevron_left_rounded,
                       tooltip: 'Previous page',
-                      onTap: sel > 0
+                      onTap: !_busy && sel > 0
                           ? () => setState(() => _selectedPage = sel - 1)
                           : null,
                     ),
-                    const Spacer(),
-                    ScanPill(
-                      label: 'Page ${sel + 1} of $count',
-                      trailing: Icons.keyboard_arrow_down_rounded,
-                      onTap: () => _pageOptions(sel),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Center(
+                        child: ScanPill(
+                          label: 'Page ${sel + 1} of $count',
+                          trailing: Icons.keyboard_arrow_down_rounded,
+                          onTap: () => _pageOptions(sel),
+                        ),
+                      ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     ScanRoundButton(
                       icon: Icons.chevron_right_rounded,
                       tooltip: 'Next page',
-                      onTap: sel + 1 < count
+                      onTap: !_busy && sel + 1 < count
                           ? () => setState(() => _selectedPage = sel + 1)
                           : null,
                     ),
                   ],
                 ),
               ),
-              ScanThumbStrip(
-                pages: _pages,
-                selected: sel,
-                onSelect: (i) => setState(() => _selectedPage = i),
-                onOptions: _pageOptions,
-                onReorder: (from, to) {
-                  if (_busy || from == to) return;
-                  final next = [..._pages];
-                  next.insert(to, next.removeAt(from));
-                  _replace(next);
-                  setState(() => _selectedPage = to);
-                },
-              ),
+              if (count > 1)
+                ScanThumbStrip(
+                  pages: _pages,
+                  selected: sel,
+                  onSelect: (i) {
+                    if (!_busy) setState(() => _selectedPage = i);
+                  },
+                  onOptions: _pageOptions,
+                  onReorder: (from, to) {
+                    if (_busy || from == to) return;
+                    final next = [..._pages];
+                    next.insert(to, next.removeAt(from));
+                    _replace(next);
+                    setState(() => _selectedPage = to);
+                  },
+                ),
             ],
             DecoratedBox(
               decoration: BoxDecoration(
@@ -835,20 +839,32 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          for (final t in tools)
-                            Expanded(
-                              child: OfficeToolButton(
-                                icon: t.$1,
-                                label: t.$2,
-                                onTap: t.$3,
-                                selected: t.$4,
-                              ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final scale =
+                              MediaQuery.textScalerOf(context).scale(11) / 11;
+                          final width = (constraints.maxWidth / tools.length)
+                              .clamp(60.0 * scale, double.infinity);
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                for (final t in tools)
+                                  SizedBox(
+                                    width: width,
+                                    child: OfficeToolButton(
+                                      icon: t.$1,
+                                      label: t.$2,
+                                      onTap: t.$3,
+                                      selected: t.$4,
+                                    ),
+                                  ),
+                              ],
                             ),
-                        ],
+                          );
+                        },
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
@@ -857,10 +873,14 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                               style: officeOutlineStyle(context),
                               onPressed: _busy
                                   ? null
+                                  : _crop
+                                  ? () => setState(() => _crop = false)
                                   : (_android ? _scan : _gallery),
                               child: FittedBox(
                                 child: Text(
-                                  has
+                                  _crop
+                                      ? 'Cancel crop'
+                                      : has
                                       ? 'Keep scanning'
                                       : (_android ? 'Scan' : 'Add images'),
                                 ),
@@ -871,8 +891,15 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                           Expanded(
                             child: FilledButton(
                               style: officePrimaryStyle(),
-                              onPressed: _busy || !has ? null : _finish,
-                              child: const Text('Save PDF'),
+                              onPressed: _busy || !has
+                                  ? null
+                                  : _crop
+                                  ? _applyCrop
+                                  : _finish,
+                              child: Text(
+                                _crop ? 'Apply crop' : 'Save PDF',
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                           ),
                         ],

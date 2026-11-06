@@ -12,8 +12,7 @@ import '../../shell/app_shell.dart' show showAccountMenu;
 import '../../viewer/document_bytes.dart';
 import '../data/studio_pdf_engine.dart';
 
-/// Office Workspace visual language (owner-approved mockups): calm neutral
-/// canvas, one confident blue for actions and a deep navy floating action.
+/// Neutral document surfaces matching the home and study hierarchy.
 class OfficeColors {
   OfficeColors._();
   static const blue = Color(0xFF1473E6);
@@ -154,147 +153,6 @@ class OfficeBrandHeader extends ConsumerWidget {
   }
 }
 
-/// Home · editable dashed title · smart-tools row under the brand header.
-class WorkspaceBar extends StatelessWidget {
-  const WorkspaceBar({
-    super.key,
-    required this.title,
-    this.onEditTitle,
-    this.onHome,
-    this.onSmart,
-    this.smartTooltip = 'Smart tools',
-    this.smartIcon,
-  });
-  final String title;
-  final VoidCallback? onEditTitle, onHome, onSmart;
-  final String smartTooltip;
-  final IconData? smartIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    final ink = OfficeColors.ink(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: OfficeColors.bar(context),
-        border: Border(
-          top: BorderSide(color: OfficeColors.divider(context)),
-          bottom: BorderSide(color: OfficeColors.divider(context)),
-        ),
-      ),
-      child: SizedBox(
-        height: 58,
-        child: Row(
-          children: [
-            IconButton(
-              tooltip: 'Home',
-              onPressed: onHome,
-              icon: Icon(Icons.home_rounded, color: ink, size: 27),
-            ),
-            Expanded(
-              child: Semantics(
-                button: onEditTitle != null,
-                label: 'Rename $title',
-                excludeSemantics: true,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: onEditTitle,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: CustomPaint(
-                            painter: _DashedUnderline(
-                              ink.withValues(alpha: .7),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 7),
-                              child: Text(
-                                title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: ink,
-                                  fontSize: 17.5,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (onEditTitle != null) ...[
-                          const SizedBox(width: 8),
-                          Icon(Icons.edit_rounded, size: 21, color: ink),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            IconButton(
-              tooltip: smartTooltip,
-              onPressed: onSmart,
-              icon: smartIcon != null
-                  ? Icon(smartIcon, color: ink, size: 27)
-                  : SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            left: 0,
-                            top: 2,
-                            child: Icon(
-                              Icons.article_outlined,
-                              color: ink,
-                              size: 25,
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Icon(
-                              Icons.auto_awesome,
-                              color: ink,
-                              size: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 4),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DashedUnderline extends CustomPainter {
-  _DashedUnderline(this.color);
-  final Color color;
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.4;
-    final y = size.height - 1;
-    for (double x = 0; x < size.width; x += 9) {
-      canvas.drawLine(
-        Offset(x, y),
-        Offset((x + 5).clamp(0, size.width), y),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedUnderline old) => old.color != color;
-}
-
 /// Bottom editing toolbar item (Retake / Crop / Rotate / Edit text / …).
 class OfficeToolButton extends StatelessWidget {
   const OfficeToolButton({
@@ -334,7 +192,7 @@ class OfficeToolButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 26, color: color),
+              Icon(icon, size: 22, color: color),
               const SizedBox(height: 5),
               Text(
                 label,
@@ -343,7 +201,7 @@ class OfficeToolButton extends StatelessWidget {
                 softWrap: false,
                 style: TextStyle(
                   color: color,
-                  fontSize: 13,
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -360,21 +218,29 @@ ButtonStyle officePrimaryStyle() => FilledButton.styleFrom(
   foregroundColor: Colors.white,
   disabledBackgroundColor: OfficeColors.blue.withValues(alpha: .35),
   disabledForegroundColor: Colors.white70,
-  minimumSize: const Size.fromHeight(54),
+  minimumSize: const Size.fromHeight(44),
   shape: const StadiumBorder(),
-  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+  textStyle: const TextStyle(
+    fontFamily: 'Manrope',
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+  ),
 );
 
 ButtonStyle officeOutlineStyle(BuildContext context) =>
     OutlinedButton.styleFrom(
       foregroundColor: OfficeColors.ink(context),
-      minimumSize: const Size.fromHeight(54),
+      minimumSize: const Size.fromHeight(44),
       shape: const StadiumBorder(),
       side: BorderSide(
         color: OfficeColors.ink(context).withValues(alpha: .55),
         width: 1.4,
       ),
-      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+      textStyle: const TextStyle(
+        fontFamily: 'Manrope',
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+      ),
     );
 
 /// Encoded image bytes plus aspect ratio, read without a full decode.
@@ -589,14 +455,14 @@ class OfficeSheetItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
         child: Row(
           children: [
-            Icon(icon, size: 25, color: color),
-            const SizedBox(width: 22),
+            Icon(icon, size: 21, color: color),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
                   color: color,
-                  fontSize: 17.5,
+                  fontSize: 14,
                   fontWeight: FontWeight.w400,
                 ),
               ),

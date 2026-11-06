@@ -434,7 +434,11 @@ void main() {
     'announcement toggle persists between settings and account info',
     (tester) async {
       await open(tester, '/settings');
-      await tester.ensureVisible(find.byType(AccountToggle));
+      await tester.scrollUntilVisible(
+        find.byType(AccountToggle),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.byType(AccountToggle));
       await tester.pumpAndSettle();
@@ -487,7 +491,7 @@ void main() {
     }
   });
 
-  testWidgets('Downloads card panda pose differs from empty-state panda', (
+  testWidgets('Downloads keeps one empty-state panda and compact file count', (
     tester,
   ) async {
     await open(tester, '/downloads');
@@ -498,7 +502,7 @@ void main() {
             widget.semanticLabel ==
                 'Hyzen panda waving from the offline library card',
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.byWidgetPredicate(
@@ -666,6 +670,39 @@ void main() {
     },
   );
 
+  testWidgets('search starts empty after re-entry and a new session', (
+    tester,
+  ) async {
+    await open(tester, '/search');
+    await tester.enterText(find.byType(TextField).first, 'Insulin');
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Insulin Notes'), findsWidgets);
+    container.read(routerProvider).go('/home');
+    await tester.pumpAndSettle();
+    container.read(routerProvider).go('/search');
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+      isEmpty,
+    );
+    await tester.enterText(find.byType(TextField).first, 'old query');
+    container.read(sessionRevisionProvider.notifier).state++;
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+      isEmpty,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  test('text size starts at 13 and restores the chosen numeric size', () async {
+    expect(container.read(textSizeProvider), 13);
+    await container.read(textSizeProvider.notifier).set(16);
+    expect(prefs.getInt('app_text_size'), 16);
+    container.invalidate(textSizeProvider);
+    expect(container.read(textSizeProvider), 16);
+  });
+
   testWidgets(
     'NAV-07 auxiliary routes retain access and account hides the dock',
     (tester) async {
@@ -787,6 +824,10 @@ void main() {
       await tester.pumpAndSettle();
       guest.read(routerProvider).go('/login');
       await tester.pumpAndSettle();
+      expect(find.byType(TextFormField), findsNothing);
+      await tester.ensureVisible(find.text('Already a user? Log in'));
+      await tester.tap(find.text('Already a user? Log in'));
+      await tester.pumpAndSettle();
       expect(find.text('Welcome to PHARM D WITH HYZEN'), findsOneWidget);
       expect(find.byKey(const ValueKey('login-panda-hero')), findsOneWidget);
       expect(find.byType(MainDock), findsNothing);
@@ -849,9 +890,21 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    // Long Study titles intentionally marquee. Freeze motion for layout QA.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await open(tester, '/home');
+    await tester.runAsync(
+      () => container.read(parsedLibraryProvider(LibraryKind.notes).future),
+    );
     for (final path in [
       '/home',
       '/study',
+      '/study/notes',
+      '/pdf-studio',
       '/search',
       '/downloads',
       '/profile',
@@ -1056,6 +1109,10 @@ void main() {
       await tester.pumpAndSettle();
       guest.read(routerProvider).go('/login');
       await tester.pumpAndSettle();
+      expect(find.byType(TextFormField), findsNothing);
+      await tester.ensureVisible(find.text('Already a user? Log in'));
+      await tester.tap(find.text('Already a user? Log in'));
+      await tester.pumpAndSettle();
       for (final mode in [ThemeMode.light, ThemeMode.dark]) {
         guest.read(themeModeProvider.notifier).set(mode);
         await tester.pumpAndSettle();
@@ -1081,22 +1138,20 @@ void main() {
     },
   );
   testWidgets(
-    'Study and Downloads banners use approved panda artwork in both themes',
+    'Study, Notes, Office and Downloads share compact hierarchy in both themes',
     (tester) async {
       for (final mode in [ThemeMode.light, ThemeMode.dark]) {
         container.read(themeModeProvider.notifier).set(mode);
-        for (final path in ['/study', '/downloads']) {
+        for (final path in [
+          '/study',
+          '/study/notes',
+          '/pdf-studio',
+          '/downloads',
+        ]) {
           await open(tester, path);
-          final art = find.descendant(
-            of: find.byType(HyzenBanner),
-            matching: find.byType(Image),
-          );
-          ImageProvider asset = tester.widget<Image>(art.first).image;
-          if (asset is ResizeImage) asset = asset.imageProvider;
-          expect(
-            (asset as AssetImage).assetName,
-            startsWith('assets/mascot/mascot_'),
-          );
+          expect(find.byType(HyzenBanner), findsNothing);
+          expect(find.byType(HomeAtmosphere), findsWidgets);
+          expect(find.byTooltip('Profile & settings'), findsOneWidget);
           expect(tester.takeException(), isNull);
         }
       }

@@ -172,7 +172,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Choose gallery images instead.'), findsOneWidget);
       expect(find.byTooltip('Choose gallery images'), findsOneWidget);
-      expect(find.text('Straighten'), findsOneWidget);
+      expect(find.text('Auto detect'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
@@ -239,23 +239,40 @@ void main() {
       );
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();
-      await tester.runAsync(() async {
-        await tester.tap(find.text('Save PDF'));
-        for (var i = 0; i < 100; i++) {
-          await Future<void>.delayed(const Duration(milliseconds: 10));
-          if (events.contains('clear')) break;
-        }
-      });
-      await tester.pump();
+      await tester.tap(find.text('Save PDF'));
+      await tester.pumpAndSettle();
+      expect(find.text('File name'), findsOneWidget);
+      await tester.tap(find.text('Save'));
+      // Hive completes real IO, while route/provider callbacks run in the
+      // test clock. Let both advance until the durable commit completes.
+      for (var i = 0; i < 100 && !events.contains('clear'); i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 10)),
+        );
+      }
+      expect(events, contains('clear'));
+      await tester.pumpAndSettle();
       Navigator.of(tester.element(find.text('Open PDF'))).pop('open');
       await tester.pump(const Duration(milliseconds: 500));
       final saved = container.read(pdfStudioHistoryProvider).single;
       expect(saved.operationBadge, 'SCANNED');
       expect(saved.pageCount, 1);
-      expect(saved.displayName, startsWith('Office Workspace '));
+      expect(saved.displayName, startsWith('Scan '));
       expect(saved.displayName, endsWith('.pdf'));
       expect(events.indexOf('clear'), greaterThan(events.indexOf('pageCount')));
       expect(tester.takeException(), isNull);
+      // Drain Hive's asynchronous writer while the widget test clock still runs.
+      var closed = false;
+      final closing = Hive.close().then((_) => closed = true);
+      for (var i = 0; i < 100 && !closed; i++) {
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 10)),
+        );
+      }
+      expect(closed, isTrue);
+      await closing;
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
   );
@@ -277,8 +294,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save PDF'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
       expect(cleared, isFalse);
-      expect(find.text('Straighten'), findsOneWidget);
+      expect(find.text('Auto detect'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),

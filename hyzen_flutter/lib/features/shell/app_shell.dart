@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../notifications/notifications_screen.dart';
+import '../home/presentation/home_background.dart';
 import '../updates/update_ui.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,12 +16,12 @@ import '../profile/presentation/widgets/account_widgets.dart';
 import '../../app/safe_nav.dart';
 
 /// Authenticated shell: Material navigation with Android back handling.
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final idx = navigationShell.currentIndex;
     final path = GoRouterState.of(context).uri.path;
     final account = path.startsWith('/profile') || path == '/settings';
@@ -69,7 +70,11 @@ class AppShell extends StatelessWidget {
             ],
           ),
         );
-        if (leave == true) await SystemNavigator.pop();
+        if (leave == true) {
+          ref.read(sessionRevisionProvider.notifier).state++;
+          navigationShell.goBranch(0, initialLocation: true);
+          await SystemNavigator.pop();
+        }
       },
       child: Scaffold(
         extendBody: true,
@@ -115,11 +120,20 @@ class TabPage extends StatelessWidget {
   final Future<void> Function()? onRefresh;
   @override
   Widget build(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final headerHeight = header != null
+        ? 64.0
+        : (scaler.scale(22) * 1.25 +
+                  (subtitle != null ? scaler.scale(11) * 1.4 : 0) +
+                  12)
+              .clamp(64.0, 160.0);
     final scroll = CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).top + 64 + 8),
+          child: SizedBox(
+            height: MediaQuery.paddingOf(context).top + headerHeight + 8,
+          ),
         ),
         ...slivers,
         if (homeBackground == null)
@@ -132,17 +146,20 @@ class TabPage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       drawer: drawer,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: Size.fromHeight(headerHeight),
         child: Theme(
           data: headerTheme ?? Theme.of(context),
-          child: header ?? _Bar(
-            integrated: integratedHeader,
-            onAccount: () => showAccountMenu(context),
-            title: title,
-            subtitle: subtitle,
-            actions: actions,
-            showMenu: drawer != null,
-          ),
+          child:
+              header ??
+              _Bar(
+                height: headerHeight,
+                integrated: integratedHeader,
+                onAccount: () => showAccountMenu(context),
+                title: title,
+                subtitle: subtitle,
+                actions: actions,
+                showMenu: drawer != null,
+              ),
         ),
       ),
       body: homeBackground != null
@@ -151,16 +168,17 @@ class TabPage extends StatelessWidget {
                   ? scroll
                   : RefreshIndicator(
                       onRefresh: onRefresh!,
-                      edgeOffset: 64,
+                      edgeOffset: headerHeight,
                       child: scroll,
                     ),
             )
-          : HBackground(
+          : HomeAtmosphere(
+              content: true,
               child: onRefresh == null
                   ? scroll
                   : RefreshIndicator(
                       onRefresh: onRefresh!,
-                      edgeOffset: 64,
+                      edgeOffset: headerHeight,
                       child: scroll,
                     ),
             ),
@@ -171,6 +189,7 @@ class TabPage extends StatelessWidget {
 class _Bar extends StatelessWidget implements PreferredSizeWidget {
   const _Bar({
     required this.title,
+    this.height = 64,
     this.subtitle,
     this.actions = const [],
     this.showMenu = false,
@@ -180,18 +199,19 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
   final bool integrated;
   final VoidCallback? onAccount;
   final bool showMenu;
+  final double height;
   final String title;
   final String? subtitle;
   final List<Widget> actions;
   @override
-  Size get preferredSize => const Size.fromHeight(64);
+  Size get preferredSize => Size.fromHeight(height);
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final header = SafeArea(
       bottom: false,
       child: SizedBox(
-        height: 64,
+        height: height,
         child: Row(
           children: [
             if (showMenu)
