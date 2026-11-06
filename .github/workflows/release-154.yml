@@ -1,0 +1,129 @@
+name: Signed Android 1.5.4 release
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/release-154.yml']
+permissions:
+  contents: read
+concurrency:
+  group: release-154
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      FLUTTER_SUPPRESS_ANALYTICS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk for universal native libraries
+        run: sudo rm -rf /usr/share/dotnet /usr/local/share/powershell /opt/ghc /usr/share/swift
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4'
+          cache: true
+      - name: Restore owner release signing
+        working-directory: hyzen_flutter
+        env:
+          KEYSTORE_BASE64: ${{ secrets.HYZEN_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.HYZEN_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.HYZEN_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.HYZEN_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS"
+          mkdir -p android/signing
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/signing/hyzen-release.jks
+          printf 'storeFile=signing/hyzen-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > android/key.properties
+          chmod 600 android/signing/hyzen-release.jks android/key.properties
+      - run: flutter pub get
+        working-directory: hyzen_flutter
+      - run: flutter analyze --no-pub && flutter test --no-pub -r expanded --timeout 90s
+        working-directory: hyzen_flutter
+      - name: Build universal release APK
+        working-directory: hyzen_flutter/android
+        run: |
+          printf 'sdk.dir=%s\nflutter.sdk=%s\nflutter.versionName=1.5.4\nflutter.versionCode=13\n' "$ANDROID_HOME" "$FLUTTER_ROOT" > local.properties
+          flutter precache --android
+          gradle :app:assembleRelease -Ptarget-platform=android-arm,android-arm64,android-x64 -Ptarget=lib/main.dart -Ptree-shake-icons=true
+      - name: Verify and package
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          cp hyzen_flutter/build/app/outputs/apk/release/app-release.apk release/PharmD-With-Hyzen-1.5.4.apk
+          apk=release/PharmD-With-Hyzen-1.5.4.apk
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$signer" verify --print-certs "$apk" > release/signing-report.txt
+          grep -qi '3fd902d131ae56d8de4792c9f5953759e2b375e32bcad8f57f7ef5c0ab887f83' release/signing-report.txt
+          unzip -Z1 "$apk" > /tmp/apk-entries.txt
+          for abi in armeabi-v7a arm64-v8a x86_64; do grep -Fxq "lib/$abi/libflutter.so" /tmp/apk-entries.txt; done
+          aapt=$(find "$ANDROID_HOME/build-tools" -name aapt | sort -V | tail -1)
+          "$aapt" dump badging "$apk" > release/apk-metadata.txt
+          grep -q "versionCode='13' versionName='1.5.4'" release/apk-metadata.txt
+          (cd release && sha256sum PharmD-With-Hyzen-1.5.4.apk > SHA256SUMS.txt)
+          printf 'Source commit: %s\nBuild: %s/%s/actions/runs/%s\n' "$GITHUB_SHA" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > release/provenance.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signed-release-154
+          path: release/
+          if-no-files-found: error
+      - name: Remove signing files
+        if: always()
+        run: rm -f hyzen_flutter/android/key.properties hyzen_flutter/android/signing/hyzen-release.jks
+  install-smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed-release-154
+          path: release
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            adb install -r release/PharmD-With-Hyzen-1.5.4.apk
+            adb shell monkey -p com.hyzen.pharmd -c android.intent.category.LAUNCHER 1
+            sleep 8
+            adb logcat -d > launch-logcat.txt
+            adb shell pidof com.hyzen.pharmd
+            ! grep -qE 'FATAL EXCEPTION|signal 11' launch-logcat.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-154-install-logs
+          path: launch-logcat.txt
+  publish:
+    needs: [build, install-smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed-release-154
+          path: release
+      - name: Publish release and APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.5.4-13 release/* --target "$GITHUB_SHA" --title 'PHARM D WITH HYZEN 1.5.4 — Scanner & compact Office' --notes-file docs/release-1.5.4.md --latest
