@@ -163,10 +163,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    if (!_showForm)
+    if (!_showForm) {
       return AccountChoiceScreen(
         onLogin: () => setState(() => _showForm = true),
       );
+    }
     final heroHeight = (MediaQuery.sizeOf(context).height * .32).clamp(
       220.0,
       310.0,

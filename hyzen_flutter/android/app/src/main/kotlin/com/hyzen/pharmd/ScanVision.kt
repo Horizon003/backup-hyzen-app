@@ -131,7 +131,7 @@ object ScanVision {
 
     private class Edges(val w: Int, val h: Int, val gx: FloatArray, val gy: FloatArray, val mag: FloatArray, val edge: BooleanArray)
 
-    private fun edges(g: Gray): Edges {
+    private fun edges(g: Gray, maxHigh: Float = 140f): Edges {
         val w = g.w; val h = g.h; val p = g.px
         val gx = FloatArray(w * h); val gy = FloatArray(w * h); val mag = FloatArray(w * h)
         for (y in 1 until h - 1) for (x in 1 until w - 1) {
@@ -149,7 +149,7 @@ object ScanVision {
         var acc = 0; var high = 40f
         val target = (count * 0.86).toInt()
         for (i in hist.indices) { acc += hist[i]; if (acc >= target) { high = i.toFloat(); break } }
-        high = high.coerceIn(12f, 140f)
+        high = high.coerceIn(12f, maxHigh)
         val low = high * 0.42f
         val nms = FloatArray(w * h)
         for (y in 1 until h - 1) for (x in 1 until w - 1) {
@@ -462,8 +462,16 @@ object ScanVision {
      * @param fast live-preview mode (smaller image, fewer hypotheses, no refine)
      */
     fun detect(source: Gray, refine: Boolean = true, fast: Boolean = false): Quad? {
+        if (source.w < 8 || source.h < 8) return null
+        return detectPass(source, refine, fast, 140f)
+            ?: detectPass(source, refine, fast, 36f)
+    }
+
+    // A second, lower edge threshold recovers pale paper on a light table.
+    // Four supported sides and the same geometric validation remain mandatory.
+    private fun detectPass(source: Gray, refine: Boolean, fast: Boolean, maxHigh: Float): Quad? {
         val small = blur(downscale(source, if (fast) 420 else 520))
-        val e = edges(small)
+        val e = edges(small, maxHigh)
         val lines = hough(e, if (fast) 20 else 28)
         val hyps = ArrayList<DoubleArray>()
         val minSep = min(small.w, small.h) * 0.20

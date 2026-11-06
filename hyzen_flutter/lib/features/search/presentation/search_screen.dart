@@ -52,7 +52,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final session = '${ref.watch(sessionRevisionProvider)}:${ref.watch(searchRevisionProvider)}';
+    final session =
+        '${ref.watch(sessionRevisionProvider)}:${ref.watch(searchRevisionProvider)}';
     ref.listen(sessionRevisionProvider, (_, __) {
       setState(() {
         _q = '';
@@ -60,7 +61,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       });
     });
     ref.listen(searchRevisionProvider, (_, __) {
-      setState(() { _q = ''; _only = null; });
+      setState(() {
+        _q = '';
+        _only = null;
+      });
     });
     final index = ref.watch(searchIndexProvider);
     ref.watch(ocrIndexProvider);

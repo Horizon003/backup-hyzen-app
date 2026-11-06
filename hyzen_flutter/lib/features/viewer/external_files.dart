@@ -102,8 +102,9 @@ class _ExternalOpenGateState extends ConsumerState<ExternalOpenGate>
         }
       });
       _channel.setMethodCallHandler((call) async {
-        if (call.method == 'incomingStarted')
+        if (call.method == 'incomingStarted') {
           ref.read(documentHandoffProvider.notifier).state = true;
+        }
         if (call.method == 'incomingAvailable') await _drain();
       });
       _camera.setMethodCallHandler((call) async {
@@ -155,8 +156,9 @@ class _ExternalOpenGateState extends ConsumerState<ExternalOpenGate>
       try {
         final importing =
             await _channel.invokeMethod<bool>('isImporting') ?? false;
-        if (mounted)
+        if (mounted) {
           ref.read(documentHandoffProvider.notifier).state = importing;
+        }
       } catch (_) {
         if (mounted) ref.read(documentHandoffProvider.notifier).state = false;
       }
@@ -276,12 +278,13 @@ class _ImportedViewerScreenState extends ConsumerState<ImportedViewerScreen> {
         context.replace('/pdf-studio/viewer/${item.id}');
       }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         showHSnack(
           context,
           'Could not save this copy. Please retry.',
           error: true,
         );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -290,8 +293,9 @@ class _ImportedViewerScreenState extends ConsumerState<ImportedViewerScreen> {
   @override
   Widget build(BuildContext context) {
     final doc = widget.document;
-    if (doc == null)
+    if (doc == null) {
       return const Scaffold(body: Center(child: Text('Document unavailable')));
+    }
     return ReaderScaffold(
       title: doc.title,
       banner: _saving ? const LinearProgressIndicator(minHeight: 2) : null,

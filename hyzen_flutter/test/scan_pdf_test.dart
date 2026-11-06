@@ -243,7 +243,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('File name'), findsOneWidget);
       await tester.runAsync(() async {
-        await tester.tap(find.text('Save')); 
+        await tester.tap(find.text('Save'));
         for (var i = 0; i < 100; i++) {
           await Future<void>.delayed(const Duration(milliseconds: 10));
           if (events.contains('clear')) break;

@@ -19,8 +19,9 @@ class _ScanAnnotationScreenState extends State<ScanAnnotationScreen> {
       (position.dy / size.height).clamp(0.0, 1.0),
     ];
     setState(() {
-      if (start)
+      if (start) {
         _marks.add({'highlight': _highlight, 'points': <List<double>>[]});
+      }
       if (_marks.isNotEmpty) (_marks.last['points'] as List).add(point);
     });
   }
@@ -44,8 +45,9 @@ class _ScanAnnotationScreenState extends State<ScanAnnotationScreen> {
             future: _image,
             builder: (context, snapshot) {
               final data = snapshot.data;
-              if (data == null)
+              if (data == null) {
                 return const Center(child: Text('Loading page…'));
+              }
               return Padding(
                 padding: const EdgeInsets.all(20),
                 child: Center(

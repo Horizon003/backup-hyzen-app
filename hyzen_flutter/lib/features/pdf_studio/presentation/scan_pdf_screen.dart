@@ -8,7 +8,6 @@ import '../../viewer/document_bytes.dart';
 import '../../viewer/document_flow.dart';
 import '../data/pdf_studio_repository.dart';
 import '../data/studio_pdf_engine.dart';
-import 'office_file_actions.dart';
 import 'office_ui.dart';
 import 'scan_review_canvas.dart';
 import 'scan_annotation_sheet.dart';
@@ -263,6 +262,13 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
         .updatePageCount(item.id, count);
     if (_android) await _camera.invokeMethod<bool>('clear');
     if (mounted) {
+      // The PDF is durable now. Do not let a cancelled/failed share reuse pages
+      // whose native draft files have already been cleared.
+      setState(() {
+        _pages = [];
+        _selectedPage = 0;
+        _crop = false;
+      });
       final action = await showModalBottomSheet<String>(
         context: context,
         showDragHandle: true,
@@ -721,7 +727,7 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
               child: !has
                   ? _emptyState(context)
                   : GestureDetector(
-                      onHorizontalDragEnd: _crop
+                      onHorizontalDragEnd: _crop || _busy
                           ? null
                           : (d) {
                               final v = d.primaryVelocity ?? 0;
@@ -740,7 +746,9 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                               : _pages[sel],
                           crop: _crop,
                           quad: _quad,
-                          onQuad: (q) => setState(() => _quad = q),
+                          onQuad: (q) {
+                            if (!_busy) setState(() => _quad = q);
+                          },
                         ),
                       ),
                     ),

@@ -337,8 +337,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     }
     lastPath = path;
   }
+
   router.routeInformationProvider.addListener(resetSearchOnEntry);
-  ref.onDispose(() => router.routeInformationProvider.removeListener(resetSearchOnEntry));
+  ref.onDispose(
+    () => router.routeInformationProvider.removeListener(resetSearchOnEntry),
+  );
   ref.onDispose(router.dispose);
   return router;
 });

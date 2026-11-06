@@ -16,7 +16,6 @@ import 'studio_tools_screen.dart';
 import 'office_file_actions.dart';
 import 'office_ui.dart';
 import '../../shell/app_shell.dart';
-import '../../home/presentation/home_background.dart';
 import 'studio_export_sheet.dart';
 import 'studio_annotation_screen.dart';
 
@@ -100,7 +99,6 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
     return TabPage(
       title: 'Office Workspace',
       subtitle: 'Scan, edit and organise',
-      homeBackground: (child) => HomeAtmosphere(content: true, child: child),
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),

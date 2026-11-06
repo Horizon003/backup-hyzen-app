@@ -358,8 +358,9 @@ bool validCropQuad(List<Offset> points) {
             p.dx > 1 ||
             p.dy < 0 ||
             p.dy > 1,
-      ))
+      )) {
     return false;
+  }
   var area = 0.0;
   for (var i = 0; i < 4; i++) {
     final a = points[i], b = points[(i + 1) % 4], c = points[(i + 2) % 4];
