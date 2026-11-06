@@ -16,16 +16,19 @@ const fs = require('node:fs');
       ['office', '/pdf-studio', 'Office Workspace', 844],
       ['downloads', '/downloads', 'Downloads', 844],
       ['study', '/study', 'Study', 844],
+      ['notes', '/study/notes', 'Notes', 844],
+      ['office-large-text', '/pdf-studio', 'Office Workspace', 844],
+      ['notes-large-text', '/study/notes', 'Notes', 844],
       ['office-narrow', '/pdf-studio', 'Office Workspace', 800],
     ]) {
-      const width = name.endsWith('narrow') ? 320 : 390;
+      const width = name.endsWith('narrow') || name.endsWith('large-text') ? 320 : 390;
       const page = await browser.newPage({viewport: {width, height}, deviceScaleFactor: 2,
         reducedMotion: name.endsWith('narrow') ? 'reduce' : 'no-preference'});
       page.on('pageerror', error => errors.push(String(error)));
       page.on('console', message => {
         if (/overflowed by|Unhandled Exception/.test(message.text())) errors.push(message.text());
       });
-      await page.goto(`http://127.0.0.1:8080/pharm-d-with-hyzen/ui-review/?theme=${theme}#${path}`);
+      await page.goto(`http://127.0.0.1:8080/pharm-d-with-hyzen/ui-review/?theme=${theme}&textScale=${name.endsWith('large-text') ? 2 : 1}#${path}`);
       await page.waitForSelector('flutter-view', {timeout: 90000});
       await page.waitForTimeout(3500);
       const enable = page.getByRole('button', {name: 'Enable accessibility'});
@@ -146,7 +149,11 @@ const fs = require('node:fs');
       if(scenario.path==='/login') {
         await page.getByText('Welcome to PHARM D WITH HYZEN',{exact:true}).waitFor({timeout:30000});
         if(await page.getByText('Welcome back',{exact:true}).count())throw Error('Outdated login greeting');
-        if(await page.getByRole('textbox').count()<1)throw Error('Missing real login fields');
+        if(await page.getByRole('textbox').count())throw Error('Login form shown before account choice');
+        await page.getByRole('button',{name:'Already a user? Log in',exact:true}).waitFor();
+        await page.screenshot({path:`${output}/${theme}-${scenario.name}-choice.png`});
+        await page.getByRole('button',{name:'Already a user? Log in',exact:true}).click();
+        await page.getByRole('textbox').first().waitFor();
       } else {
         await page.getByRole('button',{name:'Get Started →',exact:true}).waitFor({timeout:30000});
       }

@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hyzen_pharmd/features/pdf_studio/presentation/scan_pdf_screen.dart';
 import 'package:hyzen_pharmd/features/pdf_studio/presentation/scan_review_canvas.dart';
+import 'package:hyzen_pharmd/features/pdf_studio/presentation/office_ui.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +13,56 @@ void main() {
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
+  testWidgets('each corner responds independently to finger dragging', (
+    tester,
+  ) async {
+    final path = '${Directory.current.path}/test/fixtures/scan-page.png';
+    final data = await tester.runAsync(() => OfficeImageCache.image(path));
+    expect(data, isNotNull);
+    var quad = [
+      const Offset(0, 0),
+      const Offset(1, 0),
+      const Offset(1, 1),
+      const Offset(0, 1),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox.square(
+              dimension: 300,
+              child: StatefulBuilder(
+                builder: (_, set) => ScanReviewCanvas(
+                  path: path,
+                  crop: true,
+                  quad: quad,
+                  onQuad: (next) => set(() => quad = next),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 4; i++) {
+      final before = [...quad];
+      await tester.drag(
+        find.byKey(ValueKey('crop-handle-$i')),
+        Offset(i == 0 || i == 3 ? 20 : -20, i < 2 ? 12 : -12),
+      );
+      await tester.pump();
+      expect(quad[i], isNot(before[i]));
+      for (var j = 0; j < 4; j++) {
+        if (j != i) expect(quad[j], before[j]);
+      }
+      expect(validCropQuad(quad), isTrue);
+    }
+    expect(tester.takeException(), isNull);
+  });
   test(
     'perspective corners are independent and crossed quads are rejected',
     () {

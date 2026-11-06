@@ -46,19 +46,32 @@ class ScanReviewCanvas extends StatelessWidget {
                 ),
         );
       }
-      return Center(
-        child: AspectRatio(
-          aspectRatio: data.ratio,
-          child: LayoutBuilder(
-            builder: (context, box) {
-              final size = box.biggest;
-              Offset at(double x, double y) =>
-                  Offset(x * size.width, y * size.height);
-              final points = [for (final p in quad) at(p.dx, p.dy)];
-              return Stack(
+      return LayoutBuilder(
+        builder: (context, box) {
+          // Reserve the full 44px hit area even at the photo's boundaries.
+          final margin = crop ? 22.0 : 0.0;
+          final available = Size(
+            (box.maxWidth - margin * 2).clamp(1.0, double.infinity),
+            (box.maxHeight - margin * 2).clamp(1.0, double.infinity),
+          );
+          final size = applyBoxFit(
+            BoxFit.contain,
+            Size(data.ratio, 1),
+            available,
+          ).destination;
+          final photoRect = Offset(margin, margin) & size;
+          Offset at(double x, double y) =>
+              Offset(margin + x * size.width, margin + y * size.height);
+          final points = [for (final p in quad) at(p.dx, p.dy)];
+          return Center(
+            child: SizedBox(
+              width: size.width + margin * 2,
+              height: size.height + margin * 2,
+              child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Positioned.fill(
+                  Positioned.fromRect(
+                    rect: photoRect,
                     child: RepaintBoundary(
                       child: DecoratedBox(
                         decoration: const BoxDecoration(
@@ -85,7 +98,8 @@ class ScanReviewCanvas extends StatelessWidget {
                     ),
                   ),
                   if (crop) ...[
-                    Positioned.fill(
+                    Positioned.fromRect(
+                      rect: photoRect,
                       child: IgnorePointer(
                         child: CustomPaint(painter: _CropFrame(quad)),
                       ),
@@ -111,10 +125,10 @@ class ScanReviewCanvas extends StatelessWidget {
                       ),
                   ],
                 ],
-              );
-            },
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       );
     },
   );

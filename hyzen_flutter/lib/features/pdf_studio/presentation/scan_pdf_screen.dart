@@ -839,18 +839,30 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          for (final t in tools)
-                            Expanded(
-                              child: OfficeToolButton(
-                                icon: t.$1,
-                                label: t.$2,
-                                onTap: t.$3,
-                                selected: t.$4,
-                              ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final scale =
+                              MediaQuery.textScalerOf(context).scale(11) / 11;
+                          final width = (constraints.maxWidth / tools.length)
+                              .clamp(60.0 * scale, double.infinity);
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                for (final t in tools)
+                                  SizedBox(
+                                    width: width,
+                                    child: OfficeToolButton(
+                                      icon: t.$1,
+                                      label: t.$2,
+                                      onTap: t.$3,
+                                      selected: t.$4,
+                                    ),
+                                  ),
+                              ],
                             ),
-                        ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -884,7 +896,10 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                                   : _crop
                                   ? _applyCrop
                                   : _finish,
-                              child: Text(_crop ? 'Apply crop' : 'Save PDF'),
+                              child: Text(
+                                _crop ? 'Apply crop' : 'Save PDF',
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                           ),
                         ],

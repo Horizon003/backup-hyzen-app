@@ -220,7 +220,11 @@ ButtonStyle officePrimaryStyle() => FilledButton.styleFrom(
   disabledForegroundColor: Colors.white70,
   minimumSize: const Size.fromHeight(44),
   shape: const StadiumBorder(),
-  textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+  textStyle: const TextStyle(
+    fontFamily: 'Manrope',
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+  ),
 );
 
 ButtonStyle officeOutlineStyle(BuildContext context) =>
@@ -232,7 +236,11 @@ ButtonStyle officeOutlineStyle(BuildContext context) =>
         color: OfficeColors.ink(context).withValues(alpha: .55),
         width: 1.4,
       ),
-      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+      textStyle: const TextStyle(
+        fontFamily: 'Manrope',
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+      ),
     );
 
 /// Encoded image bytes plus aspect ratio, read without a full decode.
