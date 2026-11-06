@@ -892,6 +892,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     tester.platformDispatcher.textScaleFactorTestValue = 2;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await open(tester, '/home');
+    await tester.runAsync(() => container.read(parsedLibraryProvider(LibraryKind.notes).future));
     for (final path in [
       '/home',
       '/study',
@@ -901,6 +903,7 @@ void main() {
       '/downloads',
       '/profile',
     ]) {
+      debugPrint('Large-text route: $path');
       await open(tester, path);
       expect(tester.takeException(), isNull, reason: path);
     }

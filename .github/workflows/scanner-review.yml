@@ -35,13 +35,22 @@ jobs:
         working-directory: hyzen_flutter
       - name: Compile Android scanner
         if: ${{ !cancelled() }}
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Check Android Kotlin
+        if: ${{ !cancelled() }}
         working-directory: hyzen_flutter/android
-        run: ./gradlew :app:compileDebugKotlin
+        run: |
+          printf 'sdk.dir=%s\nflutter.sdk=%s\n' "$ANDROID_HOME" "$FLUTTER_ROOT" > local.properties
+          flutter precache --android
+          gradle :app:compileDebugKotlin
       - name: Build review preview
         if: ${{ !cancelled() }}
         working-directory: hyzen_flutter
         run: flutter build web --release --no-pub --target lib/main_account_review.dart --base-href /pharm-d-with-hyzen/ui-review/
       - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && hashFiles('hyzen_flutter/build/web/index.html') != '' }}
         with:
           name: compact-office-preview
           path: hyzen_flutter/build/web
