@@ -299,12 +299,16 @@ class ScanPill extends StatelessWidget {
                 Icon(icon, color: OfficeColors.blue, size: 24),
                 const SizedBox(width: 12),
               ],
-              Text(
-                label,
-                style: TextStyle(
-                  color: ink,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: ink,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               if (trailing != null) ...[

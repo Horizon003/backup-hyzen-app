@@ -17,6 +17,8 @@ import 'features/academics/domain/models.dart';
 import 'features/downloads/data/downloads_controller.dart';
 import 'features/downloads/domain/download_record.dart';
 import 'features/home/data/recent_controller.dart';
+import 'features/pdf_studio/data/pdf_studio_repository.dart';
+import 'features/pdf_studio/data/studio_file_item.dart';
 
 const reviewProfile = StudentProfile(
   uid: 'ui-review-student',
@@ -92,6 +94,7 @@ Future<void> main() async {
         sharedPrefsProvider.overrideWithValue(prefs),
         downloadsProvider.overrideWith(() => _ReviewDownloads(emptyHome)),
         recentProvider.overrideWith(() => _ReviewRecent(emptyHome)),
+        pdfStudioHistoryProvider.overrideWith(() => _ReviewOffice(emptyHome)),
         authStateProvider.overrideWith(
           (ref) => Stream<User?>.value(guestPreview ? null : _ReviewUser()),
         ),
@@ -266,6 +269,35 @@ class _ReviewDownloads extends DownloadsController {
       'Sample data preview; open the Android app to save real files.',
     ),
   );
+}
+
+class _ReviewOffice extends PdfStudioRepository {
+  _ReviewOffice(this.empty);
+  final bool empty;
+  @override
+  List<StudioFileItem> build() => empty
+      ? []
+      : [
+          for (final (i, title) in [
+            'Pharmacology revision notes',
+            'Practical notebook · Semester 2',
+            'Surgical dressings',
+          ].indexed)
+            StudioFileItem(
+              id: 'review-office-$i',
+              originalFileName: '$title.pdf',
+              displayName: '$title.pdf',
+              internalFilePath: '/sample-data/office-$i.pdf',
+              editStateJsonPath: '',
+              sourceType: 'IMAGE_SCAN',
+              fileCategory: 'PDF',
+              fileSizeBytes: 240000 + i * 80000,
+              pageCount: 3 + i,
+              createdAt: DateTime(2026, 11, 6),
+              updatedAt: DateTime(2026, 11, 6),
+              operationBadge: 'SCANNED',
+            ),
+        ];
 }
 
 class _ReviewRecent extends RecentController {

@@ -176,14 +176,15 @@ class _LibraryLevelScreenState extends ConsumerState<LibraryLevelScreen> {
                       padding: EdgeInsets.only(bottom: 8),
                       child: OfflineHint(),
                     ),
-                  HeroPanel(
-                    eyebrow: r.levelName,
-                    title: title,
-                    subtitle: widget.path.isEmpty ? kind.blurb : null,
-                    icon: kindIcon(kind),
-                    color: color,
-                    stats: r.stats,
+                  Text(
+                    r.levelName,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
+                  if (r.stats.isNotEmpty)
+                    Text(
+                      r.stats.map((s) => '${s.$1} ${s.$2}').join(' · '),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   const Gap(HSpace.md),
                   if (r.items.length > 6) ...[
                     HSearchField(

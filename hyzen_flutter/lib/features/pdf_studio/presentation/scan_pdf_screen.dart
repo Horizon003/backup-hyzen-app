@@ -268,6 +268,7 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
         _pages = [];
         _selectedPage = 0;
         _crop = false;
+        _busy = false;
       });
       final action = await showModalBottomSheet<String>(
         context: context,
@@ -313,18 +314,30 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
         ),
       );
       if (!mounted) return;
-      if (action == 'share') {
-        await MediaUpload.shareDocument(
-          item.internalFilePath,
-          item.displayName,
-          'application/pdf',
-        );
-      } else if (action == 'locate') {
-        await MediaUpload.exportDocument(
-          item.internalFilePath,
-          item.displayName,
-          'application/pdf',
-        );
+      try {
+        if (action == 'share') {
+          await MediaUpload.shareDocument(
+            item.internalFilePath,
+            item.displayName,
+            'application/pdf',
+          );
+        } else if (action == 'locate') {
+          await MediaUpload.exportDocument(
+            item.internalFilePath,
+            item.displayName,
+            'application/pdf',
+          );
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'PDF saved. Try sharing again from the document menu.',
+              ),
+            ),
+          );
+        }
       }
       if (mounted) context.replace('/pdf-studio/viewer/${item.id}');
     }
@@ -774,13 +787,17 @@ class _ScanPdfScreenState extends ConsumerState<ScanPdfScreen>
                           ? () => setState(() => _selectedPage = sel - 1)
                           : null,
                     ),
-                    const Spacer(),
-                    ScanPill(
-                      label: 'Page ${sel + 1} of $count',
-                      trailing: Icons.keyboard_arrow_down_rounded,
-                      onTap: () => _pageOptions(sel),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Center(
+                        child: ScanPill(
+                          label: 'Page ${sel + 1} of $count',
+                          trailing: Icons.keyboard_arrow_down_rounded,
+                          onTap: () => _pageOptions(sel),
+                        ),
+                      ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     ScanRoundButton(
                       icon: Icons.chevron_right_rounded,
                       tooltip: 'Next page',

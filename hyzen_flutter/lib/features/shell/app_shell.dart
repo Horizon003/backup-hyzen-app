@@ -120,11 +120,20 @@ class TabPage extends StatelessWidget {
   final Future<void> Function()? onRefresh;
   @override
   Widget build(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final headerHeight = header != null
+        ? 64.0
+        : (scaler.scale(22) * 1.25 +
+                  (subtitle != null ? scaler.scale(11) * 1.4 : 0) +
+                  12)
+              .clamp(64.0, 160.0);
     final scroll = CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).top + 64 + 8),
+          child: SizedBox(
+            height: MediaQuery.paddingOf(context).top + headerHeight + 8,
+          ),
         ),
         ...slivers,
         if (homeBackground == null)
@@ -137,12 +146,13 @@ class TabPage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       drawer: drawer,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: Size.fromHeight(headerHeight),
         child: Theme(
           data: headerTheme ?? Theme.of(context),
           child:
               header ??
               _Bar(
+                height: headerHeight,
                 integrated: integratedHeader,
                 onAccount: () => showAccountMenu(context),
                 title: title,
@@ -158,7 +168,7 @@ class TabPage extends StatelessWidget {
                   ? scroll
                   : RefreshIndicator(
                       onRefresh: onRefresh!,
-                      edgeOffset: 64,
+                      edgeOffset: headerHeight,
                       child: scroll,
                     ),
             )
@@ -168,7 +178,7 @@ class TabPage extends StatelessWidget {
                   ? scroll
                   : RefreshIndicator(
                       onRefresh: onRefresh!,
-                      edgeOffset: 64,
+                      edgeOffset: headerHeight,
                       child: scroll,
                     ),
             ),
@@ -179,6 +189,7 @@ class TabPage extends StatelessWidget {
 class _Bar extends StatelessWidget implements PreferredSizeWidget {
   const _Bar({
     required this.title,
+    this.height = 64,
     this.subtitle,
     this.actions = const [],
     this.showMenu = false,
@@ -188,18 +199,19 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
   final bool integrated;
   final VoidCallback? onAccount;
   final bool showMenu;
+  final double height;
   final String title;
   final String? subtitle;
   final List<Widget> actions;
   @override
-  Size get preferredSize => const Size.fromHeight(64);
+  Size get preferredSize => Size.fromHeight(height);
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final header = SafeArea(
       bottom: false,
       child: SizedBox(
-        height: 64,
+        height: height,
         child: Row(
           children: [
             if (showMenu)

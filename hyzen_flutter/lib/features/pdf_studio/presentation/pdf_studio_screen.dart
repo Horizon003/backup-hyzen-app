@@ -125,11 +125,7 @@ class _PdfStudioScreenState extends ConsumerState<PdfStudioScreen> {
           ),
         ),
         if (all.isEmpty)
-          SliverToBoxAdapter(
-            child: _EmptyWorkspace(
-              onCreate: () => showOfficeToolsSheet(context),
-            ),
-          ),
+          const SliverToBoxAdapter(child: _EmptyWorkspace()),
         if (all.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: Padding(
@@ -407,8 +403,7 @@ class _FilterPill extends StatelessWidget {
 }
 
 class _EmptyWorkspace extends StatelessWidget {
-  const _EmptyWorkspace({required this.onCreate});
-  final VoidCallback onCreate;
+  const _EmptyWorkspace();
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(24, 40, 24, 12),
@@ -433,34 +428,6 @@ class _EmptyWorkspace extends StatelessWidget {
           'Scan pages, convert photos or open a PDF to start.',
           textAlign: TextAlign.center,
           style: TextStyle(color: OfficeColors.muted(context)),
-        ),
-        const SizedBox(height: 22),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                style: officeOutlineStyle(context),
-                onPressed: () => context.push('/create-pdf?source=gallery'),
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('From images'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton.icon(
-                style: officePrimaryStyle(),
-                onPressed: () => context.push('/create-pdf?source=camera'),
-                icon: const Icon(Icons.document_scanner_outlined),
-                label: const Text('Scan'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        TextButton.icon(
-          onPressed: onCreate,
-          icon: const Icon(Icons.apps_rounded),
-          label: const Text('More tools'),
         ),
       ],
     ),
