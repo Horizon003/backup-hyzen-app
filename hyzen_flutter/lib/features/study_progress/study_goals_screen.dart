@@ -356,7 +356,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                 }, child: const Text('Add Task'))),
             ],
           )),
-        )),
+        ),
       );
     } finally {
       title.dispose();
@@ -443,7 +443,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                 }, child: const Text('Add Reminder'))),
             ],
           )),
-        )),
+        ),
       );
     } finally {
       title.dispose();
