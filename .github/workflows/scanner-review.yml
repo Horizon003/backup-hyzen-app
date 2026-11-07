@@ -4,7 +4,7 @@ on:
     branches: [codex/scanner-compact-office]
   pull_request:
     branches: [main]
-    paths: ['hyzen_flutter/**', 'tools/scan_bench/**']
+    paths: ['hyzen_flutter/**', 'tools/scan_bench/**', '.github/workflows/scanner-review.yml']
 permissions:
   contents: read
 concurrency:
@@ -13,7 +13,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     env:
       CI: 'true'
       FLUTTER_SUPPRESS_ANALYTICS: 'true'
@@ -45,6 +45,15 @@ jobs:
           printf 'sdk.dir=%s\nflutter.sdk=%s\n' "$ANDROID_HOME" "$FLUTTER_ROOT" > local.properties
           flutter precache --android
           gradle :app:compileDebugKotlin
+      - name: Build Android test APK
+        if: ${{ !cancelled() }}
+        working-directory: hyzen_flutter
+        run: flutter build apk --debug --no-pub
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && hashFiles('hyzen_flutter/build/app/outputs/flutter-apk/app-debug.apk') != '' }}
+        with:
+          name: hyzen-android-test-apk
+          path: hyzen_flutter/build/app/outputs/flutter-apk/app-debug.apk
       - name: Build review preview
         if: ${{ !cancelled() }}
         working-directory: hyzen_flutter
@@ -53,4 +62,13 @@ jobs:
         if: ${{ !cancelled() && hashFiles('hyzen_flutter/build/web/index.html') != '' }}
         with:
           name: compact-office-preview
+          path: hyzen_flutter/build/web
+      - name: Build actual Flutter application
+        if: ${{ !cancelled() }}
+        working-directory: hyzen_flutter
+        run: flutter build web --release --no-pub --base-href /pharm-d-with-hyzen/
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && hashFiles('hyzen_flutter/build/web/main.dart.js') != '' }}
+        with:
+          name: hyzen-flutter-web
           path: hyzen_flutter/build/web

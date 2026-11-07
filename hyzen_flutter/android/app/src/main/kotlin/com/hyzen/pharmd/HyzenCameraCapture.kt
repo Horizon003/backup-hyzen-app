@@ -175,13 +175,24 @@ class ScanDraftStore(private val context: Context) {
         } catch (e: Throwable) { orig.delete(); throw e }
     }
 
-    private fun render(orig: File, m: org.json.JSONObject, out: File) {
-        var b = StudioImages.load(orig.path, 2600)
+    fun preview(path: String, filter: String): ByteArray {
+        require(path in pages()) { "Choose a draft page." }
+        require(filter in listOf("original", "magic", "gray", "bw"))
+        val metadata = meta(path).put("filter", filter)
+        val out = File.createTempFile("preview_", ".jpg", context.cacheDir)
+        try {
+            render(original(path) ?: File(path), metadata, out, 900)
+            return out.readBytes()
+        } finally { out.delete() }
+    }
+
+    private fun render(orig: File, m: org.json.JSONObject, out: File, maxSize: Int = 2600) {
+        var b = StudioImages.load(orig.path, maxSize)
         try {
             val qa = m.optJSONArray("quad")
             val q = if (qa != null && qa.length() == 8) (0 until 8).map { qa.getDouble(it) } else FULL
             require(ScanVision.validQuad(q)) { "Invalid crop corners" }
-            val warped = ScanBitmaps.warp(b, q, 2000); b.recycle(); b = warped
+            val warped = ScanBitmaps.warp(b, q, minOf(2000, maxSize)); b.recycle(); b = warped
             val rot = m.optInt("rotation", 0)
             if (rot % 360 != 0) {
                 val r = Bitmap.createBitmap(b, 0, 0, b.width, b.height, Matrix().apply { postRotate(rot.toFloat()) }, true)
@@ -347,6 +358,7 @@ class HyzenCameraCapture(private val activity: MainActivity, messenger: BinaryMe
                             call.argument<Int>("contrast"),
                         )
                         "annotate" -> store.adjust(listOf(call.argument<String>("path") ?: ""), null, null, null, null, call.argument<List<Map<String, Any?>>>("marks") ?: emptyList())
+                        "preview" -> store.preview(call.argument<String>("path") ?: "", call.argument<String>("filter") ?: "original")
                         "pageInfo" -> store.pageInfo(call.argument<String>("path") ?: "")
                         "detect" -> store.detectIn(call.argument<String>("path") ?: "")
                         "edit" -> store.edit(call.argument<List<String>>("paths") ?: emptyList(), call.argument<String>("filter") ?: "original", call.argument<List<Double>>("crop"))
