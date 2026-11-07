@@ -32,7 +32,7 @@ class StudyStats {
     final today = DateTime(now.year, now.month, now.day);
     final monday = today.subtract(Duration(days: today.weekday - 1));
     return List.generate(
-      7,
+      now.weekday,
       (i) => studyDayKey(monday.add(Duration(days: i))),
     ).fold(0, (sum, day) => sum + (days[day] ?? 0));
   }
@@ -40,18 +40,18 @@ class StudyStats {
   static int streak(Map<String, int> days, DateTime now) {
     var day = DateTime(now.year, now.month, now.day);
     if ((days[studyDayKey(day)] ?? 0) < 900) {
-      day = day.subtract(const Duration(days: 1));
+      day = DateTime(day.year, day.month, day.day - 1);
     }
     var count = 0;
     while ((days[studyDayKey(day)] ?? 0) >= 900) {
       count++;
-      day = day.subtract(const Duration(days: 1));
+      day = DateTime(day.year, day.month, day.day - 1);
     }
     return count;
   }
 
-  static int bestStreak(Map<String, int> days) {
-    final dates = days.keys.where((k) => (days[k] ?? 0) >= 900).toList()
+  static int bestStreak(Map<String, int> days, [DateTime? now]) {
+    final dates = days.keys.where((k) => (days[k] ?? 0) >= 900 && k.compareTo(studyDayKey(now ?? DateTime.now())) <= 0).toList()
       ..sort();
     DateTime? last;
     var current = 0;
@@ -59,7 +59,7 @@ class StudyStats {
     for (final value in dates) {
       final day = DateTime.tryParse(value);
       if (day == null) continue;
-      current = last != null && day.difference(last).inDays == 1
+      current = last != null && day == DateTime(last.year, last.month, last.day + 1)
           ? current + 1
           : 1;
       if (current > best) best = current;
@@ -68,11 +68,11 @@ class StudyStats {
     return best;
   }
 
-  static List<String> recentBreaks(Map<String, int> days) {
-    final dates = days.keys.where((k) => (days[k] ?? 0) >= 900).toList()
+  static List<String> recentBreaks(Map<String, int> days, [DateTime? now]) {
+    final dates = days.keys.where((k) => (days[k] ?? 0) >= 900 && k.compareTo(studyDayKey(now ?? DateTime.now())) <= 0).toList()
       ..sort();
     final breaks = <String>[];
-    for (var i = dates.length - 1; i > 0 && breaks.length < 3; i--) {
+    for (var i = dates.length - 1; i > 0; i--) {
       final newer = DateTime.tryParse(dates[i]);
       final older = DateTime.tryParse(dates[i - 1]);
       if (newer == null || older == null) continue;
@@ -97,6 +97,10 @@ class StudyTask {
     this.estimatedMinutes = 30,
     this.leadMinutes = 0,
     this.enabled = true,
+    this.weekdays = const [],
+    this.extraAlerts = 0,
+    this.quiet = true,
+    this.until,
   });
   final String id;
   final String title;
@@ -104,6 +108,10 @@ class StudyTask {
   final bool done;
   final bool alerted;
   final bool enabled;
+  final List<int> weekdays;
+  final int extraAlerts;
+  final bool quiet;
+  final DateTime? until;
   final String kind, category, priority, repeat;
   final int estimatedMinutes, leadMinutes;
 
@@ -120,6 +128,10 @@ class StudyTask {
     repeat: repeat,
     estimatedMinutes: estimatedMinutes,
     leadMinutes: leadMinutes,
+    weekdays: weekdays,
+    extraAlerts: extraAlerts,
+    quiet: quiet,
+    until: until,
   );
 
   Map<String, dynamic> toJson() => {
@@ -129,6 +141,10 @@ class StudyTask {
     'done': done,
     'alerted': alerted,
     'enabled': enabled,
+    'weekdays': weekdays,
+    'extraAlerts': extraAlerts,
+    'quiet': quiet,
+    'until': until?.toIso8601String(),
     'kind': kind,
     'category': category,
     'priority': priority,
@@ -154,6 +170,13 @@ class StudyTask {
         .clamp(0, 120)
         .toInt(),
     enabled: map['enabled'] != false,
+    weekdays: (map['weekdays'] as List? ?? [])
+        .whereType<int>()
+        .where((d) => d >= 1 && d <= 7)
+        .toList(),
+    extraAlerts: ((map['extraAlerts'] as num?)?.toInt() ?? 0).clamp(0, 2),
+    quiet: map['quiet'] != false,
+    until: DateTime.tryParse((map['until'] ?? '').toString()),
   );
 }
 
@@ -309,8 +332,8 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   int get todaySeconds => _days[studyDayKey(clock())] ?? 0;
   int get weekSeconds => StudyStats.weekSeconds(_days, clock());
   int get currentStreak => StudyStats.streak(_days, clock());
-  int get highestStreak => StudyStats.bestStreak(_days);
-  List<String> get recentBreaks => StudyStats.recentBreaks(_days);
+  int get highestStreak => StudyStats.bestStreak(_days, clock());
+  List<String> get recentBreaks => StudyStats.recentBreaks(_days, clock());
   Map<String, int> get days => Map.unmodifiable(_days);
   List<StudyTask> get tasks =>
       List.unmodifiable(_tasks.where((t) => t.kind == 'task'));
@@ -457,7 +480,11 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _scheduleDevice(StudyTask task) async {
-    if (!scheduleDevice || !task.enabled || task.done || task.due == null) {
+    if (!scheduleDevice) return;
+    if (!task.enabled || task.done || task.due == null) {
+      await StudyNotificationScheduler.instance.cancel(
+        '$storageKey:${task.id}',
+      );
       return;
     }
     await StudyNotificationScheduler.instance.schedule(
@@ -466,6 +493,10 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
       due: task.due!,
       repeat: task.repeat,
       leadMinutes: task.leadMinutes,
+      weekdays: task.weekdays,
+      extraAlerts: task.extraAlerts,
+      quiet: task.quiet,
+      until: task.until,
       route: '/study-goals',
     );
   }

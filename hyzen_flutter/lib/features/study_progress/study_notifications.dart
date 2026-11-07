@@ -1,3 +1,4 @@
+import 'reminder_plan.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -68,7 +69,8 @@ class StudyNotificationScheduler {
 
   void _open(String? payload) {
     final route = payload?.startsWith('/study-') == true
-        ? payload! : '/study-goals';
+        ? payload!
+        : '/study-goals';
     if (onOpen == null) {
       _pendingRoute = route;
     } else {
@@ -80,15 +82,23 @@ class StudyNotificationScheduler {
     if (kIsWeb) return false;
     await initialize();
     try {
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (android != null) {
         return await android.requestNotificationsPermission() ?? false;
       }
-      final ios = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
-      return await ios?.requestPermissions(alert: true, badge: true,
-          sound: true) ?? false;
+      final ios = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      return await ios?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
+          false;
     } catch (_) {
       return false;
     }
@@ -98,7 +108,7 @@ class StudyNotificationScheduler {
     if (kIsWeb) return;
     await initialize();
     try {
-      for (var i = 0; i < 7; i++) {
+      for (var i = 0; i < 96; i++) {
         await _plugin.cancel(idFor('$key:$i'));
       }
     } catch (_) {}
@@ -111,21 +121,38 @@ class StudyNotificationScheduler {
     String repeat = 'none',
     String route = '/study-goals',
     int leadMinutes = 0,
+    List<int> weekdays = const [],
+    int extraAlerts = 0,
+    bool quiet = true,
+    DateTime? until,
   }) async {
     if (kIsWeb) return;
     await initialize();
     await cancel(key);
     try {
       final now = DateTime.now();
-      final notice = const NotificationDetails(android: AndroidNotificationDetails(
-        'hyzen_study_v1', 'Study and task reminders',
-        channelDescription: 'Your scheduled study goals and tasks',
-        importance: Importance.high, priority: Priority.high,
-      ), iOS: DarwinNotificationDetails());
-      Future<void> put(int slot, DateTime time, DateTimeComponents? match) async {
+      final notice = const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'hyzen_study_v1',
+          'Study and task reminders',
+          channelDescription: 'Your scheduled study goals and tasks',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      );
+      Future<void> put(
+        int slot,
+        DateTime time,
+        DateTimeComponents? match,
+      ) async {
         final when = tz.TZDateTime.from(time, tz.local);
-        await _plugin.zonedSchedule(idFor('$key:$slot'),
-          'PHARM D WITH HYZEN', title, when, notice,
+        await _plugin.zonedSchedule(
+          idFor('$key:$slot'),
+          'PHARM D WITH HYZEN',
+          title,
+          when,
+          notice,
           payload: route,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
@@ -133,34 +160,23 @@ class StudyNotificationScheduler {
           matchDateTimeComponents: match,
         );
       }
-      if (repeat == 'weekdays') {
-        for (var weekday = 1; weekday <= 5; weekday++) {
-          var day = now;
-          var delta = (weekday - day.weekday + 7) % 7;
-          var at = DateTime(day.year, day.month, day.day + delta,
-              due.hour, due.minute).subtract(Duration(minutes: leadMinutes));
-          if (!at.isAfter(now)) {
-            delta += 7;
-            at = DateTime(day.year, day.month, day.day + delta,
-                due.hour, due.minute).subtract(Duration(minutes: leadMinutes));
-          }
-          await put(weekday, at, DateTimeComponents.dayOfWeekAndTime);
-        }
-      } else if (repeat == 'daily' || repeat == 'weekly') {
-        var at = DateTime(now.year, now.month, now.day,
-            due.hour, due.minute).subtract(Duration(minutes: leadMinutes));
-        if (repeat == 'weekly') {
-          final shift = (due.weekday - now.weekday + 7) % 7;
-          at = at.add(Duration(days: shift));
-        }
-        if (!at.isAfter(now)) {
-          at = at.add(Duration(days: repeat == 'daily' ? 1 : 7));
-        }
-        await put(0, at, repeat == 'daily'
-            ? DateTimeComponents.time : DateTimeComponents.dayOfWeekAndTime);
-      } else {
-        final at = due.subtract(Duration(minutes: leadMinutes));
-        if (at.isAfter(now)) await put(0, at, null);
+
+      final plan = reminderPlan(
+        now: now,
+        due: due,
+        repeat: repeat,
+        weekdays: weekdays,
+        leadMinutes: leadMinutes,
+        extraAlerts: extraAlerts,
+        quiet: quiet,
+        until: until,
+      );
+      for (var i = 0; i < plan.length; i++) {
+        await put(
+          i,
+          plan[i].time,
+          plan[i].weekly ? DateTimeComponents.dayOfWeekAndTime : null,
+        );
       }
     } catch (error) {
       if (kDebugMode) debugPrint('Could not schedule reminder: $error');

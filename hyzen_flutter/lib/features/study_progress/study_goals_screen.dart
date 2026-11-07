@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'study_tracker.dart';
-import 'study_notifications.dart';
+import 'study_forms.dart';
 import '../home/presentation/home_time_artwork.dart';
 
 const _sky = Color(0xFF49AFFF);
@@ -83,14 +83,16 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
     final progress = ref.watch(studyTrackerProvider);
     final now = DateTime.now();
     final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 3.0);
-    final pct = (progress.todaySeconds / (progress.dailyGoal * 60))
+    final pct = (progress.todaySeconds / ((selectedPeriod == 2 ? progress.customGoal : progress.dailyGoal) * 60))
         .clamp(0.0, 1.0)
         .toDouble();
     final weeklyPct = (progress.weekSeconds / (progress.weeklyGoal * 60))
         .clamp(0.0, 1.0)
         .toDouble();
-    final done = progress.completedTasks;
-    final total = progress.tasks.length;
+    final todayTasks = progress.tasks.where((task) => task.due == null ||
+      studyDayKey(task.due!) == studyDayKey(now)).toList();
+    final done = todayTasks.where((task) => task.done).length;
+    final total = todayTasks.length;
     final entries = progress.days;
     final monday = DateTime(
       now.year,
@@ -103,7 +105,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
     ];
     final maxWeek = week.fold<int>(1, (m, d) => d > m ? d : m);
     final priorWeek = [
-      for (var i = -7; i < 0; i++)
+      for (var i = -7; i < now.weekday - 7; i++)
         entries[studyDayKey(monday.add(Duration(days: i)))] ?? 0,
     ].fold<int>(0, (a, b) => a + b);
     final changePercent = priorWeek > 0
@@ -374,7 +376,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                     action: '+ Add Task',
                     onTap: () => _addTask(progress),
                   ),
-                  if (progress.tasks.isEmpty)
+                  if (todayTasks.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(18),
                       child: Text(
@@ -382,7 +384,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                         style: TextStyle(color: Colors.white70),
                       ),
                     ),
-                  for (final task in progress.tasks)
+                  for (final task in todayTasks)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Material(
@@ -417,6 +419,13 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                           ),
                           trailing: PopupMenuButton<String>(
                             onSelected: (selection) {
+                              if (selection == 'edit') {
+                                showStudyForm(
+                                  context,
+                                  progress,
+                                  existing: task,
+                                );
+                              }
                               if (selection == 'done') {
                                 progress.toggleTask(task.id);
                               }
@@ -425,6 +434,10 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                               }
                             },
                             itemBuilder: (_) => const [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Text('Edit task'),
+                              ),
                               PopupMenuItem(
                                 value: 'done',
                                 child: Text('Toggle complete'),
@@ -505,11 +518,13 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                               ),
                               PopupMenuButton<String>(
                                 onSelected: (v) {
+                                  if (v == 'edit') { showStudyForm(context, progress, reminder: true, existing: reminder); }
                                   if (v == 'delete') {
                                     progress.deleteTask(reminder.id);
                                   }
                                 },
                                 itemBuilder: (_) => const [
+                                  PopupMenuItem(value: 'edit', child: Text('Edit reminder')),
                                   PopupMenuItem(
                                     value: 'delete',
                                     child: Text('Delete reminder'),
@@ -599,7 +614,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                       ),
                       _Insight(
                         'Daily average',
-                        '${(progress.weekSeconds ~/ 60) ~/ 7}m',
+                        '${(progress.weekSeconds ~/ 60) ~/ now.weekday}m',
                       ),
                       _Insight('Active days', '$daysStudied / 7'),
                       _Insight(
@@ -699,344 +714,10 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
     }
   }
 
-  Future<void> _addTask(StudyTracker tracker) async {
-    final title = TextEditingController();
-    var category = 'General';
-    var priority = 'Medium';
-    var minutes = 30;
-    DateTime? due;
-    try {
-      await showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        isScrollControlled: true,
-        backgroundColor: _panel,
-        builder: (sheet) => StatefulBuilder(
-          builder: (sheet, change) => SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              8,
-              20,
-              24 + MediaQuery.viewInsetsOf(sheet).bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Add Task',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 21),
-                ),
-                const Text(
-                  'Create a study task for your goal',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: title,
-                  autofocus: true,
-                  maxLength: 120,
-                  decoration: const InputDecoration(
-                    labelText: 'Task Title *',
-                    hintText: 'e.g. Revise Unit 3',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: category,
-                  decoration: const InputDecoration(
-                    labelText: 'Subject / Category',
-                  ),
-                  items:
-                      const [
-                            'General',
-                            'Pharmacology',
-                            'Pharmaceutics',
-                            'Pharmacognosy',
-                            'Pathology',
-                            'Biochemistry',
-                            'Other',
-                          ]
-                          .map(
-                            (v) => DropdownMenuItem(value: v, child: Text(v)),
-                          )
-                          .toList(),
-                  onChanged: (v) => change(() => category = v ?? category),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'Estimated Time',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final v in [15, 30, 60, 90, 120])
-                      ChoiceChip(
-                        label: Text('${v}m'),
-                        selected: minutes == v,
-                        onSelected: (_) => change(() => minutes = v),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Priority',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final v in ['Low', 'Medium', 'High'])
-                      ChoiceChip(
-                        label: Text(v),
-                        selected: priority == v,
-                        onSelected: (_) => change(() => priority = v),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.event_outlined),
-                  label: Text(
-                    due == null
-                        ? 'Due Date (optional)'
-                        : '${due!.day}/${due!.month}/${due!.year}',
-                  ),
-                  onPressed: () async {
-                    final result = await showDatePicker(
-                      context: sheet,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now().subtract(
-                        const Duration(days: 1),
-                      ),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (result != null) change(() => due = result);
-                  },
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () {
-                      if (title.text.trim().isEmpty) return;
-                      tracker.addDetailedTask(
-                        title.text,
-                        category: category,
-                        priority: priority.toLowerCase(),
-                        estimatedMinutes: minutes,
-                        due: due,
-                      );
-                      Navigator.pop(sheet);
-                    },
-                    child: const Text('Add Task'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } finally {
-      title.dispose();
-    }
-  }
-
-  Future<void> _addReminder(StudyTracker tracker) async {
-    final title = TextEditingController();
-    var type = 'Study';
-    var repeat = 'daily';
-    var lead = 0;
-    var due = DateTime.now().add(const Duration(hours: 1));
-    try {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        backgroundColor: _panel,
-        builder: (sheet) => StatefulBuilder(
-          builder: (sheet, change) => SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              8,
-              20,
-              24 + MediaQuery.viewInsetsOf(sheet).bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Add Reminder',
-                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
-                ),
-                const Text(
-                  'Get notified for your study tasks',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: title,
-                  maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Reminder Title *',
-                    hintText: 'e.g. Study Time',
-                  ),
-                ),
-                const SizedBox(height: 7),
-                const Text(
-                  'Reminder Type',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                Wrap(
-                  spacing: 7,
-                  children: [
-                    for (final name in ['Study', 'Task', 'Goal', 'General'])
-                      ChoiceChip(
-                        label: Text(name),
-                        selected: type == name,
-                        onSelected: (_) => change(() => type = name),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 9),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.calendar_month_outlined),
-                        label: Text('${due.day}/${due.month}/${due.year}'),
-                        onPressed: () async {
-                          final result = await showDatePicker(
-                            context: sheet,
-                            initialDate: due,
-                            firstDate: DateTime.now().subtract(
-                              const Duration(days: 1),
-                            ),
-                            lastDate: DateTime.now().add(
-                              const Duration(days: 365),
-                            ),
-                          );
-                          if (result != null) {
-                            change(
-                              () => due = DateTime(
-                                result.year,
-                                result.month,
-                                result.day,
-                                due.hour,
-                                due.minute,
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.schedule),
-                        label: Text(
-                          '${due.hour.toString().padLeft(2, '0')}:${due.minute.toString().padLeft(2, '0')}',
-                        ),
-                        onPressed: () async {
-                          final result = await showTimePicker(
-                            context: sheet,
-                            initialTime: TimeOfDay.fromDateTime(due),
-                          );
-                          if (result != null) {
-                            change(
-                              () => due = DateTime(
-                                due.year,
-                                due.month,
-                                due.day,
-                                result.hour,
-                                result.minute,
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Repeat',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                Wrap(
-                  spacing: 7,
-                  children: [
-                    for (final val in ['none', 'daily', 'weekdays', 'weekly'])
-                      ChoiceChip(
-                        label: Text(
-                          val == 'none'
-                              ? 'Once'
-                              : val == 'weekdays'
-                              ? 'Mon–Fri'
-                              : val[0].toUpperCase() + val.substring(1),
-                        ),
-                        selected: repeat == val,
-                        onSelected: (_) => change(() => repeat = val),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Notify Me',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                Wrap(
-                  spacing: 7,
-                  children: [
-                    for (final v in [0, 10, 30])
-                      ChoiceChip(
-                        label: Text(v == 0 ? 'At time' : '$v min before'),
-                        selected: lead == v,
-                        onSelected: (_) => change(() => lead = v),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () async {
-                      if (title.text.trim().isEmpty) return;
-                      final allowed = await StudyNotificationScheduler.instance
-                          .requestPermission();
-                      tracker.addReminder(
-                        title.text,
-                        due,
-                        type: type,
-                        repeat: repeat,
-                        leadMinutes: lead,
-                      );
-                      if (!sheet.mounted || !mounted) return;
-                      Navigator.pop(sheet);
-                      if (!allowed) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Reminder saved. Enable device notifications to see Android alerts.',
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    child: const Text('Add Reminder'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } finally {
-      title.dispose();
-    }
-  }
+  Future<void> _addTask(StudyTracker tracker) =>
+      showStudyForm(context, tracker);
+  Future<void> _addReminder(StudyTracker tracker) =>
+      showStudyForm(context, tracker, reminder: true);
 }
 
 class _LinkCard extends StatelessWidget {

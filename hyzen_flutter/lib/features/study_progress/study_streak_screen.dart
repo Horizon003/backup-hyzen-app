@@ -33,10 +33,10 @@ class _StudyStreakScreenState extends ConsumerState<StudyStreakScreen> {
     final monday = today.subtract(Duration(days: today.weekday - 1));
     final week = [
       for (var i = 0; i < 7; i++)
-        p.days[studyDayKey(monday.add(Duration(days: i)))] ?? 0,
+        i >= now.weekday ? 0 : p.days[studyDayKey(monday.add(Duration(days: i)))] ?? 0,
     ];
     final weekCount = week.where((n) => n >= 900).length;
-    final totalDays = p.days.values.where((n) => n >= 900).length;
+    final totalDays = p.days.entries.where((e) => e.value >= 900 && e.key.compareTo(studyDayKey(now)) <= 0).length;
     final totals = [
       for (var i = historyRange - 1; i >= 0; i--)
         p.days[studyDayKey(today.subtract(Duration(days: i)))] ?? 0,
@@ -301,7 +301,7 @@ class _StudyStreakScreenState extends ConsumerState<StudyStreakScreen> {
                       style: TextStyle(color: subtle),
                     ),
                   ),
-                for (final entry in p.recentBreaks)
+                for (final entry in p.recentBreaks.take(3))
                   Padding(
                     padding: const EdgeInsets.only(bottom: 7),
                     child: Container(
@@ -486,8 +486,8 @@ class _StudyStreakScreenState extends ConsumerState<StudyStreakScreen> {
     showDragHandle: true,
     builder: (sheet) => Padding(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: ListView(
+        shrinkWrap: true,
         children: [
           const Text(
             'Recent Breaks',
@@ -507,8 +507,8 @@ class _StudyStreakScreenState extends ConsumerState<StudyStreakScreen> {
     showDragHandle: true,
     builder: (sheet) => Padding(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: ListView(
+        shrinkWrap: true,
         children: [
           const Text(
             'Study Milestones',

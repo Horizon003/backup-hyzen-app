@@ -37,10 +37,15 @@ android {
 
     // Private development signing, retained for continuity between test updates.
     signingConfigs.getByName("debug") {
-        storeFile = file("../test-signing/hyzen-test.keystore")
-        storePassword = "android"
-        keyAlias = "AndroidDebugKey"
-        keyPassword = "android"
+        val privateTestKey = file("../test-signing/hyzen-test.keystore")
+        if (privateTestKey.exists()) {
+            storeFile = privateTestKey
+            storePassword = "android"
+            keyAlias = "AndroidDebugKey"
+            keyPassword = "android"
+        }
+        // Fresh CI uses AGP's standard debug key. This APK is a test artifact;
+        // production releases still require the owner's key.properties above.
     }
     signingConfigs.create("production") {
         if (releasePropertiesFile.exists()) {
