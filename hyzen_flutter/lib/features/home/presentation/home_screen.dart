@@ -122,7 +122,7 @@ class HomeScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(homeGreeting(ref.watch(homeClockProvider)()).toUpperCase(),
+                    if (scale <= 1.3) Text(homeGreeting(ref.watch(homeClockProvider)()).toUpperCase(),
                       key: const ValueKey('home-greeting'),
                       style: TextStyle(
                         fontSize: 10, letterSpacing: .7,
@@ -261,9 +261,9 @@ class HomeScreen extends ConsumerWidget {
                             ),
                           ),
                         Row(children: [
-                          Text('Quick Access', style: Theme.of(context).textTheme.titleLarge
-                            ?.copyWith(fontSize: 18, fontWeight: FontWeight.w800)),
-                          const Spacer(),
+                          Expanded(child: Text('Quick Access', maxLines: 1,
+                            overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(fontSize: 18, fontWeight: FontWeight.w800))),
                           TextButton(onPressed: () => context.go('/study'),
                             child: const Text('See All')),
                         ]),
@@ -286,6 +286,8 @@ class HomeScreen extends ConsumerWidget {
                           ),
                         ], 132),
                         const Gap(14),
+                        Text('Others', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                        const Gap(8),
                         Row(children: [
                           Expanded(child: _CompactHomeLink(
                             label: settings.sectionEnabled('shop') ? 'Shop' : 'Search',
@@ -296,7 +298,7 @@ class HomeScreen extends ConsumerWidget {
                           const SizedBox(width: 8),
                           Expanded(child: _CompactHomeLink(label: 'Downloads',
                             icon: Icons.file_download_outlined,
-                            badge: badges.isEmpty ? null : badges.first,
+                            badges: badges,
                             onTap: () => context.go('/downloads'))),
                           const SizedBox(width: 8),
                           Expanded(child: _CompactHomeLink(label: 'Study Plan',
@@ -443,11 +445,11 @@ class _ReferenceCard extends StatelessWidget {
 
 class _CompactHomeLink extends StatelessWidget {
   const _CompactHomeLink({required this.label, required this.icon,
-    required this.onTap, this.badge});
+    required this.onTap, this.badges = const []});
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  final String? badge;
+  final List<String> badges;
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -456,7 +458,8 @@ class _CompactHomeLink extends StatelessWidget {
       elevation: dark ? 0 : 2,
       borderRadius: BorderRadius.circular(17),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: SizedBox(height: 74,
+      child: InkWell(onTap: onTap, child: SizedBox(
+        height: (94 * MediaQuery.textScalerOf(context).scale(1)).clamp(94.0, 180.0),
         child: Padding(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(icon, size: 25, color: dark ? Colors.white : const Color(0xFF174E8B)),
@@ -464,8 +467,8 @@ class _CompactHomeLink extends StatelessWidget {
             Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center, style: const TextStyle(
                 fontSize: 11, fontWeight: FontWeight.w700)),
-            if (badge != null) Text(badge!, maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            for (final badge in badges) Text(badge, maxLines: 1,
+              overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w700)),
           ])),
       )),
