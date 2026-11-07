@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/providers.dart';
 import '../notifications/notifications_screen.dart';
+import 'study_notifications.dart';
 
 String studyDayKey(DateTime d) =>
     d.year.toString().padLeft(4, '0') + '-' +
@@ -33,11 +34,11 @@ class StudyStats {
 
   static int streak(Map<String, int> days, DateTime now) {
     var day = DateTime(now.year, now.month, now.day);
-    if ((days[studyDayKey(day)] ?? 0) < 60) {
+    if ((days[studyDayKey(day)] ?? 0) < 900) {
       day = day.subtract(const Duration(days: 1));
     }
     var count = 0;
-    while ((days[studyDayKey(day)] ?? 0) >= 60) {
+    while ((days[studyDayKey(day)] ?? 0) >= 900) {
       count++;
       day = day.subtract(const Duration(days: 1));
     }
@@ -45,7 +46,7 @@ class StudyStats {
   }
 
   static int bestStreak(Map<String, int> days) {
-    final dates = days.keys.where((k) => (days[k] ?? 0) >= 60).toList()..sort();
+    final dates = days.keys.where((k) => (days[k] ?? 0) >= 900).toList()..sort();
     DateTime? last;
     var current = 0;
     var best = 0;
@@ -61,7 +62,7 @@ class StudyStats {
   }
 
   static List<String> recentBreaks(Map<String, int> days) {
-    final dates = days.keys.where((k) => (days[k] ?? 0) >= 60).toList()..sort();
+    final dates = days.keys.where((k) => (days[k] ?? 0) >= 900).toList()..sort();
     final breaks = <String>[];
     for (var i = dates.length - 1; i > 0 && breaks.length < 3; i--) {
       final newer = DateTime.tryParse(dates[i]);
@@ -75,25 +76,48 @@ class StudyStats {
 }
 
 class StudyTask {
-  const StudyTask(this.id, this.title, {this.due, this.done = false, this.alerted = false});
+  const StudyTask(
+    this.id, this.title, {
+    this.due, this.done = false, this.alerted = false,
+    this.kind = 'task', this.category = 'General', this.priority = 'medium',
+    this.repeat = 'none', this.estimatedMinutes = 30, this.leadMinutes = 0,
+    this.enabled = true,
+  });
   final String id;
   final String title;
   final DateTime? due;
   final bool done;
   final bool alerted;
+  final bool enabled;
+  final String kind, category, priority, repeat;
+  final int estimatedMinutes, leadMinutes;
 
-  StudyTask change({bool? done, bool? alerted}) => StudyTask(
-    id, title, due: due, done: done ?? this.done, alerted: alerted ?? this.alerted);
+  StudyTask change({bool? done, bool? alerted, bool? enabled}) => StudyTask(
+    id, title,
+    due: due, done: done ?? this.done, alerted: alerted ?? this.alerted,
+    enabled: enabled ?? this.enabled, kind: kind, category: category,
+    priority: priority, repeat: repeat, estimatedMinutes: estimatedMinutes,
+    leadMinutes: leadMinutes,
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id, 'title': title, 'due': due?.toIso8601String(),
-    'done': done, 'alerted': alerted,
+    'done': done, 'alerted': alerted, 'enabled': enabled, 'kind': kind,
+    'category': category, 'priority': priority, 'repeat': repeat,
+    'estimatedMinutes': estimatedMinutes, 'leadMinutes': leadMinutes,
   };
 
   factory StudyTask.fromJson(Map<String, dynamic> map) => StudyTask(
     (map['id'] ?? '').toString(), (map['title'] ?? '').toString(),
     due: DateTime.tryParse((map['due'] ?? '').toString()),
     done: map['done'] == true, alerted: map['alerted'] == true,
+    kind: (map['kind'] ?? 'task').toString(),
+    category: (map['category'] ?? 'General').toString(),
+    priority: (map['priority'] ?? 'medium').toString(),
+    repeat: (map['repeat'] ?? 'none').toString(),
+    estimatedMinutes: ((map['estimatedMinutes'] as num?)?.toInt() ?? 30).clamp(1, 1440).toInt(),
+    leadMinutes: ((map['leadMinutes'] as num?)?.toInt() ?? 0).clamp(0, 120).toInt(),
+    enabled: map['enabled'] != false,
   );
 }
 
@@ -103,6 +127,12 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _checkReminders();
     _manageTicker();
+    // Restore alarms when the user returns after an update or device reboot.
+    for (final task in _tasks) {
+      if (task.enabled && !task.done && task.due != null) {
+        unawaited(_scheduleDevice(task));
+      }
+    }
   }
 
   final SharedPreferences prefs;
@@ -153,8 +183,11 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   int get currentStreak => StudyStats.streak(_days, DateTime.now());
   int get highestStreak => StudyStats.bestStreak(_days);
   List<String> get recentBreaks => StudyStats.recentBreaks(_days);
-  List<StudyTask> get tasks => List.unmodifiable(_tasks);
-  int get pendingCount => _tasks.where((task) => !task.done).length;
+  Map<String, int> get days => Map.unmodifiable(_days);
+  List<StudyTask> get tasks => List.unmodifiable(_tasks.where((t) => t.kind == 'task'));
+  List<StudyTask> get reminders => List.unmodifiable(_tasks.where((t) => t.kind == 'reminder'));
+  int get completedTasks => _tasks.where((t) => t.kind == 'task' && t.done).length;
+  int get pendingCount => _tasks.where((task) => task.kind == 'task' && !task.done).length;
 
   /// Do not leave an idle periodic timer alive in the app or widget tests.
   /// Only tick while studying or awaiting a due in-app reminder.
@@ -211,8 +244,10 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
 
   void addTask(String title, DateTime? due) {
     if (title.trim().isEmpty) return;
-    _tasks.insert(0, StudyTask(DateTime.now().microsecondsSinceEpoch.toString(),
-        title.trim(), due: due));
+    final task = StudyTask(DateTime.now().microsecondsSinceEpoch.toString(),
+        title.trim(), due: due);
+    _tasks.insert(0, task);
+    if (due != null) unawaited(_scheduleDevice(task));
     _save();
     notifyListeners();
     _checkReminders();
@@ -223,16 +258,81 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     final i = _tasks.indexWhere((t) => t.id == id);
     if (i < 0) return;
     _tasks[i] = _tasks[i].change(done: !_tasks[i].done);
+    if (_tasks[i].done) {
+      unawaited(StudyNotificationScheduler.instance.cancel(id));
+    } else {
+      unawaited(_scheduleDevice(_tasks[i]));
+    }
     _manageTicker();
     _save();
     notifyListeners();
   }
 
   void deleteTask(String id) {
+    unawaited(StudyNotificationScheduler.instance.cancel(id));
     _tasks.removeWhere((t) => t.id == id);
     _manageTicker();
     _save();
     notifyListeners();
+  }
+
+  Future<void> _scheduleDevice(StudyTask task) async {
+    if (!task.enabled || task.done || task.due == null) return;
+    await StudyNotificationScheduler.instance.schedule(
+      key: task.id, title: task.title, due: task.due!,
+      repeat: task.repeat, leadMinutes: task.leadMinutes,
+      route: '/study-goals',
+    );
+  }
+
+  void addDetailedTask(
+    String title, {
+    String category = 'General',
+    String priority = 'medium',
+    int estimatedMinutes = 30,
+    DateTime? due,
+  }) {
+    if (title.trim().isEmpty) return;
+    final task = StudyTask(DateTime.now().microsecondsSinceEpoch.toString(),
+      title.trim(), due: due, category: category, priority: priority,
+      estimatedMinutes: estimatedMinutes);
+    _tasks.insert(0, task);
+    if (due != null) unawaited(_scheduleDevice(task));
+    _save();
+    notifyListeners();
+    _manageTicker();
+  }
+
+  void addReminder(
+    String title, DateTime due, {
+    String type = 'Study',
+    String repeat = 'none',
+    int leadMinutes = 0,
+  }) {
+    if (title.trim().isEmpty) return;
+    final reminder = StudyTask(DateTime.now().microsecondsSinceEpoch.toString(),
+      title.trim(), due: due, kind: 'reminder', category: type,
+      repeat: repeat, leadMinutes: leadMinutes);
+    _tasks.insert(0, reminder);
+    unawaited(_scheduleDevice(reminder));
+    _save();
+    notifyListeners();
+    _manageTicker();
+  }
+
+  void toggleReminder(String id) {
+    final index = _tasks.indexWhere((t) => t.id == id && t.kind == 'reminder');
+    if (index < 0) return;
+    final updated = _tasks[index].change(enabled: !_tasks[index].enabled);
+    _tasks[index] = updated;
+    if (updated.enabled) {
+      unawaited(_scheduleDevice(updated));
+    } else {
+      unawaited(StudyNotificationScheduler.instance.cancel(id));
+    }
+    _save();
+    notifyListeners();
+    _manageTicker();
   }
 
   void _checkReminders() {
@@ -240,8 +340,8 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     var changed = false;
     for (var i = 0; i < _tasks.length; i++) {
       final task = _tasks[i];
-      if (!task.done && !task.alerted &&
-          task.due != null && !task.due!.isAfter(now)) {
+      if (!task.done && task.enabled && !task.alerted &&
+          task.repeat == 'none' && task.due != null && !task.due!.isAfter(now)) {
         _tasks[i] = task.change(alerted: true);
         changed = true;
         onReminder(task);
