@@ -79,6 +79,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc.startsWith('/pdf-studio/viewer/')) {
         return null;
       }
+      // Local-only study preview is safe to open before Firebase resolves.
+      if (loc == '/study-progress') return null;
       if (auth.isLoading && !auth.hasValue) {
         return loc == '/splash' ? null : '/splash';
       }
