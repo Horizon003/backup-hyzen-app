@@ -177,7 +177,11 @@ class NotificationsScreen extends ConsumerWidget {
                   onTap: () {
                     ref.read(notificationsProvider.notifier).read('${m['id']}');
                     if ('${m['url'] ?? ''}'.isNotEmpty) {
+                      if (m['url'] == '/study-progress') {
+                        context.push('/study-progress');
+                      } else {
                       openLink(context, '${m['url']}');
+                      }
                     }
                   },
                 );
