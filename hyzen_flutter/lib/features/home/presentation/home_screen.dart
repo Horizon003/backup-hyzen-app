@@ -355,19 +355,17 @@ class _ReferenceCard extends StatelessWidget {
     required this.art,
     required this.onTap,
     this.black = false,
-    this.badges = const [],
   });
   final String title, subtitle, art;
   final IconData icon;
   final VoidCallback onTap;
   final bool black;
-  final List<String> badges;
   @override
   Widget build(BuildContext context) {
     final ink = black ? Colors.white : Colors.black;
     return Semantics(
       button: true,
-      label: [title, ...badges].join(', '),
+      label: title,
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(26),
@@ -424,32 +422,13 @@ class _ReferenceCard extends StatelessWidget {
                         ),
                       ),
                       const Gap(9),
-                      if (badges.isEmpty) Padding(
+                      Padding(
                         padding: const EdgeInsets.only(right: 35),
-                        child: Text(
-                          subtitle,
-                          maxLines: 2,
+                        child: Text(subtitle, maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: ink.withValues(alpha: .72),
-                            fontSize: 11,
-                          ),
-                        ),
+                          style: TextStyle(color: ink.withValues(alpha: .72),
+                            fontSize: 11)),
                       ),
-                      if (badges.isNotEmpty) ...[
-                        const Gap(6),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 3,
-                          children: [
-                            for (final badge in badges)
-                              DecoratedBox(
-                                decoration: BoxDecoration(color: const Color(0xFFE9E9EB), borderRadius: BorderRadius.circular(6)),
-                                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), child: Text(badge, style: const TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.w700))),
-                              ),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
                 ),
