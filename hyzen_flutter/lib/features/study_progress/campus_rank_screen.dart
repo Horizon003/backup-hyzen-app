@@ -122,7 +122,6 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
                           fontWeight: FontWeight.w800, fontSize: 12))),
                     ]))),
               )),
-            ),
           ])),
         const SizedBox(height: 14),
         SegmentedButton<String>(segments: const [
