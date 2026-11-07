@@ -400,8 +400,8 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                       initialDate: due, firstDate: DateTime.now().subtract(
                         const Duration(days: 1)),
                       lastDate: DateTime.now().add(const Duration(days: 365)));
-                    if (result != null) change(() => due = DateTime(
-                      result.year, result.month, result.day, due.hour, due.minute));
+                    if (result != null) { change(() => due = DateTime(
+                      result.year, result.month, result.day, due.hour, due.minute)); }
                   })),
                 const SizedBox(width: 8),
                 Expanded(child: OutlinedButton.icon(
@@ -411,7 +411,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                     final result = await showTimePicker(context: sheet,
                         initialTime: TimeOfDay.fromDateTime(due));
                     if (result != null) change(() => due = DateTime(
-                      due.year, due.month, due.day, result.hour, result.minute));
+                      due.year, due.month, due.day, result.hour, result.minute)); }
                   })),
               ]),
               const SizedBox(height: 12),
@@ -434,9 +434,9 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                   final allowed = await StudyNotificationScheduler.instance.requestPermission();
                   tracker.addReminder(title.text, due, type: type,
                     repeat: repeat, leadMinutes: lead);
-                  if (!sheet.mounted) return;
+                  if (!sheet.mounted || !mounted) return;
                   Navigator.pop(sheet);
-                  if (!allowed && context.mounted) {
+                  if (!allowed) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('Reminder saved. Enable device notifications to see Android alerts.')));
                   }
