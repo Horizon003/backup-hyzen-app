@@ -79,6 +79,7 @@ flutter:
 
   assets:
     - assets/home/
+    - assets/home_backgrounds/
     - assets/auth/
     - assets/brand/
     - assets/illustrations/
