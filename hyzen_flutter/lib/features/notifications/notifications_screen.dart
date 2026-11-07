@@ -80,6 +80,24 @@ class NotificationsController extends Notifier<List<Map<String, dynamic>>> {
   void _persist() => unawaited(
     ref.read(sharedPrefsProvider).setString(key, jsonEncode(state)),
   );
+  /// Device-local study reminders; delivered to the in-app inbox on next open.
+  /// This does not claim Android OS push/background scheduling.
+  void addLocalReminder(String title, String body, String taskId) {
+    if (state.any((m) => m['id'] == 'study_$taskId')) return;
+    state = [
+      {
+        'id': 'study_$taskId',
+        'title': title,
+        'body': body,
+        'url': '/study-progress',
+        'receivedAt': DateTime.now().toIso8601String(),
+        'read': false,
+      },
+      ...state,
+    ].take(100).toList();
+    _persist();
+  }
+
   void read(String id) {
     state = [
       for (final m in state) m['id'] == id ? {...m, 'read': true} : m,
@@ -159,7 +177,11 @@ class NotificationsScreen extends ConsumerWidget {
                   onTap: () {
                     ref.read(notificationsProvider.notifier).read('${m['id']}');
                     if ('${m['url'] ?? ''}'.isNotEmpty) {
+                      if (m['url'] == '/study-progress') {
+                        context.push('/study-progress');
+                      } else {
                       openLink(context, '${m['url']}');
+                      }
                     }
                   },
                 );

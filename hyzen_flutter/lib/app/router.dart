@@ -18,6 +18,7 @@ import '../features/content/presentation/info_screens.dart';
 import '../features/downloads/domain/download_record.dart';
 import '../features/downloads/presentation/downloads_screen.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/study_progress/study_progress_screen.dart';
 import '../features/notifications/notice_host.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/profile/presentation/profile_screens.dart';
@@ -37,6 +38,7 @@ const _publicPrefixes = [
   '/forgot-password',
   '/register',
   '/legal',
+  '/study-progress',
 ];
 
 class _AuthListenable extends ChangeNotifier {
@@ -77,6 +79,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc.startsWith('/pdf-studio/viewer/')) {
         return null;
       }
+      // Local-only study preview is safe to open before Firebase resolves.
+      if (loc == '/study-progress') return null;
       if (auth.isLoading && !auth.hasValue) {
         return loc == '/splash' ? null : '/splash';
       }
@@ -128,6 +132,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/legal/:doc',
         builder: (_, s) => LegalScreen(doc: s.pathParameters['doc']!),
       ),
+      GoRoute(path: '/study-progress', builder: (_, __) => const StudyProgressScreen()),
       StatefulShellRoute.indexedStack(
         builder: (_, __, nav) =>
             NoticeHost(child: AppShell(navigationShell: nav)),

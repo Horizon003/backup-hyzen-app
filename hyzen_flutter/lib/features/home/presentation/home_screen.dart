@@ -12,6 +12,7 @@ import '../../../core/widgets/surfaces.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../downloads/domain/download_record.dart';
 import 'home_background.dart';
+import '../../study_progress/study_progress_screen.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../core/widgets/profile_avatar.dart';
 import '../../notifications/notifications_screen.dart';
@@ -282,6 +283,8 @@ class HomeScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
+                        const HomeStudyTracker(),
+                        const Gap(18),
                         if (ann != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 24),
