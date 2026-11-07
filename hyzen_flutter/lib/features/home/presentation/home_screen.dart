@@ -9,10 +9,9 @@ import '../../../core/utils/links.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/main_dock.dart';
 import '../../../core/widgets/surfaces.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../downloads/domain/download_record.dart';
 import 'home_background.dart';
-import '../../study_progress/study_progress_screen.dart';
+import 'home_dashboard_top.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../core/widgets/profile_avatar.dart';
 import '../../notifications/notifications_screen.dart';
@@ -79,12 +78,12 @@ class HomeScreen extends ConsumerWidget {
       children: children,
     );
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: TabPage(
         title: 'PHARM D',
         integratedHeader: true,
-        headerTheme: AppTheme.dark(),
-        header: ColoredBox(color: Colors.black, child: SafeArea(
+        headerTheme: Theme.of(context),
+        header: ColoredBox(color: dark ? Colors.black : const Color(0xFFE8F1FB), child: SafeArea(
           bottom: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -118,7 +117,26 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 10),
+                Expanded(child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(homeGreeting(ref.watch(homeClockProvider)()).toUpperCase(),
+                      key: const ValueKey('home-greeting'),
+                      style: TextStyle(
+                        fontSize: 10, letterSpacing: .7,
+                        fontWeight: FontWeight.w700,
+                        color: dark ? Colors.white70 : const Color(0xFF436187))),
+                    Tooltip(message: name, child: Text(
+                      fresh ? 'Welcome, $name' : 'Welcome back, $name',
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w900,
+                        color: dark ? Colors.white : const Color(0xFF0C1933)),
+                    )),
+                  ],
+                )),
                 const NotificationBell(),
               ],
             ),
@@ -134,95 +152,7 @@ class HomeScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Column(
               children: [
-                SizedBox(
-                  height: scale > 1.5 ? 370 * scale.clamp(1, 2) : 230,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Image.asset(
-                          'assets/home/mountain_panda.webp',
-                          key: const ValueKey('home-hero-art'),
-                          fit: scale > 1.5 ? BoxFit.fitWidth : BoxFit.cover,
-                          alignment: Alignment.bottomCenter,
-                          semanticLabel:
-                              'Hyzen panda reading above mountains and clouds',
-                        ),
-                      ),
-                      Positioned(
-                        left: 0, right: 0, bottom: 0, height: 32,
-                        child: IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Colors.transparent, dark ? const Color(0xFF101012) : const Color(0xFFF1F1F3)],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 32,
-                        left: 16,
-                        right: scale > 1.5 ? 16 : 110,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              homeGreeting(
-                                ref.watch(homeClockProvider)(),
-                              ).toUpperCase(),
-                              key: const ValueKey('home-greeting'),
-                              style: const TextStyle(
-                                color: Color(0xFFE3E3E5),
-                                fontSize: 11,
-                                letterSpacing: 1.2,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Gap(8),
-                            Tooltip(
-                              message: name,
-                              child: Text(
-                                fresh
-                                    ? 'Welcome, $name'
-                                    : 'Welcome back, $name',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 21,
-                                  height: 1.15,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                            const Gap(14),
-                            FilledButton.icon(
-                              onPressed: () => context.go('/study'),
-                              icon: const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 20,
-                              ),
-                              label: const Text('Continue to Study'),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
-                                minimumSize: const Size(48, 48),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                                shape: const StadiumBorder(),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                HomeDashboardTop(year: profile?.professionalYear),
                 HomeAtmosphere(
                   content: true,
                   child: Padding(
@@ -283,8 +213,6 @@ class HomeScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const HomeStudyTracker(),
-                        const Gap(18),
                         if (ann != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 24),
