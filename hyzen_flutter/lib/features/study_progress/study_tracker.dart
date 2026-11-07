@@ -146,6 +146,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   bool running = false;
   int dailyGoal = 120;
   int weeklyGoal = 840;
+  int customGoal = 90;
 
   void _load() {
     try {
@@ -158,6 +159,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
       }
       dailyGoal = ((data['dailyGoal'] as num?)?.toInt() ?? 120).clamp(1, 1440).toInt();
       weeklyGoal = ((data['weeklyGoal'] as num?)?.toInt() ?? 840).clamp(1, 10080).toInt();
+      customGoal = ((data['customGoal'] as num?)?.toInt() ?? 90).clamp(1, 10080).toInt();
       for (final value in (data['tasks'] as List?) ?? []) {
         if (value is Map) {
           final task = StudyTask.fromJson(Map<String, dynamic>.from(value));
@@ -174,6 +176,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
       'days': _days,
       'dailyGoal': dailyGoal,
       'weeklyGoal': weeklyGoal,
+      'customGoal': customGoal,
       'tasks': _tasks.map((task) => task.toJson()).toList(),
     })));
   }
@@ -238,6 +241,12 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   void setGoals(int daily, int weekly) {
     dailyGoal = daily.clamp(1, 1440).toInt();
     weeklyGoal = weekly.clamp(1, 10080).toInt();
+    _save();
+    notifyListeners();
+  }
+
+  void setCustomGoal(int value) {
+    customGoal = value.clamp(1, 10080).toInt();
     _save();
     notifyListeners();
   }
