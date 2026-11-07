@@ -12,6 +12,7 @@ import '../../../core/widgets/surfaces.dart';
 import '../../downloads/domain/download_record.dart';
 import 'home_background.dart';
 import 'home_dashboard_top.dart';
+import 'home_time_artwork.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../core/widgets/profile_avatar.dart';
 import '../../notifications/notifications_screen.dart';
@@ -26,11 +27,10 @@ import '../../downloads/data/downloads_controller.dart';
 
 // The reference artwork is decorative; all controls below are live Flutter UI.
 final homeClockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
-String homeGreeting(DateTime time) => time.hour < 12
-    ? 'Good morning'
-    : time.hour < 17
-    ? 'Good afternoon'
-    : 'Good evening';
+String homeGreeting(DateTime time) {
+  final greeting = HomeTimePhase.at(time).greeting;
+  return greeting[0] + greeting.substring(1).toLowerCase();
+}
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -83,65 +83,87 @@ class HomeScreen extends ConsumerWidget {
         title: 'PHARM D',
         integratedHeader: true,
         headerTheme: Theme.of(context),
-        header: ColoredBox(color: dark ? Colors.black : const Color(0xFFE8F1FB), child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Tooltip(
-                  message: 'Profile & settings',
-                  child: InkWell(
-                    onTap: () => showAccountMenu(context),
-                    customBorder: const CircleBorder(),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      child: ClipOval(
-                        child: profile?.photoUrl != null
-                            ? ProfileAvatar(
-                                photoUrl: profile!.photoUrl,
-                                radius: 20,
-                                fallback: name,
-                              )
-                            : Image.asset(
-                                'assets/brand/hyzen_icon_square.png',
-                                fit: BoxFit.cover,
-                              ),
+        header: ColoredBox(
+          color: dark ? Colors.black : const Color(0xFFE8F1FB),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Tooltip(
+                    message: 'Profile & settings',
+                    child: InkWell(
+                      onTap: () => showAccountMenu(context),
+                      customBorder: const CircleBorder(),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: ClipOval(
+                          child: profile?.photoUrl != null
+                              ? ProfileAvatar(
+                                  photoUrl: profile!.photoUrl,
+                                  radius: 20,
+                                  fallback: name,
+                                )
+                              : Image.asset(
+                                  'assets/brand/hyzen_icon_square.png',
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (scale <= 1.3) Text(homeGreeting(ref.watch(homeClockProvider)()).toUpperCase(),
-                      key: const ValueKey('home-greeting'),
-                      style: TextStyle(
-                        fontSize: 10, letterSpacing: .7,
-                        fontWeight: FontWeight.w700,
-                        color: dark ? Colors.white70 : const Color(0xFF436187))),
-                    Tooltip(message: name, child: Text(
-                      fresh ? 'Welcome, $name' : 'Welcome back, $name',
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w900,
-                        color: dark ? Colors.white : const Color(0xFF0C1933)),
-                    )),
-                  ],
-                )),
-                const NotificationBell(),
-              ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (scale <= 1.3)
+                          Text(
+                            homeGreeting(
+                              ref.watch(homePhaseClockProvider).value,
+                            ).toUpperCase(),
+                            key: const ValueKey('home-greeting'),
+                            style: TextStyle(
+                              fontSize: 10,
+                              letterSpacing: .7,
+                              fontWeight: FontWeight.w700,
+                              color: dark
+                                  ? Colors.white70
+                                  : const Color(0xFF436187),
+                            ),
+                          ),
+                        Tooltip(
+                          message: name,
+                          child: Text(
+                            fresh ? 'Welcome, $name' : 'Welcome back, $name',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: dark
+                                  ? Colors.white
+                                  : const Color(0xFF0C1933),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const NotificationBell(),
+                ],
+              ),
             ),
           ),
-        )),
+        ),
         homeBackground: (child) => HomeAtmosphere(child: child),
         onRefresh: () => refreshContent(ref, [
           'pw_settings',
@@ -260,13 +282,26 @@ class HomeScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
-                        Row(children: [
-                          Expanded(child: Text('Quick Access', maxLines: 1,
-                            overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleLarge
-                            ?.copyWith(fontSize: 18, fontWeight: FontWeight.w800))),
-                          TextButton(onPressed: () => context.go('/study'),
-                            child: const Text('See All')),
-                        ]),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Quick Access',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => context.go('/study'),
+                              child: const Text('See All'),
+                            ),
+                          ],
+                        ),
                         const Gap(10),
                         grid([
                           _ReferenceCard(
@@ -286,29 +321,54 @@ class HomeScreen extends ConsumerWidget {
                           ),
                         ], 132),
                         const Gap(14),
-                        Text('Others', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                        Text(
+                          'Others',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
                         const Gap(8),
-                        Row(children: [
-                          Expanded(child: _CompactHomeLink(
-                            label: settings.sectionEnabled('shop') ? 'Shop' : 'Search',
-                            icon: settings.sectionEnabled('shop')
-                                ? Icons.storefront_outlined : Icons.search,
-                            onTap: () => settings.sectionEnabled('shop')
-                                ? context.go('/shop') : context.go('/search', extra: true))),
-                          const SizedBox(width: 8),
-                          Expanded(child: _CompactHomeLink(label: 'Downloads',
-                            icon: Icons.file_download_outlined,
-                            badges: badges,
-                            onTap: () => context.go('/downloads'))),
-                          const SizedBox(width: 8),
-                          Expanded(child: _CompactHomeLink(label: 'Study Plan',
-                            icon: Icons.calendar_month_outlined,
-                            onTap: () => context.push('/study-goals'))),
-                          const SizedBox(width: 8),
-                          Expanded(child: _CompactHomeLink(label: 'My Progress',
-                            icon: Icons.bar_chart_rounded,
-                            onTap: () => context.push('/study-progress'))),
-                        ]),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _CompactHomeLink(
+                                label: settings.sectionEnabled('shop')
+                                    ? 'Shop'
+                                    : 'Search',
+                                icon: settings.sectionEnabled('shop')
+                                    ? Icons.storefront_outlined
+                                    : Icons.search,
+                                onTap: () => settings.sectionEnabled('shop')
+                                    ? context.go('/shop')
+                                    : context.go('/search', extra: true),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _CompactHomeLink(
+                                label: 'Downloads',
+                                icon: Icons.file_download_outlined,
+                                badges: badges,
+                                onTap: () => context.go('/downloads'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _CompactHomeLink(
+                                label: 'Study Plan',
+                                icon: Icons.calendar_month_outlined,
+                                onTap: () => context.push('/study-goals'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _CompactHomeLink(
+                                label: 'My Progress',
+                                icon: Icons.bar_chart_rounded,
+                                onTap: () => context.push('/study-progress'),
+                              ),
+                            ),
+                          ],
+                        ),
                         const Gap(20),
                         if (recent.isNotEmpty) ...[
                           const Gap(24),
@@ -426,10 +486,15 @@ class _ReferenceCard extends StatelessWidget {
                       const Gap(9),
                       Padding(
                         padding: const EdgeInsets.only(right: 35),
-                        child: Text(subtitle, maxLines: 2,
+                        child: Text(
+                          subtitle,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: ink.withValues(alpha: .72),
-                            fontSize: 11)),
+                          style: TextStyle(
+                            color: ink.withValues(alpha: .72),
+                            fontSize: 11,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -444,8 +509,12 @@ class _ReferenceCard extends StatelessWidget {
 }
 
 class _CompactHomeLink extends StatelessWidget {
-  const _CompactHomeLink({required this.label, required this.icon,
-    required this.onTap, this.badges = const []});
+  const _CompactHomeLink({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.badges = const [],
+  });
   final String label;
   final IconData icon;
   final VoidCallback onTap;
@@ -458,20 +527,50 @@ class _CompactHomeLink extends StatelessWidget {
       elevation: dark ? 0 : 2,
       borderRadius: BorderRadius.circular(17),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: SizedBox(
-        height: (94 * MediaQuery.textScalerOf(context).scale(1)).clamp(94.0, 180.0),
-        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon, size: 25, color: dark ? Colors.white : const Color(0xFF174E8B)),
-            const SizedBox(height: 6),
-            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center, style: const TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w700)),
-            for (final badge in badges) Text(badge, maxLines: 1,
-              overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w700)),
-          ])),
-      )),
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: (94 * MediaQuery.textScalerOf(context).scale(1)).clamp(
+            94.0,
+            180.0,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 25,
+                  color: dark ? Colors.white : const Color(0xFF174E8B),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                for (final badge in badges)
+                  Text(
+                    badge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

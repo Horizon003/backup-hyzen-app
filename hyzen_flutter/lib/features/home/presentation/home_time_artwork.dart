@@ -32,57 +32,83 @@ enum HomeTimePhase {
   }
 }
 
-/// One clock for the Home page. Recomputes on resume and once per minute,
-/// including while Home remains open across a phase boundary. Timers are
-/// cancelled with the widget to avoid leaked fake timers in widget tests.
-class HomePhaseArtwork extends ConsumerStatefulWidget {
-  const HomePhaseArtwork({
-    super.key,
-    required this.height,
-    required this.builder,
-  });
-
-  final double height;
-  final Widget Function(BuildContext context, HomeTimePhase phase) builder;
-
-  @override
-  ConsumerState<HomePhaseArtwork> createState() => _HomePhaseArtworkState();
-}
-
-class _HomePhaseArtworkState extends ConsumerState<HomePhaseArtwork>
-    with WidgetsBindingObserver {
-  Timer? _minuteTimer;
-  DateTime _clock = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (mounted) setState(() => _clock = DateTime.now());
+/// Shared, injectable wall clock. Pause timers when there are no listeners or
+/// the app is backgrounded; re-evaluate timezone and time on resume.
+final homePhaseClockProvider =
+    ChangeNotifierProvider.autoDispose<HomePhaseClock>((ref) {
+      final clock = HomePhaseClock(ref.watch(homeClockProvider));
+      ref.onCancel(clock.suspend);
+      ref.onResume(clock.refresh);
+      return clock;
     });
+
+class HomePhaseClock extends ChangeNotifier with WidgetsBindingObserver {
+  HomePhaseClock(this.now) {
+    value = now();
+    WidgetsBinding.instance.addObserver(this);
+    _schedule();
+  }
+  final DateTime Function() now;
+  late DateTime value;
+  Timer? _timer;
+  bool _disposed = false;
+  void suspend() {
+    _timer?.cancel();
+  }
+
+  void _schedule() {
+    suspend();
+    final next = DateTime(
+      value.year,
+      value.month,
+      value.day,
+      value.hour,
+      value.minute + 1,
+    );
+    final delay = next.difference(value);
+    _timer = Timer(delay.isNegative ? Duration.zero : delay, refresh);
+  }
+
+  void refresh() {
+    if (_disposed) return;
+    value = now();
+    notifyListeners();
+    _schedule();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && mounted) {
-      setState(() => _clock = DateTime.now());
+    if (state == AppLifecycleState.resumed) {
+      refresh();
+    } else {
+      suspend();
     }
   }
 
   @override
   void dispose() {
-    _minuteTimer?.cancel();
+    _disposed = true;
+    suspend();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
+}
 
+class HomePhaseArtwork extends ConsumerWidget {
+  const HomePhaseArtwork({
+    super.key,
+    required this.height,
+    required this.builder,
+  });
+  final double height;
+  final Widget Function(BuildContext context, HomeTimePhase phase) builder;
   @override
-  Widget build(BuildContext context) {
-    // The provider is overrideable for deterministic phase-boundary tests.
-    final time = ref.watch(homeClockProvider)();
-    final phase = HomeTimePhase.at(_clock.year > 0 ? time : DateTime.now());
-    return SizedBox(height: widget.height, child: widget.builder(context, phase));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final time = ref.watch(homePhaseClockProvider).value;
+    return SizedBox(
+      height: height,
+      child: builder(context, HomeTimePhase.at(time)),
+    );
   }
 }
 
@@ -99,34 +125,47 @@ class HomeLandscape extends StatelessWidget {
       borderRadius: BorderRadius.circular(24),
       child: SizedBox(
         height: height,
-        child: Stack(fit: StackFit.expand, children: [
-          AnimatedSwitcher(
-            duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 320),
-            layoutBuilder: (current, previous) => Stack(
-              fit: StackFit.expand,
-              children: [...previous, if (current != null) current],
-            ),
-            child: Image.asset(
-              phase.asset,
-              key: ValueKey(phase),
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              errorBuilder: (_, __, ___) => const ColoredBox(
-                color: Color(0xFF1A3C64)),
-            ),
-          ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: dark
-                    ? const [Color(0xDD030407), Color(0x33000000), Color(0xC9000000)]
-                    : const [Color(0x00000000), Color(0x00000000), Color(0x4F112846)],
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            AnimatedSwitcher(
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 320),
+              layoutBuilder: (current, previous) => Stack(
+                fit: StackFit.expand,
+                children: [...previous, if (current != null) current],
+              ),
+              child: Image.asset(
+                phase.asset,
+                key: ValueKey(phase),
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (_, __, ___) =>
+                    const ColoredBox(color: Color(0xFF1A3C64)),
               ),
             ),
-          ),
-        ]),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: dark
+                      ? const [
+                          Color(0xDD030407),
+                          Color(0x33000000),
+                          Color(0xC9000000),
+                        ]
+                      : const [
+                          Color(0x00000000),
+                          Color(0x00000000),
+                          Color(0x4F112846),
+                        ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
