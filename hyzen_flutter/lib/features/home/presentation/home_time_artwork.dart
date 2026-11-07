@@ -96,6 +96,7 @@ class HomeLandscape extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     return ClipRRect(
+      key: const ValueKey('home-hero-art'),
       borderRadius: BorderRadius.circular(24),
       child: SizedBox(
         height: height,
