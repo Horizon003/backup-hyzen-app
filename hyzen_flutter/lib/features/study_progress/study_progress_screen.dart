@@ -32,7 +32,7 @@ class HomeStudyTracker extends ConsumerWidget {
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
             const SizedBox(height: 9),
             LinearProgressIndicator(
-              value: (progress.todaySeconds / (progress.dailyGoal * 60)).clamp(0.0, 1.0),
+              value: (progress.todaySeconds / (progress.dailyGoal * 60)).clamp(0.0, 1.0).toDouble(),
               color: const Color(0xFF087F76),
               backgroundColor: dark ? Colors.white12 : Colors.black12,
               minHeight: 5, borderRadius: BorderRadius.circular(9)),
@@ -73,7 +73,7 @@ class StudyProgressScreen extends ConsumerWidget {
     );
 
     Widget progressBar(int seconds, int goal) => LinearProgressIndicator(
-      value: (seconds / (goal * 60)).clamp(0.0, 1.0),
+      value: (seconds / (goal * 60)).clamp(0.0, 1.0).toDouble(),
       minHeight: 7, color: const Color(0xFF087F76),
       backgroundColor: dark ? Colors.white12 : Colors.black12,
       borderRadius: BorderRadius.circular(12),
