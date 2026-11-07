@@ -5,6 +5,7 @@ import '../core/config/brand.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/palettes.dart';
 import 'providers.dart';
+import '../features/study_progress/study_tracker.dart';
 import 'router.dart';
 import '../features/study_progress/study_notifications.dart';
 import '../features/viewer/external_files.dart';
@@ -37,7 +38,15 @@ class HyzenApp extends ConsumerWidget {
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1080),
-              child: ExternalOpenGate(child: child ?? const SizedBox.shrink()),
+              child: Listener(
+                onPointerDown: (_) =>
+                    ref.read(studyTrackerProvider).interaction(),
+                onPointerSignal: (_) =>
+                    ref.read(studyTrackerProvider).interaction(),
+                child: ExternalOpenGate(
+                  child: child ?? const SizedBox.shrink(),
+                ),
+              ),
             ),
           ),
         ),

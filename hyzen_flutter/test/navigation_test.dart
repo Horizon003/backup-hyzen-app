@@ -562,7 +562,12 @@ void main() {
       expect(rect.height, greaterThanOrEqualTo(48));
       previous = rect.left;
     }
-    expect(tester.widget<Material>(dock).color, Colors.black);
+    expect(
+      tester.widget<Material>(dock).color,
+      Theme.of(tester.element(dock)).brightness == Brightness.dark
+          ? Colors.black
+          : Colors.white,
+    );
   });
 
   testWidgets(
@@ -753,19 +758,22 @@ void main() {
       DockDestination selected = DockDestination.home;
       for (final reduce in [false, true]) {
         await tester.pumpWidget(
-          MaterialApp(
-            home: MediaQuery(
-              data: MediaQueryData(
-                size: const Size(320, 900),
-                textScaler: TextScaler.linear(2),
-                padding: const EdgeInsets.only(bottom: 24),
-                disableAnimations: reduce,
-              ),
-              child: StatefulBuilder(
-                builder: (context, setState) => Scaffold(
-                  bottomNavigationBar: MainDock(
-                    path: selected.route,
-                    onSelected: (value) => setState(() => selected = value),
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: MediaQuery(
+                data: MediaQueryData(
+                  size: const Size(320, 900),
+                  textScaler: TextScaler.linear(2),
+                  padding: const EdgeInsets.only(bottom: 24),
+                  disableAnimations: reduce,
+                ),
+                child: StatefulBuilder(
+                  builder: (context, setState) => Scaffold(
+                    bottomNavigationBar: MainDock(
+                      path: selected.route,
+                      onSelected: (value) => setState(() => selected = value),
+                    ),
                   ),
                 ),
               ),
