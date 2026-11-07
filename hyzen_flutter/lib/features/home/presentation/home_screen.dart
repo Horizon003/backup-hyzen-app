@@ -260,6 +260,14 @@ class HomeScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
+                        Row(children: [
+                          Text('Quick Access', style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(fontSize: 18, fontWeight: FontWeight.w800)),
+                          const Spacer(),
+                          TextButton(onPressed: () => context.go('/study'),
+                            child: const Text('See All')),
+                        ]),
+                        const Gap(10),
                         grid([
                           _ReferenceCard(
                             title: 'Study Library',
@@ -277,56 +285,29 @@ class HomeScreen extends ConsumerWidget {
                             onTap: () => context.go('/pdf-studio'),
                           ),
                         ], 132),
-                        const Gap(20),
-                        Row(
-                          children: [
-                            Text(
-                              'Others',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Divider(
-                                color: dark
-                                    ? const Color(0xFF55555A)
-                                    : const Color(0xFFD0D0D4),
-                              ),
-                            ),
-                          ],
-                        ),
                         const Gap(14),
-                        grid([
-                          settings.sectionEnabled('shop')
-                              ? _ReferenceCard(
-                                  title: 'Shop',
-                                  subtitle: settings.shopComingSoon
-                                      ? 'Coming soon'
-                                      : 'Study essentials',
-                                  icon: Icons.storefront_outlined,
-                                  art: 'shop',
-                                  onTap: () => context.go('/shop'),
-                                )
-                              : _ReferenceCard(
-                                  title: 'Search',
-                                  subtitle: 'Find your next topic',
-                                  icon: Icons.search,
-                                  art: 'books',
-                                  onTap: () =>
-                                      context.go('/search', extra: true),
-                                ),
-                          _ReferenceCard(
-                            title: 'Downloads',
-                            subtitle: 'Read anywhere, offline',
+                        Row(children: [
+                          Expanded(child: _CompactHomeLink(
+                            label: settings.sectionEnabled('shop') ? 'Shop' : 'Search',
+                            icon: settings.sectionEnabled('shop')
+                                ? Icons.storefront_outlined : Icons.search,
+                            onTap: () => settings.sectionEnabled('shop')
+                                ? context.go('/shop') : context.go('/search', extra: true))),
+                          const SizedBox(width: 8),
+                          Expanded(child: _CompactHomeLink(label: 'Downloads',
                             icon: Icons.file_download_outlined,
-                            art: 'downloads',
-                            badges: badges,
-                            onTap: () => context.go('/downloads'),
-                          ),
-                        ], badges.isEmpty ? 116 : 124),
+                            badge: badges.isEmpty ? null : badges.first,
+                            onTap: () => context.go('/downloads'))),
+                          const SizedBox(width: 8),
+                          Expanded(child: _CompactHomeLink(label: 'Study Plan',
+                            icon: Icons.calendar_month_outlined,
+                            onTap: () => context.push('/study-goals'))),
+                          const SizedBox(width: 8),
+                          Expanded(child: _CompactHomeLink(label: 'My Progress',
+                            icon: Icons.bar_chart_rounded,
+                            onTap: () => context.push('/study-progress'))),
+                        ]),
+                        const Gap(20),
                         if (recent.isNotEmpty) ...[
                           const Gap(24),
                           SectionHeader(
@@ -477,6 +458,38 @@ class _ReferenceCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CompactHomeLink extends StatelessWidget {
+  const _CompactHomeLink({required this.label, required this.icon,
+    required this.onTap, this.badge});
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? badge;
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: dark ? const Color(0xFF212123) : const Color(0xFFF9FBFF),
+      elevation: dark ? 0 : 2,
+      borderRadius: BorderRadius.circular(17),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(onTap: onTap, child: SizedBox(height: 74,
+        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon, size: 25, color: dark ? Colors.white : const Color(0xFF174E8B)),
+            const SizedBox(height: 6),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center, style: const TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700)),
+            if (badge != null) Text(badge!, maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w700)),
+          ])),
+      )),
     );
   }
 }
