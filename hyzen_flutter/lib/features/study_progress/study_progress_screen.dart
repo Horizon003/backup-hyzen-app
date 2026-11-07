@@ -158,7 +158,7 @@ class StudyProgressScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Today · sessions saved on this device',
+                  progress.cloudStatus,
                   style: TextStyle(fontSize: 12, color: secondary),
                 ),
                 const SizedBox(height: 16),

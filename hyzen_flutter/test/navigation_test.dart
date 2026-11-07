@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:hyzen_pharmd/features/study_progress/study_forms.dart';
+import 'package:hyzen_pharmd/features/study_progress/study_tracker.dart';
 import 'package:hyzen_pharmd/features/home/presentation/home_time_artwork.dart';
 import 'package:hyzen_pharmd/features/home/presentation/home_screen.dart';
 import 'package:hyzen_pharmd/features/home/presentation/home_background.dart';
@@ -1485,6 +1487,34 @@ void main() {
               );
             }
           }
+        }
+      }
+    }
+    if (const bool.fromEnvironment('HYZEN_CAPTURE_QA')) {
+      tester.view.physicalSize = const Size(360, 844);
+      tester.platformDispatcher.textScaleFactorTestValue = 1;
+      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+        container.read(themeModeProvider.notifier).set(mode);
+        for (final hour in [6,9,12,15,18,22]) {
+          qaClock = DateTime(2026,1,1,hour);
+          await open(tester,'/home');
+          container.read(homePhaseClockProvider).refresh();
+          tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);
+          await tester.pumpAndSettle();
+          await expectLater(find.byKey(const ValueKey('qa-app')),
+            matchesGoldenFile('../qa/pr9/home-phase-$hour-${mode.name}.png'));
+          expect(tester.takeException(),isNull);
+        }
+        for (final reminder in [false,true]) {
+          await open(tester,'/study-goals');
+          final context = tester.element(find.byType(Scaffold).last);
+          showStudyForm(context,container.read(studyTrackerProvider),reminder:reminder);
+          await tester.pumpAndSettle();
+          await expectLater(find.byKey(const ValueKey('qa-app')),
+            matchesGoldenFile('../qa/pr9/form-${reminder ? 'reminder' : 'task'}-${mode.name}.png'));
+          Navigator.pop(tester.element(find.byType(TextFormField).first));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(),isNull);
         }
       }
     }

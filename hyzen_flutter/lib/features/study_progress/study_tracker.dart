@@ -10,6 +10,7 @@ import '../../app/providers.dart';
 import '../notifications/notifications_screen.dart';
 import 'study_notifications.dart';
 import 'study_session.dart';
+import 'study_cloud.dart';
 
 String studyDayKey(DateTime d) =>
     d.year.toString().padLeft(4, '0') +
@@ -393,10 +394,22 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void checkpoint() => _tick();
+  StudySyncWorker? _sync;
+  String get cloudStatus => _cloudStatus;
+  String _cloudStatus = 'Saved on this device · cloud sync not configured';
+  void attachCloud(StudyCloud cloud) {
+    _sync?.dispose();
+    _sync = StudySyncWorker(cloud: cloud, events: () => pendingEvents,
+      acknowledge: (ids) async { acknowledge(ids); await flush(); },
+      running: () => running, session: () => _session,
+      onStatus: (status) { if (!_disposed && status != _cloudStatus) { _cloudStatus = status; notifyListeners(); } });
+  }
+
   void start() {
     if (running) return;
     _session ??= studyId();
     running = true;
+    _sync?.changed();
     _lastTick = clock();
     _lastMs = _elapsedMs();
     interaction();
@@ -409,6 +422,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     if (!running) return;
     _tick();
     running = false;
+    _sync?.changed();
     _lastTick = null;
     _manageTicker();
     _save();
@@ -419,6 +433,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     pause();
     if (_session != null) _completed.add(_session!);
     _session = null;
+    _sync?.changed();
     _save();
     notifyListeners();
   }
@@ -612,6 +627,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     _disposed = true;
+    _sync?.dispose();
     pause();
     _watch.stop();
     _timer?.cancel();
@@ -621,12 +637,15 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
 }
 
 final studyTrackerProvider = ChangeNotifierProvider<StudyTracker>((ref) {
-  final uid = ref.watch(authStateProvider).valueOrNull?.uid ?? 'guest';
-  return StudyTracker(ref.read(sharedPrefsProvider), 'hyzen_study_v1_$uid', (
+  final user = ref.watch(authStateProvider).valueOrNull;
+  final uid = user?.uid ?? 'guest';
+  final tracker = StudyTracker(ref.read(sharedPrefsProvider), 'hyzen_study_v1_$uid', (
     task,
   ) {
     ref
         .read(notificationsProvider.notifier)
         .addLocalReminder('Study reminder', task.title, task.id);
   });
+  if (user != null && studyApiBase.isNotEmpty && ref.watch(firebaseReadyProvider)) { tracker.attachCloud(StudyCloud(user)); }
+  return tracker;
 });

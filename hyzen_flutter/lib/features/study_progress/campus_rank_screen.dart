@@ -1,4 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'study_cloud.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +23,7 @@ class CampusEntry {
   );
   final int rank, year, minutes, points;
   final String name, uid;
+  Map<String,dynamic> toJson() => {'rank':rank,'alias':name,'academicYear':year,'verifiedMinutes':minutes,'score':points,'uid':uid};
   factory CampusEntry.fromMap(Map<String, dynamic> d) => CampusEntry(
     (d['rank'] as num?)?.toInt() ?? 0,
     (d['alias'] ?? 'Student').toString(),
@@ -31,91 +35,73 @@ class CampusEntry {
 }
 
 class CampusBoard {
-  const CampusBoard(this.status, this.entries, this.mine, this.updatedAt);
+  const CampusBoard(this.status, this.entries, this.mine, this.updatedAt,
+    {this.next, this.generation, this.cached = false});
   final String status;
   final List<CampusEntry> entries;
   final CampusEntry? mine;
   final DateTime? updatedAt;
+  final int? next;
+  final String? generation;
+  final bool cached;
 }
 
-/// Read only from server-computed, verified public leaderboard snapshots.
-/// Never calculate a fake competitive rank from local browser data.
-final campusBoardProvider = FutureProvider.family<CampusBoard, String>((
-  ref,
-  period,
-) async {
+class CampusController extends StateNotifier<AsyncValue<CampusBoard>> {
+  CampusController(this.cloud, this.prefs, this.key, this.period) : super(const AsyncLoading()) {
+    if (cloud == null) {
+      state = const AsyncData(CampusBoard('Verified Campus Rank is not connected yet.', [], null, null));
+    } else { unawaited(load()); }
+  }
+  final StudyCloud? cloud;
+  final SharedPreferences prefs;
+  final String key, period;
+  bool loading = false;
+  CampusBoard decode(Map<String,dynamic> data, {bool cached = false}) => CampusBoard(
+    data['status'] ?? 'ready',
+    (data['entries'] as List? ?? []).map((e) => CampusEntry.fromMap(Map<String,dynamic>.from(e))).toList(),
+    data['mine'] == null ? null : CampusEntry.fromMap(Map<String,dynamic>.from(data['mine'])),
+    data['updatedAt'] == null ? null : DateTime.fromMillisecondsSinceEpoch(data['updatedAt']),
+    next: data['next'], generation: data['generation'], cached: cached);
+  Future<void> load({bool more = false}) async {
+    if (loading || cloud == null) return;
+    loading = true;
+    final prior = state.valueOrNull;
+    try {
+      var data = await cloud!.call('readCampusBoard', {'period':period,
+        if (more) 'after':prior?.next, if (more) 'generation':prior?.generation});
+      if (data['status'] == 'refresh') { data = await cloud!.call('readCampusBoard', {'period':period}); more = false; }
+      if (!mounted) return;
+      if (more && prior != null) {
+        final rows = {for(final entry in prior.entries) entry.uid:entry.toJson()};
+        for(final row in data['entries'] as List? ?? []) { rows[row['uid']] = Map<String,dynamic>.from(row); }
+        data['entries'] = rows.values.toList();
+      }
+      state = AsyncData(decode(data));
+      await prefs.setString(key,jsonEncode(data));
+    } catch (_) {
+      if (!mounted) return;
+      try {
+        final cached = prefs.getString(key);
+        state = AsyncData(cached == null
+          ? const CampusBoard('Rankings are unavailable. Your local study history is safe.', [], null, null)
+          : decode(Map<String,dynamic>.from(jsonDecode(cached)),cached:true));
+      } catch (_) { state = const AsyncData(CampusBoard('No cached rankings available.',[],null,null)); }
+    } finally { loading = false; }
+  }
+  Future<void> privacy(String alias, bool optOut) async {
+    if (cloud == null) throw StateError('Campus backend is not connected.');
+    await cloud!.call('setRankPrivacy', {'alias':alias,'optOut':optOut});
+    await prefs.remove(key);
+    await load();
+  }
+  @override
+  void dispose() { cloud?.dispose(); super.dispose(); }
+}
+final campusBoardProvider = StateNotifierProvider.autoDispose.family<CampusController,AsyncValue<CampusBoard>,String>((ref,period) {
   final user = ref.watch(authStateProvider).valueOrNull;
-  if (user == null) {
-    return const CampusBoard(
-      'Sign in to view campus rankings.',
-      [],
-      null,
-      null,
-    );
-  }
-  if (!ref.watch(firebaseReadyProvider)) {
-    return const CampusBoard(
-      'Campus rankings require a connected verified account.',
-      [],
-      null,
-      null,
-    );
-  }
-  final firestore = ref.watch(firestoreProvider);
-  try {
-    final account = await firestore.collection('students').doc(user.uid).get();
-    final profile = account.data();
-    if (profile == null ||
-        profile['campusVerified'] != true ||
-        (profile['campusId'] ?? '').toString().isEmpty) {
-      return const CampusBoard(
-        'Campus verification is required before rankings are available.',
-        [],
-        null,
-        null,
-      );
-    }
-    final campusId = profile['campusId'].toString();
-    final periodRef = firestore
-        .collection('campusLeaderboards')
-        .doc(campusId)
-        .collection('periods')
-        .doc(period);
-    final meta = await periodRef.get();
-    if (!meta.exists) {
-      return const CampusBoard(
-        'No verified leaderboard has been published for this period.',
-        [],
-        null,
-        null,
-      );
-    }
-    final snapshot = await periodRef
-        .collection('entries')
-        .orderBy('rank')
-        .limit(30)
-        .get();
-    final entries = snapshot.docs
-        .map((d) => CampusEntry.fromMap(d.data()))
-        .where((e) => e.rank > 0 && e.uid.isNotEmpty)
-        .toList();
-    final mineDoc = await periodRef.collection('entries').doc(user.uid).get();
-    final mine = mineDoc.exists ? CampusEntry.fromMap(mineDoc.data()!) : null;
-    final updatedAt = meta.data()?['updatedAt'];
-    return CampusBoard(
-      'ready',
-      entries,
-      mine,
-      updatedAt is Timestamp ? updatedAt.toDate() : null,
-    );
-  } catch (_) {
-    return const CampusBoard(
-      'Rankings are unavailable or you do not have permission to view them.',
-      [],
-      null,
-      null,
-    );
-  }
+  final ready = ref.watch(firebaseReadyProvider) && studyApiBase.isNotEmpty && user != null;
+  return CampusController(ready ? StudyCloud(user) : null, ref.watch(sharedPrefsProvider),
+    'hyzen_campus_${user?.uid ?? 'guest'}_$period',period);
 });
 
 class CampusRankScreen extends ConsumerStatefulWidget {
@@ -126,6 +112,34 @@ class CampusRankScreen extends ConsumerStatefulWidget {
 
 class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
   var period = 'week';
+  Future<void> _privacy() async {
+    final alias = TextEditingController(text: ref.read(campusBoardProvider(period)).valueOrNull?.mine?.name ?? 'Student');
+    var optOut = true;
+    String? error;
+    var saving = false;
+    try {
+      await showDialog<void>(context: context, builder: (dialog) => StatefulBuilder(builder: (dialog, update) => AlertDialog(
+        title: const Text('Ranking privacy'),
+        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text('Only verified campus members can join. Your alias is shown to other verified members.'),
+          TextField(controller: alias, maxLength: 40, decoration: const InputDecoration(labelText: 'Display alias')),
+          SwitchListTile(title: const Text('Hide me from ranking'), value: optOut, onChanged: saving ? null : (v) => update(() => optOut=v)),
+          if (error != null) Text(error!),
+        ])),
+        actions: [
+          IconButton(tooltip: 'Ranking privacy', onPressed: _privacy, icon: const Icon(Icons.privacy_tip_outlined)),TextButton(onPressed: saving ? null : () => Navigator.pop(dialog), child: const Text('Cancel')),
+          FilledButton(onPressed: saving ? null : () async {
+            if (alias.text.trim().isEmpty) { update(() => error='Enter an alias.'); return; }
+            update(() => saving=true);
+            try {
+              await ref.read(campusBoardProvider(period).notifier).privacy(alias.text.trim(),optOut);
+              if(dialog.mounted) Navigator.pop(dialog);
+            } catch (_) { if(dialog.mounted) update(() {saving=false;error='Verified campus service is unavailable. No privacy change was saved.';}); }
+          },child: const Text('Save'))],
+      )));
+    } finally { alias.dispose(); }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 3.0);
@@ -268,6 +282,7 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
                 panel(Text('Could not load verified rankings: $e')),
             data: (data) => Column(
               children: [
+                if (data.next != null) TextButton(onPressed: () => ref.read(campusBoardProvider(period).notifier).load(more:true), child: const Text('Load more learners')),
                 panel(
                   Column(
                     children: [
@@ -340,7 +355,7 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
                       ),
                       if (data.updatedAt != null)
                         Text(
-                          'Last verified update: ${data.updatedAt!.toLocal()}',
+                          '${data.cached ? 'Last synced (offline)' : 'Last verified update'}: ${data.updatedAt!.toLocal()}',
                           style: TextStyle(
                             color: ink.withValues(alpha: .55),
                             fontSize: 10,

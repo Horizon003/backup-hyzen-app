@@ -1,0 +1,30 @@
+const {test,before,after}=require('node:test');
+const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/rules-unit-testing');
+const {doc,setDoc,getDoc,collection,getDocs}=require('firebase/firestore');
+const fs=require('node:fs');let env;
+before(async()=>{
+ env=await initializeTestEnvironment({projectId:'demo-hyzen-study',firestore:{rules:fs.readFileSync('../study.rules','utf8')}});
+ await env.withSecurityRulesDisabled(async c=>{
+  const db=c.firestore();await setDoc(doc(db,'studyUsers/alice/events/event'),{seconds:10});
+  await setDoc(doc(db,'campusMemberships/alice'),{verified:true,campusId:'campus',optOut:false});
+  await setDoc(doc(db,'campusLeaderboards/campus/periods/week'),{generation:'test'});
+ });
+});
+after(async()=>{await env.cleanup();});
+test('owner may read private events; guests and other accounts cannot',async()=>{
+ await assertSucceeds(getDoc(doc(env.authenticatedContext('alice').firestore(),'studyUsers/alice/events/event')));
+ await assertFails(getDoc(doc(env.authenticatedContext('bob').firestore(),'studyUsers/alice/events/event')));
+ await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(),'studyUsers/alice/events/event')));
+});
+test('clients cannot forge study events or self-verify campus membership',async()=>{
+ const db=env.authenticatedContext('alice').firestore();
+ await assertFails(setDoc(doc(db,'studyUsers/alice/events/new'),{seconds:999999}));
+ await assertFails(setDoc(doc(db,'campusMemberships/alice'),{verified:true,campusId:'other'}));
+ await assertSucceeds(getDoc(doc(db,'campusMemberships/alice')));
+ await assertFails(getDocs(collection(db,'campusMemberships')));
+});
+test('leaderboards require server privacy filtering, never direct client reads/writes',async()=>{
+ const db=env.authenticatedContext('alice').firestore();
+ await assertFails(getDoc(doc(db,'campusLeaderboards/campus/periods/week')));
+ await assertFails(setDoc(doc(db,'campusLeaderboards/campus/periods/week'),{score:99999}));
+});
