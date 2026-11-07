@@ -101,8 +101,8 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   StudyTracker(this.prefs, this.storageKey, this.onReminder) {
     _load();
     WidgetsBinding.instance.addObserver(this);
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     _checkReminders();
+    _manageTicker();
   }
 
   final SharedPreferences prefs;
@@ -156,6 +156,19 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   List<StudyTask> get tasks => List.unmodifiable(_tasks);
   int get pendingCount => _tasks.where((task) => !task.done).length;
 
+  /// Do not leave an idle periodic timer alive in the app or widget tests.
+  /// Only tick while studying or awaiting a due in-app reminder.
+  void _manageTicker() {
+    final needed = running ||
+        _tasks.any((t) => !t.done && !t.alerted && t.due != null);
+    if (needed && _timer == null) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    } else if (!needed && _timer != null) {
+      _timer!.cancel();
+      _timer = null;
+    }
+  }
+
   void _tick() {
     if (running) {
       final now = DateTime.now();
@@ -175,6 +188,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     if (running) return;
     running = true;
     _lastTick = DateTime.now();
+    _manageTicker();
     notifyListeners();
   }
 
@@ -183,6 +197,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     _tick();
     running = false;
     _lastTick = null;
+    _manageTicker();
     _save();
     notifyListeners();
   }
@@ -201,18 +216,21 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     _save();
     notifyListeners();
     _checkReminders();
+    _manageTicker();
   }
 
   void toggleTask(String id) {
     final i = _tasks.indexWhere((t) => t.id == id);
     if (i < 0) return;
     _tasks[i] = _tasks[i].change(done: !_tasks[i].done);
+    _manageTicker();
     _save();
     notifyListeners();
   }
 
   void deleteTask(String id) {
     _tasks.removeWhere((t) => t.id == id);
+    _manageTicker();
     _save();
     notifyListeners();
   }
@@ -230,6 +248,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
       }
     }
     if (changed) {
+      _manageTicker();
       _save();
       notifyListeners();
     }
