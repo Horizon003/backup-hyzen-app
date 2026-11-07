@@ -410,8 +410,10 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                   onPressed: () async {
                     final result = await showTimePicker(context: sheet,
                         initialTime: TimeOfDay.fromDateTime(due));
-                    if (result != null) change(() => due = DateTime(
-                      due.year, due.month, due.day, result.hour, result.minute)); }
+                    if (result != null) {
+                      change(() => due = DateTime(due.year, due.month,
+                          due.day, result.hour, result.minute));
+                    }
                   })),
               ]),
               const SizedBox(height: 12),
