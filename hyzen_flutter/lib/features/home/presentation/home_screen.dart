@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/theme/tokens.dart';
-import '../../../core/utils/links.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/main_dock.dart';
 import '../../../core/widgets/surfaces.dart';
@@ -13,6 +12,7 @@ import '../../downloads/domain/download_record.dart';
 import 'home_background.dart';
 import 'home_dashboard_top.dart';
 import 'home_time_artwork.dart';
+import 'announcement_carousel.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../core/widgets/profile_avatar.dart';
 import '../../notifications/notifications_screen.dart';
@@ -41,8 +41,8 @@ class HomeScreen extends ConsumerWidget {
     final settings = ref.watch(siteSettingsProvider);
     final recent = ref.watch(recentProvider);
     final ann = ref.watch(boolPrefProvider('pref_announcements'))
-        ? ref.watch(announcementProvider)
-        : null;
+        ? ref.watch(announcementSlidesProvider)
+        : ref.watch(announcementSlidesProvider).take(0).toList();
     final name =
         profile?.firstName ?? user?.displayName?.split(' ').first ?? 'there';
     final fresh = ref.watch(lastCreatedProfileProvider)?.uid == user?.uid;
@@ -235,52 +235,10 @@ class HomeScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        if (ann != null)
+                        if (ann.isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(bottom: 24),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: dark
-                                    ? const Color(0xFF29292D)
-                                    : const Color(0xFFE3E3E5),
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.campaign_outlined,
-                                    color: dark ? Colors.white : Colors.black,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      ann.text,
-                                      style: TextStyle(
-                                        color: dark
-                                            ? Colors.white
-                                            : Colors.black,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  if (ann.linkUrl.isNotEmpty)
-                                    TextButton(
-                                      onPressed: () =>
-                                          openLink(context, ann.linkUrl),
-                                      child: Text(
-                                        ann.linkText.isEmpty
-                                            ? 'Open'
-                                            : ann.linkText,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: AnnouncementCarousel(slides: ann),
                           ),
                         Row(
                           children: [
@@ -309,7 +267,7 @@ class HomeScreen extends ConsumerWidget {
                             subtitle: 'Your academic library',
                             icon: Icons.menu_book_outlined,
                             art: 'books',
-                            black: !dark,
+                            black: true,
                             onTap: () => context.go('/study'),
                           ),
                           _ReferenceCard(
@@ -319,7 +277,7 @@ class HomeScreen extends ConsumerWidget {
                             art: 'papers',
                             onTap: () => context.go('/pdf-studio'),
                           ),
-                        ], 132),
+                        ], 128),
                         const Gap(14),
                         Text(
                           'Others',
@@ -424,7 +382,9 @@ class _ReferenceCard extends StatelessWidget {
   final bool black;
   @override
   Widget build(BuildContext context) {
-    final ink = black ? Colors.white : Colors.black;
+    final ink = black || Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : Colors.black;
     return Semantics(
       button: true,
       label: title,
@@ -440,7 +400,11 @@ class _ReferenceCard extends StatelessWidget {
           ],
         ),
         child: Material(
-          color: black ? const Color(0xFF1C1C1E) : Colors.white,
+          color: black
+              ? const Color(0xFF174E8B)
+              : (Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF212123)
+                    : Colors.white),
           borderRadius: BorderRadius.circular(26),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -483,7 +447,7 @@ class _ReferenceCard extends StatelessWidget {
                           height: 1.2,
                         ),
                       ),
-                      const Gap(9),
+                      const Gap(4),
                       Padding(
                         padding: const EdgeInsets.only(right: 35),
                         child: Text(
@@ -530,10 +494,10 @@ class _CompactHomeLink extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
-          height: (94 * MediaQuery.textScalerOf(context).scale(1)).clamp(
-            94.0,
-            180.0,
-          ),
+          height:
+              ((68 + 12 * badges.length) *
+                      MediaQuery.textScalerOf(context).scale(1))
+                  .clamp(68.0, 260.0),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
             child: Column(
