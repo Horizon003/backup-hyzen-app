@@ -54,6 +54,9 @@ jobs:
           printf 'sdk.dir=%s\nflutter.sdk=%s\n' "$ANDROID_HOME" "$FLUTTER_ROOT" > local.properties
           flutter precache --android
           gradle :app:compileDebugKotlin
+      - name: Stage verified Gradle runtime for Flutter APK build
+        if: ${{ !cancelled() }}
+        run: python tools/ci/prepare_gradle.py
       - name: Build Android test APK
         if: ${{ !cancelled() }}
         working-directory: hyzen_flutter
