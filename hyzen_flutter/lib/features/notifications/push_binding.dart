@@ -14,11 +14,13 @@ class PushBinding extends ConsumerStatefulWidget {
   ConsumerState<PushBinding> createState() => _PushBindingState();
 }
 
-class _PushBindingState extends ConsumerState<PushBinding> {
+class _PushBindingState extends ConsumerState<PushBinding>
+    with WidgetsBindingObserver {
   StreamSubscription<Map<String, dynamic>>? subscription;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     subscription = PushService.instance.events.stream.listen(receive);
     ref.listenManual(authStateProvider, (_, next) async {
       if (next.isLoading) return;
@@ -69,7 +71,35 @@ class _PushBindingState extends ConsumerState<PushBinding> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(syncInbox());
+  }
+
+  Future<void> syncInbox() async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null || pushApiBase.isEmpty) return;
+    try {
+      final inbox = await PushApi.call(user, '/inbox');
+      if (!mounted || ref.read(authStateProvider).valueOrNull?.uid != user.uid) {
+        return;
+      }
+      for (final row in inbox['items'] as List? ?? []) {
+        receive({
+          'id': 'push_${row['id']}',
+          'title': row['title'],
+          'body': row['body'],
+          'url': safePushRoute(row['route']),
+          'owner': user.uid,
+        });
+      }
+    } catch (_) {
+      /* Local inbox is retained during connectivity loss. */
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     subscription?.cancel();
     super.dispose();
   }
