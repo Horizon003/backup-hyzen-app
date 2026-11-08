@@ -1,5 +1,6 @@
 name: OneSignal and professional rank verification
 on:
+  workflow_dispatch:
   push:
     branches: [feat/onesignal-global-professional]
   pull_request:
@@ -7,6 +8,8 @@ on:
     paths: ['push-worker/**', 'hyzen_flutter/**']
 permissions:
   contents: read
+env:
+  PUSH_API_BASE: ${{ vars.HYZEN_PUSH_API_BASE }}
 jobs:
   flutter:
     runs-on: ubuntu-latest
@@ -19,6 +22,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.4'
@@ -29,9 +33,12 @@ jobs:
         working-directory: hyzen_flutter
       - run: flutter test --no-pub -r expanded
         working-directory: hyzen_flutter
-      - run: flutter build web --release --no-pub --base-href /pharm-d-with-hyzen/
+      - run: flutter build web --release --no-pub --base-href /pharm-d-with-hyzen/ --dart-define=PUSH_API_BASE="$PUSH_API_BASE"
         working-directory: hyzen_flutter
-      - run: flutter build apk --debug --no-pub
+      - name: Build Android debug APK (retry transient dependency downloads once)
+        run: |
+          flutter build apk --debug --no-pub --dart-define=PUSH_API_BASE="$PUSH_API_BASE" ||
+            flutter build apk --debug --no-pub --dart-define=PUSH_API_BASE="$PUSH_API_BASE"
         working-directory: hyzen_flutter
       - uses: actions/upload-artifact@v4
         if: always()
@@ -55,7 +62,7 @@ jobs:
         working-directory: push-worker
       - run: node --test backend/functions/scoring.test.js
   owner-signed-apk:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [flutter, sender]
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -67,6 +74,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.4'
@@ -87,7 +95,10 @@ jobs:
           chmod 600 android/signing/hyzen-release.jks android/key.properties
       - run: flutter pub get
         working-directory: hyzen_flutter
-      - run: flutter build apk --release --no-pub
+      - name: Build owner-signed release APK (retry transient dependency downloads once)
+        run: |
+          flutter build apk --release --no-pub --dart-define=PUSH_API_BASE="$PUSH_API_BASE" ||
+            flutter build apk --release --no-pub --dart-define=PUSH_API_BASE="$PUSH_API_BASE"
         working-directory: hyzen_flutter
       - name: Verify existing owner certificate
         working-directory: hyzen_flutter
@@ -95,9 +106,55 @@ jobs:
           signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
           "$signer" verify --print-certs build/app/outputs/flutter-apk/app-release.apk > signing-report.txt
           grep -qi '3fd902d131ae56d8de4792c9f5953759e2b375e32bcad8f57f7ef5c0ab887f83' signing-report.txt
+          printf 'Source commit: %s\nPush API: %s\n' "$GITHUB_SHA" "${PUSH_API_BASE:-NOT CONFIGURED}" > build-provenance.txt
+          sha256sum build/app/outputs/flutter-apk/app-release.apk > apk-sha256.txt
       - uses: actions/upload-artifact@v4
         with:
           name: hyzen-onesignal-owner-signed-apk
           path: |
             hyzen_flutter/build/app/outputs/flutter-apk/app-release.apk
             hyzen_flutter/signing-report.txt
+            hyzen_flutter/build-provenance.txt
+            hyzen_flutter/apk-sha256.txt
+  android-launch:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: owner-signed-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: hyzen-onesignal-owner-signed-apk
+          path: verified-apk
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            apk=$(find verified-apk -name app-release.apk -print -quit)
+            test -n "$apk"
+            adb install -r "$apk"
+            adb shell pm grant com.hyzen.pharmd android.permission.POST_NOTIFICATIONS
+            adb logcat -c
+            adb shell monkey -p com.hyzen.pharmd -c android.intent.category.LAUNCHER 1
+            sleep 20
+            adb shell pidof com.hyzen.pharmd
+            adb logcat -d > android-startup.log
+            adb exec-out screencap -p > android-startup.png
+            ! grep -E 'FATAL EXCEPTION|E/flutter.*Unhandled Exception|Fatal signal' android-startup.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hyzen-android-startup-evidence
+          path: |
+            android-startup.log
+            android-startup.png
+          if-no-files-found: ignore

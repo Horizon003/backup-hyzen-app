@@ -47,6 +47,13 @@ match /campusMemberships/{uid} {
    collection name is retained for migration compatibility; ranking groups are
    **all colleges within the same academicYear**. College is only a push filter.
 5. Build Flutter with `--dart-define=PUSH_API_BASE=https://YOUR_WORKER.workers.dev`.
+   For GitHub builds: Repository → Settings → Secrets and variables → Actions →
+   **Variables** → create `HYZEN_PUSH_API_BASE` with that public HTTPS Worker URL.
+   Then Actions → **OneSignal and professional rank verification** → Run workflow
+   on `feat/onesignal-global-professional`. It builds the real Web/debug app and an
+   owner-signed APK after checks. Pages also reads this variable after an approved
+   merge. An empty variable produces an explicitly unconfigured test APK; a rebuild
+   is required after setting the URL. Do not publish that test build as production.
    The same URL supplies the free study sync and ranking API. Do not set the old
    `STUDY_API_BASE` to undeployed Cloud Functions. Admin → Push Notification Center
    → reload audiences synchronizes the verified ranking roster, including removals.
