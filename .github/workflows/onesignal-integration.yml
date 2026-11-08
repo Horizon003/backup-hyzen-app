@@ -35,6 +35,8 @@ jobs:
         working-directory: hyzen_flutter
       - run: flutter build web --release --no-pub --base-href /pharm-d-with-hyzen/ --dart-define=PUSH_API_BASE="$PUSH_API_BASE"
         working-directory: hyzen_flutter
+      - name: Stage verified Gradle runtime through official release API
+        run: python tools/ci/prepare_gradle.py
       - name: Build Android debug APK (retry transient dependency downloads once)
         run: |
           flutter build apk --debug --no-pub --dart-define=PUSH_API_BASE="$PUSH_API_BASE" ||
@@ -96,10 +98,13 @@ jobs:
       - run: flutter pub get
         working-directory: hyzen_flutter
       - name: Build owner-signed release APK (retry transient dependency downloads once)
+        # Stage the exact official runtime before using Flutter's wrapper.
+        # The pin prevents alternate or partial download bytes from being used.
         run: |
+          python tools/ci/prepare_gradle.py
+          cd hyzen_flutter
           flutter build apk --release --no-pub --dart-define=PUSH_API_BASE="$PUSH_API_BASE" ||
             flutter build apk --release --no-pub --dart-define=PUSH_API_BASE="$PUSH_API_BASE"
-        working-directory: hyzen_flutter
       - name: Verify existing owner certificate
         working-directory: hyzen_flutter
         run: |
