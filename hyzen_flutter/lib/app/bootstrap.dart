@@ -10,10 +10,12 @@ import '../core/storage/local_store.dart';
 import 'app.dart';
 import '../features/study_progress/study_notifications.dart';
 import 'providers.dart';
+import '../features/notifications/push_service.dart';
 
 /// Initialise only what the first frame needs. No artificial delay.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PushService.instance.initialize();
   // Firebase, preferences and Hive are independent: start them together so
   // cold start waits for the slowest one instead of the sum of all three.
   Future<bool> firebase() async {

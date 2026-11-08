@@ -2,8 +2,8 @@ const {test}=require('node:test');const assert=require('node:assert/strict');
 const {dayAt,validateEvents,unionSeconds,periodStart,score,rank,leaseDelta}=require('./scoring');
 test('campus date and semester boundaries use campus calendar',()=>{
  assert.equal(dayAt(Date.parse('2026-11-07T20:00:00Z')),'2026-11-08');
- assert.equal(periodStart('semester','2026-06-30'),'2026-01-01');
- assert.equal(periodStart('semester','2026-07-01'),'2026-07-01');
+ assert.equal(periodStart('semester','2026-06-30'),'2000-01-01');
+ assert.equal(periodStart('semester','2026-07-01'),'2000-01-01');
  assert.equal(periodStart('week','2026-11-08'),'2026-11-02');
 });
 test('duplicates, overlaps and out-of-order intervals count once',()=>assert.equal(unionSeconds([[1000,11000],[0,5000],[1000,11000],[10000,15000]]),15));

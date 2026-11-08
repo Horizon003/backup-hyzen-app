@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../features/admin/presentation/push_center.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -83,7 +84,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
       // Local-only study preview is safe to open before Firebase resolves.
-      if (const ['/study-progress', '/study-goals', '/study-streak', '/campus-rank'].contains(loc)) return null;
+      if (const [
+        '/study-progress',
+        '/study-goals',
+        '/study-streak',
+        '/campus-rank',
+      ].contains(loc))
+        return null;
       if (auth.isLoading && !auth.hasValue) {
         return loc == '/splash' ? null : '/splash';
       }
@@ -135,10 +142,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/legal/:doc',
         builder: (_, s) => LegalScreen(doc: s.pathParameters['doc']!),
       ),
-      GoRoute(path: '/study-progress', builder: (_, __) => const StudyProgressScreen()),
-      GoRoute(path: '/study-goals', builder: (_, __) => const StudyGoalsScreen()),
-      GoRoute(path: '/study-streak', builder: (_, __) => const StudyStreakScreen()),
-      GoRoute(path: '/campus-rank', builder: (_, __) => const CampusRankScreen()),
+      GoRoute(
+        path: '/study-progress',
+        builder: (_, __) => const StudyProgressScreen(),
+      ),
+      GoRoute(
+        path: '/study-goals',
+        builder: (_, __) => const StudyGoalsScreen(),
+      ),
+      GoRoute(
+        path: '/study-streak',
+        builder: (_, __) => const StudyStreakScreen(),
+      ),
+      GoRoute(
+        path: '/campus-rank',
+        builder: (_, __) => const CampusRankScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (_, __, nav) =>
             NoticeHost(child: AppShell(navigationShell: nav)),
@@ -295,6 +314,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/admin',
         builder: (_, __) => const AdminScreen(),
         routes: [
+          GoRoute(path: 'push', builder: (_, __) => const PushCenter()),
           GoRoute(
             path: 'sections',
             builder: (_, __) => const SectionSettingsScreen(),

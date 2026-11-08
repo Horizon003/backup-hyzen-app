@@ -32,7 +32,7 @@ function periodStart(period, today) {
   const date = new Date(today + 'T00:00:00Z');
   if (period === 'week') date.setUTCDate(date.getUTCDate() - (date.getUTCDay()+6)%7);
   else if (period === 'month') date.setUTCDate(1);
-  else if (period === 'semester') { date.setUTCMonth(date.getUTCMonth() < 6 ? 0 : 6, 1); }
+  else if (period === 'semester') { return '2000-01-01'; }
   else throw Error('Invalid period');
   return date.toISOString().slice(0,10);
 }

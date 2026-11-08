@@ -28,6 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  onesignal_flutter: 5.7.3 # onesignal:managed v1 — exact current release
   flutter:
     sdk: flutter
 

@@ -8,7 +8,7 @@ const {dayAt,validateEvents,score,rank,leaseDelta}=require('./scoring');
 initializeApp();const db=getFirestore();
 const options={region:'us-central1',maxInstances:20};
 const uidOf=r=>{if(!r.auth)throw new HttpsError('unauthenticated','Sign in first.');return r.auth.uid;};
-const eligible=m=>m?.verified===true&&m.optOut===false&&typeof m.campusId==='string'&&/^[\w-]{1,80}$/.test(m.campusId);
+const eligible=m=>m?.verified===true&&m.optOut===false&&Number.isInteger(m.academicYear)&&m.academicYear>=1&&m.academicYear<=5;
 const memberRef=uid=>db.collection('campusMemberships').doc(uid);
 const userRef=uid=>db.collection('studyUsers').doc(uid);
 
@@ -52,7 +52,7 @@ exports.studyPulse=onCall(options,async request=>{
   const completed=action==='stop'&&total>=600;
   const dayRef=userRef(uid).collection('verifiedDays').doc(day);
   const dayRecord=(await tx.get(dayRef)).data()||{seconds:0,completed:0};
-  tx.set(dayRef,{seconds:dayRecord.seconds+delta,completed:dayRecord.completed+(completed?1:0)});
+  tx.set(dayRef,{academicYear:member.academicYear,seconds:dayRecord.seconds+delta,completed:dayRecord.completed+(completed?1:0)});
   tx.set(sessionRef,{seconds:total,completed:action==='stop',validCompletion:completed,updatedAt:now});
   tx.set(leaseRef,{session,last:now,active:action==='start'||action==='heartbeat'});
   return {status:action,seconds:total};
@@ -77,10 +77,11 @@ exports.refreshCampusRanks=onSchedule({schedule:'every 15 minutes',region:'us-ce
  for(const doc of members.docs){
   const m=doc.data();if(!eligible(m))continue;
   const zone=m.timezone||'Asia/Karachi',today=dayAt(now,zone);
-  const history=await userRef(doc.id).collection('verifiedDays').where('__name__','>=',`${Number(today.slice(0,4))-1}-12-01`).get();
+  const history=await userRef(doc.id).collection('verifiedDays').where('academicYear','==',m.academicYear).get();
   const days=Object.fromEntries(history.docs.map(d=>[d.id,d.data()]));
-  if(!campuses.has(m.campusId))campuses.set(m.campusId,[]);
-  campuses.get(m.campusId).push({uid:doc.id,alias:m.alias||'Student',academicYear:Number(m.academicYear)||0,days,today});
+  const group = `professional-${m.academicYear}`;
+  if(!campuses.has(group))campuses.set(group,[]);
+  campuses.get(group).push({uid:doc.id,alias:m.alias||'Student',academicYear:m.academicYear,days,today});
  }
  for(const [campus,members]of campuses)for(const period of ['week','month','semester']){
   const ref=db.collection('campusLeaderboards').doc(campus).collection('periods').doc(period);
@@ -97,14 +98,14 @@ exports.readCampusBoard=onCall(options,async request=>{
  if(!['week','month','semester'].includes(period))throw new HttpsError('invalid-argument','Invalid period.');
  const membership=(await memberRef(uid).get()).data();
  if(!eligible(membership))return {status:'Campus verification and ranking consent are required.',entries:[],mine:null};
- const ref=db.collection('campusLeaderboards').doc(membership.campusId).collection('periods').doc(period),meta=(await ref.get()).data();
+ const ref=db.collection('campusLeaderboards').doc(`professional-${membership.academicYear}`).collection('periods').doc(period),meta=(await ref.get()).data();
  if(!meta?.generation)return {status:'No verified leaderboard has been published.',entries:[],mine:null};
  const generation=String(request.data?.generation||meta.generation);
  if(generation!==meta.generation)return {status:'refresh',entries:[],mine:null};
  const after=Math.max(0,Number(request.data?.after)||0),entriesRef=ref.collection('generations').doc(generation).collection('entries');
  const page=await entriesRef.orderBy('rank').startAfter(after).limit(30).get();
  const memberships=page.empty?[]:await db.getAll(...page.docs.map(d=>memberRef(d.id)));
- const entries=page.docs.flatMap((d,i)=>{const current=memberships[i].data();return eligible(current)&&current.campusId===membership.campusId ? [{...d.data(),alias:current.alias||'Student'}]:[];});
+ const entries=page.docs.flatMap((d,i)=>{const current=memberships[i].data();return eligible(current)&&current.academicYear===membership.academicYear ? [{...d.data(),alias:current.alias||'Student'}]:[];});
  const mine=(await entriesRef.doc(uid).get()).data()||null;
  return {status:'ready',entries,mine,updatedAt:meta.updatedAt.toMillis(),generation,
    next:page.size===30?page.docs.at(-1).data().rank:null,alias:membership.alias||'Student'};

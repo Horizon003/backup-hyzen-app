@@ -10,6 +10,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/utils/links.dart';
 import '../academics/domain/drive.dart';
 import '../content/data/content_providers.dart';
+import 'push_service.dart';
 
 class NotificationsController extends Notifier<List<Map<String, dynamic>>> {
   int _generation = 0;
@@ -80,6 +81,23 @@ class NotificationsController extends Notifier<List<Map<String, dynamic>>> {
   void _persist() => unawaited(
     ref.read(sharedPrefsProvider).setString(key, jsonEncode(state)),
   );
+  void receivePush(Map<String, dynamic> item) {
+    final id = item['id'];
+    if (state.any((entry) => entry['id'] == id)) {
+      if (item['opened'] == true) read(id.toString());
+      return;
+    }
+    state = [
+      {
+        ...item,
+        'read': item['opened'] == true,
+        'receivedAt': DateTime.now().toIso8601String(),
+      },
+      ...state,
+    ].take(100).toList();
+    _persist();
+  }
+
   /// Device-local study reminders; delivered to the in-app inbox on next open.
   /// This does not claim Android OS push/background scheduling.
   void addLocalReminder(String title, String body, String taskId) {
@@ -148,6 +166,46 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: HTopBar(
         title: 'Notifications',
         actions: [
+          IconButton(
+            tooltip: 'Push notification preferences',
+            icon: const Icon(Icons.notifications_active_outlined),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (dialog) => AlertDialog(
+                title: const Text('Android push notifications'),
+                content: const Text(
+                  'Enable alerts for announcements, new material, rank and app updates. Study reminders use local device schedules.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      await PushService.instance.enable(false);
+                      if (dialog.mounted) Navigator.pop(dialog);
+                    },
+                    child: const Text('Disable'),
+                  ),
+                  FilledButton(
+                    onPressed: () async {
+                      final allowed = await PushService.instance.enable(true);
+                      if (!dialog.mounted) return;
+                      Navigator.pop(dialog);
+                      if (context.mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              allowed
+                                  ? 'Push permission enabled'
+                                  : 'Permission unavailable. Check Android notification settings.',
+                            ),
+                          ),
+                        );
+                    },
+                    child: const Text('Enable'),
+                  ),
+                ],
+              ),
+            ),
+          ),
           TextButton(
             onPressed: () => ref.read(notificationsProvider.notifier).readAll(),
             child: const Text('Read all'),
@@ -180,7 +238,7 @@ class NotificationsScreen extends ConsumerWidget {
                       if (m['url'] == '/study-progress') {
                         context.push('/study-progress');
                       } else {
-                      openLink(context, '${m['url']}');
+                        openLink(context, '${m['url']}');
                       }
                     }
                   },

@@ -187,7 +187,7 @@ class HomeDashboardTop extends ConsumerWidget {
               Expanded(
                 child: _StatTile(
                   value: '—',
-                  label: 'Campus Rank',
+                  label: 'Professional Rank',
                   icon: Icons.emoji_events_rounded,
                   tint: const Color(0xFFE3B22E),
                   onTap: () => context.push('/campus-rank'),
