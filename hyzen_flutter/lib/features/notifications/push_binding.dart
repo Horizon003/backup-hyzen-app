@@ -74,10 +74,12 @@ class _PushBindingState extends ConsumerState<PushBinding>
         if (await syncInbox(
           openedId: item['opened'] == true ? item['id']?.toString() : null,
           expectedId: item['id']?.toString(),
-        ))
+        )) {
           return;
-        if (!mounted || ref.read(authStateProvider).valueOrNull?.uid != uid)
+        }
+        if (!mounted || ref.read(authStateProvider).valueOrNull?.uid != uid) {
           return;
+        }
         await Future<void>.delayed(Duration(milliseconds: 500 * (attempt + 1)));
       }
       return;

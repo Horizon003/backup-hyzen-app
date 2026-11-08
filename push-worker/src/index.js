@@ -6,7 +6,9 @@ const keys=createRemoteJWKSet(new URL('https://www.googleapis.com/service_accoun
 async function identity(request,env) {
   const token=(request.headers.get('authorization')||'').match(/^Bearer (.+)$/)?.[1];
   if(!token) throw new Error('401');
-  const {payload}=await jwtVerify(token,keys,{algorithms:['RS256'],audience:env.FIREBASE_PROJECT_ID,issuer:`https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`});
+  let payload;
+  try {({payload}=await jwtVerify(token,keys,{algorithms:['RS256'],audience:env.FIREBASE_PROJECT_ID,issuer:`https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`}));}
+  catch {throw Error('401');}
   if(!payload.sub || payload.sub.length>128 || !payload.auth_time || payload.auth_time>Date.now()/1000)throw Error('401');
   return {uid:payload.sub,token};
 }

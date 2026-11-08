@@ -1,21 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {DatabaseSync} from 'node:sqlite';
-import {readFileSync} from 'node:fs';
+import {fixture} from './sqlite.js';
 import {rememberMember,syncRoster,pulse,syncEvents,readBoard,rankPrivacy,decodeMember} from '../src/ranking.js';
 import scoring from '../../backend/functions/scoring.js';
-function fixture() {
-  const sql=new DatabaseSync(':memory:');
-  sql.exec(readFileSync(new URL('../schema.sql',import.meta.url),'utf8'));
-  function prepare(query,args=[]) {
-    return {bind(...values){return prepare(query,values);},
-      execute(){return query.startsWith('SELECT')?{results:sql.prepare(query).all(...args)}:{meta:{changes:Number(sql.prepare(query).run(...args).changes)}};},
-      async run(){return this.execute();},
-      async first(){return sql.prepare(query).get(...args)||null;},
-      async all(){return {results:sql.prepare(query).all(...args)};}};
-  }
-  return {sql,db:{prepare,async batch(statements){sql.exec('BEGIN');try{const results=statements.map(s=>s.execute());sql.exec('COMMIT');return results;}catch(e){sql.exec('ROLLBACK');throw e;}}}};
-}
 const member=(uid,year=1,college='a')=>({uid,academicYear:year,campusId:college,alias:uid,verified:true,optOut:false});
 const session='a'.repeat(32),other='b'.repeat(32),now=Date.parse('2026-11-08T10:00:00Z');
 test('all colleges share a professional board; previous professional history remains isolated',async()=>{
