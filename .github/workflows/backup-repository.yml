@@ -1,0 +1,30 @@
+name: Mirror Hyzen repository to backup
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check backup credentials
+        env:
+          BACKUP_TOKEN: ${{ secrets.HYZEN_BACKUP_TOKEN }}
+        run: |
+          if [ -z "$BACKUP_TOKEN" ]; then
+            echo "::error::Set HYZEN_BACKUP_TOKEN in source repository Actions secrets first."
+            exit 1
+          fi
+      - name: Mirror all Git branches and tags
+        env:
+          BACKUP_TOKEN: ${{ secrets.HYZEN_BACKUP_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone --mirror "https://github.com/Horizon003/pharm-d-with-hyzen.git" source.git
+          cd source.git
+          git config --local credential.helper '!f() { echo username=x-access-token; echo "password=$BACKUP_TOKEN"; }; f'
+          git push --mirror "https://github.com/Horizon003/backup-hyzen-app.git"
+          git config --local --unset credential.helper
+      - name: Confirm backup
+        run: echo "Git mirror push completed. Verify branches and tags in backup repository."
