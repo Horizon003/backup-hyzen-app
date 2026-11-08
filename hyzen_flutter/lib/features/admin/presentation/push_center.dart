@@ -39,7 +39,7 @@ class _PushCenterState extends ConsumerState<PushCenter> {
     try {
       final audiences = await PushApi.call(user, '/audiences');
       final sent = await PushApi.call(user, '/history');
-      if (mounted)
+      if (mounted) {
         setState(() {
           colleges = (audiences['colleges'] as List).cast<String>();
           history = (sent['results'] as List)
@@ -47,6 +47,7 @@ class _PushCenterState extends ConsumerState<PushCenter> {
               .toList();
           error = null;
         });
+      }
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
     }
@@ -113,18 +114,20 @@ class _PushCenterState extends ConsumerState<PushCenter> {
           'category': category,
         },
       );
-      if (mounted)
+      if (mounted) {
         setState(
           () => result =
               'Accepted by OneSignal: ${response['id']}. Device delivery has not yet been confirmed.',
         );
+      }
       await load();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(
           () => error =
               '$e\nRetry uses the same message ID to prevent duplicate sends.',
         );
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -132,10 +135,11 @@ class _PushCenterState extends ConsumerState<PushCenter> {
 
   @override
   Widget build(BuildContext context) {
-    if (!ref.watch(isAdminProvider))
+    if (!ref.watch(isAdminProvider)) {
       return const Scaffold(
         body: Center(child: Text('Administrator access required')),
       );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Push Notification Center'),
@@ -254,7 +258,7 @@ class _PushCenterState extends ConsumerState<PushCenter> {
                       ref.read(authStateProvider).valueOrNull!,
                       '/status/${item['id']}',
                     );
-                    if (context.mounted)
+                    if (context.mounted) {
                       showDialog<void>(
                         context: context,
                         builder: (c) => AlertDialog(
@@ -264,6 +268,7 @@ class _PushCenterState extends ConsumerState<PushCenter> {
                           ),
                         ),
                       );
+                    }
                   } catch (e) {
                     if (mounted) setState(() => error = e.toString());
                   }

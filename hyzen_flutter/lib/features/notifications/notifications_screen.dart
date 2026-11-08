@@ -189,7 +189,7 @@ class NotificationsScreen extends ConsumerWidget {
                       final allowed = await PushService.instance.enable(true);
                       if (!dialog.mounted) return;
                       Navigator.pop(dialog);
-                      if (context.mounted)
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -199,6 +199,7 @@ class NotificationsScreen extends ConsumerWidget {
                             ),
                           ),
                         );
+                      }
                     },
                     child: const Text('Enable'),
                   ),

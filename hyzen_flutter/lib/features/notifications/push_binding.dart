@@ -34,8 +34,9 @@ class _PushBindingState extends ConsumerState<PushBinding> {
           final inbox = await PushApi.call(next.valueOrNull!, '/inbox');
           if (!mounted ||
               ref.read(authStateProvider).valueOrNull?.uid !=
-                  next.valueOrNull?.uid)
+                  next.valueOrNull?.uid) {
             return;
+          }
           for (final row in inbox['items'] as List? ?? []) {
             receive({
               'id': 'push_${row['id']}',

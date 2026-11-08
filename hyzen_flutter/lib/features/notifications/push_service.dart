@@ -16,8 +16,9 @@ class PushService {
   void initialize() {
     if (initialized ||
         kIsWeb ||
-        defaultTargetPlatform != TargetPlatform.android)
+        defaultTargetPlatform != TargetPlatform.android) {
       return;
+    }
     initialized = true;
     OneSignal.initialize(hyzenOneSignalAppId);
     OneSignal.Notifications.addForegroundWillDisplayListener((event) {

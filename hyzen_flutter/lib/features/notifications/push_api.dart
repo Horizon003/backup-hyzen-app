@@ -10,10 +10,11 @@ class PushApi {
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    if (pushApiBase.isEmpty)
+    if (pushApiBase.isEmpty) {
       throw StateError(
         'Push server is not deployed. Configure PUSH_API_BASE after owner setup.',
       );
+    }
     final token = await user.getIdToken();
     final client = http.Client();
     try {
@@ -28,8 +29,9 @@ class PushApi {
                   : client.post(uri, headers: headers, body: jsonEncode(body)))
               .timeout(const Duration(seconds: 30));
       final data = Map<String, dynamic>.from(jsonDecode(response.body));
-      if (response.statusCode >= 400)
+      if (response.statusCode >= 400) {
         throw StateError(data['error']?.toString() ?? 'Push request failed.');
+      }
       return data;
     } finally {
       client.close();

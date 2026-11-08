@@ -89,8 +89,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/study-goals',
         '/study-streak',
         '/campus-rank',
-      ].contains(loc))
+      ].contains(loc)) {
         return null;
+      }
       if (auth.isLoading && !auth.hasValue) {
         return loc == '/splash' ? null : '/splash';
       }
