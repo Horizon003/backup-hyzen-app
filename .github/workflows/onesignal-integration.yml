@@ -147,9 +147,7 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: |
-            apk=$(find verified-apk -name app-release.apk -print -quit)
-            test -n "$apk"
-            adb install -r "$apk"
+            adb install -r "$(find verified-apk -name app-release.apk -print -quit)"
             adb shell pm grant com.hyzen.pharmd android.permission.POST_NOTIFICATIONS
             adb logcat -c
             adb shell monkey -p com.hyzen.pharmd -c android.intent.category.LAUNCHER 1
