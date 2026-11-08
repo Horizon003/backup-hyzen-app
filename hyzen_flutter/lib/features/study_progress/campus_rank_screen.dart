@@ -193,8 +193,9 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted)
+      if (mounted) {
         unawaited(ref.read(campusBoardProvider(period).notifier).load());
+      }
     });
   }
 
