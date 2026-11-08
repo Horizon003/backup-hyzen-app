@@ -13,6 +13,8 @@ export function validateMessage(value) {
 }
 export function selectRecipients(profiles, message) {
   return [...new Set(profiles.filter(p=>p.verified === true && p.pushOptOut !== true &&
+    typeof p.uid === 'string' && p.uid.length > 0 && p.uid.length <= 128 &&
+    Number.isInteger(p.academicYear) && p.academicYear >= 1 && p.academicYear <= 5 &&
     (message.target !== 'professional' || p.academicYear === message.year) &&
     (message.target !== 'college' || p.campusId === message.college)).map(p=>p.uid))];
 }

@@ -1,4 +1,12 @@
-# Study backend deployment gate
+# Historical Cloud Functions implementation — do not deploy
+
+The active free runtime is [`../push-worker/`](../push-worker/OWNER_SETUP.md).
+Firebase must remain on **Spark**. Do not deploy `functions/index.js` or enable
+Blaze, Cloud Scheduler or billing. The policy below describes historical source,
+not the active global professional-year ranking service. The Worker combines all
+colleges within professional years 1–5 and supports week, month and professional
+total in Pakistan time. `functions/scoring.js` remains the shared tested policy.
+The public `PUSH_API_BASE` supplies both study and notification APIs.
 
 Status: source and pure scoring tests added; **NOT DEPLOYED**. No production
 Firebase credentials or deployed rules were available in this workspace. The
@@ -45,20 +53,18 @@ are unknown. Do not overwrite them with this standalone emulator rules file.
 CI runs pure scoring and Firestore emulator access tests. Live multiple-account
 integration, App Check, abuse load tests and deployment are separate release gates.
 
-## Deployment and rollback
+## Historical deployment notes (superseded; not executable instructions)
 
 1. Obtain the deployed Firestore rules and backup; merge ONLY the three new match
    blocks from `study.rules`, preserving existing app/admin permissions. Review
    existing catch-all allow rules: a broad allow would override these denials.
-2. Deploy functions to the existing `pharmawhisper-debd2` project using authorized
-   Firebase administration. Billing and Cloud Scheduler must be enabled. Do not
-   create a replacement project or overwrite Firebase client configuration.
+2. Do not deploy this historical Functions runtime. Use the free Worker/D1
+   deployment described in the owner guide. Keep Firebase on Spark.
 3. Run emulator security tests, seed consenting verified test memberships through
    Admin SDK, and verify auth, multi-account isolation, privacy, concurrency,
    partial acknowledgements and generation pagination against a staging project.
-4. Only after validation build with `--dart-define=STUDY_API_BASE=https://us-central1-PROJECT_ID.cloudfunctions.net`.
-   The default is empty: cloud sync/rank stays explicitly disconnected. Existing
-   accounts and local timers remain usable. No fabricated ranks are displayed.
+4. Build with the owner-selected `PUSH_API_BASE` Worker URL. Do not set
+   `STUDY_API_BASE` to undeployed Cloud Functions. No fabricated ranks are displayed.
 5. Roll back by rebuilding without STUDY_API_BASE, disabling the schedule and
    callable functions, retaining private event data and the preceding rules backup.
 

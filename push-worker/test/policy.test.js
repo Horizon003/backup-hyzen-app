@@ -15,5 +15,12 @@ test('unsafe routes, unbounded messages and unsupported schedules are rejected',
  assert.equal(validateMessage(message).target,'all');
 });
 test('opt-out and duplicate profile rows cannot expand the audience',()=>{
- assert.deepEqual(selectRecipients([{uid:'a',verified:true},{uid:'a',verified:true},{uid:'b',verified:true,pushOptOut:true}],message),['a']);
+ assert.deepEqual(selectRecipients([{uid:'a',verified:true,academicYear:1},{uid:'a',verified:true,academicYear:1},{uid:'b',verified:true,academicYear:1,pushOptOut:true}],message),['a']);
+});
+test('legacy malformed verified profiles cannot enter all-student or college sends',()=>{
+ const profiles=[{uid:'valid',verified:true,academicYear:5,campusId:'one'},...[
+  {uid:'no-year'},{uid:'string-year',academicYear:'1'},{uid:'outside-range',academicYear:6},{academicYear:1}
+ ].map(p=>({verified:true,campusId:'one',...p}))];
+ assert.deepEqual(selectRecipients(profiles,message),['valid']);
+ assert.deepEqual(selectRecipients(profiles,{...message,target:'college',college:'one'}),['valid']);
 });
