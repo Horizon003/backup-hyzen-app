@@ -1,0 +1,10 @@
+name = "hyzen-free-push"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+# Public, non-secret identifiers. The service account JSON MUST be a
+# Cloudflare Secret; never store it in this file or GitHub.
+[vars]
+FIREBASE_PROJECT_ID = "pharmawhisper-debd2"
+ADMIN_UID = "Vv6HtZjmUvfVACzvuyL2pFx5HR33"
+ALLOWED_ORIGIN = "https://horizon003.github.io"
