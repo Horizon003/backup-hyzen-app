@@ -116,6 +116,9 @@ jobs:
             hyzen_flutter/signing-report.txt
             hyzen_flutter/build-provenance.txt
             hyzen_flutter/apk-sha256.txt
+      - name: Remove restored signing files
+        if: always()
+        run: rm -f hyzen_flutter/android/key.properties hyzen_flutter/android/signing/hyzen-release.jks
   android-launch:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: owner-signed-apk

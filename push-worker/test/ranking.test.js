@@ -82,3 +82,22 @@ test('offline sync is idempotent and immutable and cannot earn ranking credit',a
   await assert.rejects(pulse(db,decoded,{session,action:'start'},now),/verified|Verified/);
   sql.close();
 });
+test('immutable snapshots keep pagination stable while live study changes scores',async()=>{
+  const {db,sql}=fixture();
+  const users=Array.from({length:35},(_,i)=>member(`learner-${String(i).padStart(2,'0')}`));
+  await syncRoster(db,users);
+  for(let i=0;i<users.length;i++)sql.prepare('INSERT INTO rank_days VALUES(?,?,?,?,?)').run(users[i].uid,1,'2026-11-08',(40-i)*60,0);
+  const first=await readBoard(db,users[0],{period:'week'},now);
+  assert.equal(first.entries.length,30);assert.equal(first.next,30);
+  sql.prepare('UPDATE rank_days SET seconds=20000 WHERE uid=?').run(users[34].uid);
+  const second=await readBoard(db,users[0],{period:'week',generation:first.generation,after:30},now+15000);
+  assert.equal(second.status,'ready');assert.equal(second.entries.length,5);
+  assert.equal(new Set([...first.entries,...second.entries].map(row=>row.uid)).size,35);
+  assert.equal(second.entries.at(-1).uid,users[34].uid);
+  const refreshed=await readBoard(db,users[0],{period:'week',generation:first.generation,after:30},now+60001);
+  assert.equal(refreshed.status,'refresh');
+  const current=await readBoard(db,users[0],{period:'week'},now+60002);
+  assert.equal(current.entries[0].uid,users[34].uid);
+  assert.equal(sql.prepare('SELECT COUNT(DISTINCT generation) AS n FROM rank_entries').get().n,1);
+  sql.close();
+});

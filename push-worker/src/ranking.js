@@ -90,15 +90,26 @@ export async function readBoard(db,member,data,now=Date.now()) {
   if(!['week','month','semester'].includes(data.period))throw fail('Invalid ranking period.');
   if(!await eligible(db,member))return {status:'Verified professional year and ranking consent are required.',entries:[],mine:null};
   const today=dayAt(now),start=periodStart(data.period,today),year=member.academicYear;
-  // A changing snapshot invalidates pagination instead of silently skipping rows.
-  const meta=await db.prepare('SELECT COALESCE(SUM(version),0) AS version FROM rank_leases').first();
   const privacy=await db.prepare('SELECT version FROM rank_revision WHERE id=1').first();
-  const generation=`${today}:${meta.version}:${privacy.version}`;
+  let meta=await db.prepare('SELECT * FROM rank_boards WHERE academic_year=? AND period=?').bind(year,data.period).first();
+  if(!meta||meta.day!==today||meta.revision!==privacy.version||now-meta.updated_at>=60000) {
+    const proposed=crypto.randomUUID();
+    // A board is published atomically and stays immutable for one minute. Live
+    // heartbeats cannot reset every page or silently move rows between pages.
+    // Membership/privacy changes invalidate it immediately on the next read.
+    await db.batch([
+      db.prepare('INSERT INTO rank_boards(academic_year,period,generation,updated_at,revision,day) VALUES(?,?,?,?,?,?) ON CONFLICT(academic_year,period) DO UPDATE SET generation=excluded.generation,updated_at=excluded.updated_at,revision=excluded.revision,day=excluded.day WHERE rank_boards.updated_at<=? OR rank_boards.revision<>excluded.revision OR rank_boards.day<>excluded.day').bind(year,data.period,proposed,now,privacy.version,today,now-60000),
+      db.prepare(`INSERT INTO rank_entries(generation,uid,alias,academicYear,verifiedMinutes,sessions,score,rank) SELECT ?,uid,alias,academicYear,verifiedMinutes,sessions,score,rank FROM (${boardQuery}) WHERE EXISTS(SELECT 1 FROM rank_boards WHERE generation=?)`).bind(proposed,year,start,today,proposed),
+      db.prepare('DELETE FROM rank_entries WHERE generation NOT IN(SELECT generation FROM rank_boards)')
+    ]);
+    meta=await db.prepare('SELECT * FROM rank_boards WHERE academic_year=? AND period=?').bind(year,data.period).first();
+  }
+  const generation=meta.generation;
   if(data.generation&&data.generation!==generation)return {status:'refresh',entries:[],mine:null};
   const after=Math.max(0,Number(data.after)||0);
-  const page=await db.prepare(`${boardQuery} WHERE rank>? ORDER BY rank LIMIT 30`).bind(year,start,today,after).all();
-  const mine=await db.prepare(`${boardQuery} WHERE uid=?`).bind(year,start,today,member.uid).first();
-  return {status:'ready',academicYear:year,entries:page.results,mine,updatedAt:now,generation,next:page.results.length===30?page.results.at(-1).rank:null};
+  const page=await db.prepare('SELECT uid,alias,academicYear,verifiedMinutes,sessions,score,rank FROM rank_entries WHERE generation=? AND rank>? ORDER BY rank LIMIT 30').bind(generation,after).all();
+  const mine=await db.prepare('SELECT uid,alias,academicYear,verifiedMinutes,sessions,score,rank FROM rank_entries WHERE generation=? AND uid=?').bind(generation,member.uid).first();
+  return {status:'ready',academicYear:year,entries:page.results,mine,updatedAt:meta.updated_at,generation,next:page.results.length===30?page.results.at(-1).rank:null};
 }
 export async function rankPrivacy(db,member,data) {
   const alias=typeof data.alias==='string'?data.alias.trim():'';

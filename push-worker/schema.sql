@@ -15,3 +15,6 @@ CREATE TRIGGER IF NOT EXISTS rank_member_insert AFTER INSERT ON rank_members BEG
 CREATE TRIGGER IF NOT EXISTS rank_member_update AFTER UPDATE ON rank_members BEGIN UPDATE rank_revision SET version=version+1 WHERE id=1; END;
 CREATE TRIGGER IF NOT EXISTS rank_privacy_insert AFTER INSERT ON rank_privacy BEGIN UPDATE rank_revision SET version=version+1 WHERE id=1; END;
 CREATE TRIGGER IF NOT EXISTS rank_privacy_update AFTER UPDATE ON rank_privacy BEGIN UPDATE rank_revision SET version=version+1 WHERE id=1; END;
+CREATE TABLE IF NOT EXISTS rank_boards(academic_year INTEGER NOT NULL, period TEXT NOT NULL, generation TEXT NOT NULL, updated_at INTEGER NOT NULL, revision INTEGER NOT NULL, day TEXT NOT NULL, PRIMARY KEY(academic_year,period));
+CREATE TABLE IF NOT EXISTS rank_entries(generation TEXT NOT NULL, uid TEXT NOT NULL, alias TEXT NOT NULL, academicYear INTEGER NOT NULL, verifiedMinutes INTEGER NOT NULL, sessions INTEGER NOT NULL, score INTEGER NOT NULL, rank INTEGER NOT NULL, PRIMARY KEY(generation,uid));
+CREATE INDEX IF NOT EXISTS board_page ON rank_entries(generation,rank);

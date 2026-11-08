@@ -97,6 +97,8 @@ match /campusMemberships/{uid} {
   ranking and privacy. Weekly/monthly/professional-total SQL scores are regression
   tested against the shared policy. Professional history stays separate. D1
   transactions/version checks prevent concurrent heartbeat double credit.
+  Immutable, atomically published one-minute snapshots keep pagination stable while
+  other students study; roster/privacy changes invalidate the snapshot immediately.
   Students' own verified Firestore membership is rechecked before each pulse/board
   call. Other students' roster revocations/removals propagate when the admin reloads
   audiences; refresh this after roster edits. Offline events never earn rank points.
