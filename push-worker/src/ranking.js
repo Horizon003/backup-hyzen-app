@@ -98,7 +98,7 @@ export async function readBoard(db,member,data,now=Date.now()) {
   const after=Math.max(0,Number(data.after)||0);
   const page=await db.prepare(`${boardQuery} WHERE rank>? ORDER BY rank LIMIT 30`).bind(year,start,today,after).all();
   const mine=await db.prepare(`${boardQuery} WHERE uid=?`).bind(year,start,today,member.uid).first();
-  return {status:'ready',entries:page.results,mine,updatedAt:now,generation,next:page.results.length===30?page.results.at(-1).rank:null};
+  return {status:'ready',academicYear:year,entries:page.results,mine,updatedAt:now,generation,next:page.results.length===30?page.results.at(-1).rank:null};
 }
 export async function rankPrivacy(db,member,data) {
   const alias=typeof data.alias==='string'?data.alias.trim():'';

@@ -50,6 +50,7 @@ class CampusBoard {
     this.next,
     this.generation,
     this.cached = false,
+    this.academicYear,
   });
   final String status;
   final List<CampusEntry> entries;
@@ -58,6 +59,7 @@ class CampusBoard {
   final int? next;
   final String? generation;
   final bool cached;
+  final int? academicYear;
 }
 
 class CampusController extends StateNotifier<AsyncValue<CampusBoard>> {
@@ -95,6 +97,7 @@ class CampusController extends StateNotifier<AsyncValue<CampusBoard>> {
         next: data['next'],
         generation: data['generation'],
         cached: cached,
+        academicYear: (data['academicYear'] as num?)?.toInt(),
       );
   Future<void> load({bool more = false}) async {
     if (loading || cloud == null) return;
@@ -186,6 +189,15 @@ class CampusRankScreen extends ConsumerStatefulWidget {
 
 class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
   var period = 'week';
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted)
+        unawaited(ref.read(campusBoardProvider(period).notifier).load());
+    });
+  }
+
   Future<void> _privacy() async {
     final alias = TextEditingController(
       text:
@@ -271,8 +283,8 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
     final ink = dark ? Colors.white : _navy;
     final bg = dark ? Colors.black : const Color(0xFFEAF3FF);
     final surface = dark ? const Color(0xFF1B1C20) : Colors.white;
-    final profile = ref.watch(profileProvider).valueOrNull;
     final board = ref.watch(campusBoardProvider(period));
+    final verifiedYear = board.valueOrNull?.academicYear;
     Widget panel(Widget content) => Container(
       width: double.infinity,
       padding: const EdgeInsets.all(15),
@@ -325,240 +337,255 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 32),
-        children: [
-          Container(
-            height: 135,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    HomeTimePhase.at(DateTime.now()).asset,
-                    fit: BoxFit.cover,
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(campusBoardProvider(period).notifier).load(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 32),
+          children: [
+            Container(
+              height: 135,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      HomeTimePhase.at(DateTime.now()).asset,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-                const Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xC7F0F6FF), Color(0x00FFFFFF)],
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xC7F0F6FF), Color(0x00FFFFFF)],
+                        ),
                       ),
                     ),
                   ),
+                  Positioned(
+                    left: 16,
+                    bottom: 16,
+                    right: 16,
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Material(
+                        color: const Color(0xEDFFFFFF),
+                        borderRadius: BorderRadius.circular(22),
+                        child: Padding(
+                          padding: const EdgeInsets.all(11),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.school_outlined, color: _blue),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  verifiedYear == null
+                                      ? 'All colleges · Separate professionals'
+                                      : 'Verified Professional $verifiedYear · All colleges',
+                                  maxLines: 2,
+                                  style: const TextStyle(
+                                    color: _navy,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'week', label: Text('This Week')),
+                ButtonSegment(value: 'month', label: Text('This Month')),
+                ButtonSegment(
+                  value: 'semester',
+                  label: Text('Professional Total'),
                 ),
-                Positioned(
-                  left: 16,
-                  bottom: 16,
-                  right: 16,
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: Material(
-                      color: const Color(0xEDFFFFFF),
-                      borderRadius: BorderRadius.circular(22),
-                      child: Padding(
-                        padding: const EdgeInsets.all(11),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+              ],
+              selected: {period},
+              showSelectedIcon: false,
+              onSelectionChanged: (values) =>
+                  setState(() => period = values.first),
+            ),
+            const SizedBox(height: 16),
+            board.when(
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(35),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (e, _) =>
+                  panel(Text('Could not load verified rankings: $e')),
+              data: (data) => Column(
+                children: [
+                  if (data.next != null)
+                    TextButton(
+                      onPressed: () => ref
+                          .read(campusBoardProvider(period).notifier)
+                          .load(more: true),
+                      child: const Text('Load more learners'),
+                    ),
+                  panel(
+                    Column(
+                      children: [
+                        Row(
                           children: [
-                            const Icon(Icons.school_outlined, color: _blue),
+                            Icon(Icons.account_circle, color: _blue),
+                            const SizedBox(width: 7),
+                            Text(
+                              'Your Rank',
+                              style: TextStyle(
+                                color: ink,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (data.mine == null)
+                          Text(
+                            data.status == 'ready'
+                                ? 'Not ranked this period'
+                                : data.status,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: ink),
+                          )
+                        else
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _RankStat(
+                                '#${data.mine!.rank}',
+                                'Your rank',
+                                ink,
+                              ),
+                              _RankStat(
+                                '${data.mine!.minutes ~/ 60}h ${data.mine!.minutes % 60}m',
+                                'Verified study',
+                                ink,
+                              ),
+                              _RankStat('${data.mine!.points}', 'Points', ink),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  panel(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.emoji_events_outlined,
+                              color: Color(0xFFE3B52A),
+                            ),
                             const SizedBox(width: 8),
-                            Flexible(
+                            Expanded(
                               child: Text(
-                                profile?.professionalYear == null
-                                    ? 'Choose your professional year'
-                                    : 'Professional ${profile!.professionalYear} · All colleges',
-                                maxLines: 2,
-                                style: const TextStyle(
-                                  color: _navy,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 12,
+                                'Leaderboard',
+                                style: TextStyle(
+                                  color: ink,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 18,
                                 ),
                               ),
                             ),
+                            IconButton(
+                              icon: Icon(Icons.refresh_rounded, color: ink),
+                              onPressed: () =>
+                                  ref.invalidate(campusBoardProvider(period)),
+                            ),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'week', label: Text('This Week')),
-              ButtonSegment(value: 'month', label: Text('This Month')),
-              ButtonSegment(
-                value: 'semester',
-                label: Text('Professional Total'),
-              ),
-            ],
-            selected: {period},
-            showSelectedIcon: false,
-            onSelectionChanged: (values) =>
-                setState(() => period = values.first),
-          ),
-          const SizedBox(height: 16),
-          board.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(35),
-                child: CircularProgressIndicator(),
-              ),
-            ),
-            error: (e, _) =>
-                panel(Text('Could not load verified rankings: $e')),
-            data: (data) => Column(
-              children: [
-                if (data.next != null)
-                  TextButton(
-                    onPressed: () => ref
-                        .read(campusBoardProvider(period).notifier)
-                        .load(more: true),
-                    child: const Text('Load more learners'),
-                  ),
-                panel(
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.account_circle, color: _blue),
-                          const SizedBox(width: 7),
+                        if (data.updatedAt != null)
                           Text(
-                            'Your Rank',
+                            '${data.cached ? 'Last synced (offline)' : 'Last verified update'}: ${data.updatedAt!.toLocal()}',
                             style: TextStyle(
-                              color: ink,
-                              fontWeight: FontWeight.w700,
+                              color: ink.withValues(alpha: .55),
+                              fontSize: 10,
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      if (data.mine == null)
-                        Text(
-                          data.status == 'ready'
-                              ? 'Not ranked this period'
-                              : data.status,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: ink),
-                        )
-                      else
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _RankStat('#${data.mine!.rank}', 'Your rank', ink),
-                            _RankStat(
-                              '${data.mine!.minutes ~/ 60}h ${data.mine!.minutes % 60}m',
-                              'Verified study',
-                              ink,
-                            ),
-                            _RankStat('${data.mine!.points}', 'Points', ink),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                panel(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.emoji_events_outlined,
-                            color: Color(0xFFE3B52A),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
+                        if (data.entries.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.all(18),
                             child: Text(
-                              'Leaderboard',
+                              data.status,
+                              textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: ink,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 18,
+                                color: ink.withValues(alpha: .7),
                               ),
                             ),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.refresh_rounded, color: ink),
-                            onPressed: () =>
-                                ref.invalidate(campusBoardProvider(period)),
-                          ),
-                        ],
-                      ),
-                      if (data.updatedAt != null)
-                        Text(
-                          '${data.cached ? 'Last synced (offline)' : 'Last verified update'}: ${data.updatedAt!.toLocal()}',
-                          style: TextStyle(
-                            color: ink.withValues(alpha: .55),
-                            fontSize: 10,
-                          ),
-                        ),
-                      if (data.entries.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(18),
-                          child: Text(
-                            data.status,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: ink.withValues(alpha: .7)),
-                          ),
-                        )
-                      else
-                        for (final entry in data.entries)
+                          )
+                        else
+                          for (final entry in data.entries)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: _RankRow(
+                                entry: entry,
+                                highlight:
+                                    entry.uid ==
+                                    ref
+                                        .read(authStateProvider)
+                                        .valueOrNull
+                                        ?.uid,
+                                ink: ink,
+                                dark: dark,
+                              ),
+                            ),
+                        if (data.mine != null &&
+                            !data.entries.any((e) => e.uid == data.mine!.uid))
                           Padding(
-                            padding: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.only(top: 12),
                             child: _RankRow(
-                              entry: entry,
-                              highlight:
-                                  entry.uid ==
-                                  ref.read(authStateProvider).valueOrNull?.uid,
+                              entry: data.mine!,
+                              highlight: true,
                               ink: ink,
                               dark: dark,
                             ),
                           ),
-                      if (data.mine != null &&
-                          !data.entries.any((e) => e.uid == data.mine!.uid))
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: _RankRow(
-                            entry: data.mine!,
-                            highlight: true,
-                            ink: ink,
-                            dark: dark,
-                          ),
-                        ),
-                    ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            panel(
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.bar_chart_rounded, color: _blue),
+                title: Text(
+                  'How Professional Rank Works?',
+                  style: TextStyle(fontWeight: FontWeight.w800, color: ink),
+                ),
+                subtitle: Text(
+                  'Only verified active study and eligible students count.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: ink.withValues(alpha: .6),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          panel(
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.bar_chart_rounded, color: _blue),
-              title: Text(
-                'How Professional Rank Works?',
-                style: TextStyle(fontWeight: FontWeight.w800, color: ink),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => _showRules(context),
               ),
-              subtitle: Text(
-                'Only verified active study and eligible students count.',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: ink.withValues(alpha: .6),
-                ),
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => _showRules(context),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

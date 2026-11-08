@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../study_progress/study_tracker.dart';
+import '../../study_progress/campus_rank_screen.dart';
 import 'home_time_artwork.dart';
 
 const _blue = Color(0xFF174E8B);
@@ -14,6 +15,8 @@ class HomeDashboardTop extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = ref.watch(studyTrackerProvider);
+    final weeklyBoard = ref.watch(campusBoardProvider('week')).valueOrNull;
+    final rank = weeklyBoard?.mine?.rank;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final text = dark ? Colors.white : const Color(0xFF091936);
     final percent = (p.todaySeconds / (p.dailyGoal * 60))
@@ -186,8 +189,12 @@ class HomeDashboardTop extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _StatTile(
-                  value: '—',
-                  label: 'Professional Rank',
+                  value: rank == null
+                      ? '—'
+                      : '#$rank${weeklyBoard!.cached ? '*' : ''}',
+                  label: weeklyBoard?.cached == true
+                      ? 'Weekly Rank (saved)'
+                      : 'Professional Rank',
                   icon: Icons.emoji_events_rounded,
                   tint: const Color(0xFFE3B22E),
                   onTap: () => context.push('/campus-rank'),
