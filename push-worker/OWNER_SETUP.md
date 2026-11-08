@@ -8,7 +8,29 @@ OneSignal App ID is c8344ed8-429a-4c09-8f74-6cc120918dda. The connected OneSigna
 app listing sees it, but credential-status API returned 401. Uploaded FCM credentials
 were not changed. API acceptance is not evidence of phone delivery.
 
-## Owner setup on a phone
+## Verified configuration (8 November 2026)
+
+The public endpoint is `https://hyzen-onesignal-sender.harisaslam003.workers.dev`.
+Its unauthenticated requests correctly return HTTP 401. Cloudflare settings show
+`ONESIGNAL_REST_API_KEY` as an encrypted `secret_text` binding, alongside the
+expected D1/project/app/admin bindings. The secret value was not read or logged.
+Do not repeat account initialization or replace the existing secret.
+
+Production Firestore access is currently blocked by Google sign-in. No deployed
+rules have been read, backed up, modified or published. To finish the safe merge,
+the owner must provide the **current Firestore Rules text** (not credentials), or
+authorize Firebase console sign-in. The collection block below is a candidate
+patch, not proof of a safe merge against unseen production rules. Firestore allow
+rules are additive: an existing recursive wildcard allow can override a narrow
+deny. Review every overlapping match before publishing. Never deploy
+`backend/study.rules` as the whole production policy.
+
+Fresh release CI requires `HYZEN_PUSH_API_BASE` to equal that public URL before
+building. Signed APK provenance records the source commit and URL; signing still
+uses only the existing production certificate. Production rollout requires owner
+approval after the automated gates and real Android checks below.
+
+## Setup reference (completed steps do not need repeating)
 
 1. Open https://dash.cloudflare.com/?to=/:account/workers/workers-and-pages once.
    Cloudflare reported that this account has no workers.dev subdomain. Complete

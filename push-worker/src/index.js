@@ -7,9 +7,12 @@ async function identity(request,env) {
   const token=(request.headers.get('authorization')||'').match(/^Bearer (.+)$/)?.[1];
   if(!token) throw new Error('401');
   let payload;
-  try {({payload}=await jwtVerify(token,keys,{algorithms:['RS256'],audience:env.FIREBASE_PROJECT_ID,issuer:`https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`}));}
+  try {({payload}=await jwtVerify(token,keys,{algorithms:['RS256'],audience:env.FIREBASE_PROJECT_ID,issuer:`https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`,requiredClaims:['sub','iat','exp','auth_time']}));}
   catch {throw Error('401');}
-  if(!payload.sub || payload.sub.length>128 || !payload.auth_time || payload.auth_time>Date.now()/1000)throw Error('401');
+  const now=Date.now()/1000;
+  if(typeof payload.sub!=='string' || !payload.sub || payload.sub.length>128 ||
+    !Number.isFinite(payload.auth_time) || payload.auth_time<=0 || payload.auth_time>now ||
+    !Number.isFinite(payload.iat) || payload.iat>now)throw Error('401');
   return {uid:payload.sub,token};
 }
 async function profiles(token,env) {

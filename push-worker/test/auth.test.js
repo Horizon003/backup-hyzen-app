@@ -10,3 +10,11 @@ test('cross-origin browser sends are rejected',async()=>{
  const response=await worker.fetch(new Request('https://sender.invalid/send',{method:'POST',headers:{Origin:'https://attacker.invalid'},body:'{}'}),env);
  assert.equal(response.status,403);
 });
+test('every protected endpoint rejects missing or malformed credentials before accessing bindings',async()=>{
+ for(const [path,method] of [['/send','POST'],['/audiences','GET'],['/history','GET'],['/status/test','GET'],['/inbox','GET'],['/inbox/test','GET'],['/syncStudy','POST'],['/studyPulse','POST'],['/readCampusBoard','POST'],['/setRankPrivacy','POST']]) {
+  for(const authorization of ['', 'Bearer invalid.jwt.token']) {
+   const response=await worker.fetch(new Request(`https://sender.invalid${path}`,{method,headers:{authorization},...(method==='POST'?{body:'{}'}:{})}),env);
+   assert.equal(response.status,401,`${method} ${path}`);
+  }
+ }
+});

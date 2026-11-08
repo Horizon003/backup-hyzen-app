@@ -37,6 +37,14 @@ test('authenticated HTTP flow verifies tokens, roles, canonical membership and r
     assert.equal((await call('/history','admin',null,await token('admin','test-project',Math.floor(Date.now()/1000)-60))).status,401);
     assert.equal(providerCalls,0);
   });
+  await t.test('all admin endpoints reject students and required Firebase claims cannot be omitted',async()=>{
+    for(const path of ['/audiences','/history','/status/test'])assert.equal((await call(path,'student')).status,403);
+    for(const claims of [{auth_time:1,iat:1},{auth_time:'1',iat:1,exp:Math.floor(Date.now()/1000)+60},{auth_time:1,exp:Math.floor(Date.now()/1000)+60},{auth_time:1,iat:Math.floor(Date.now()/1000)+3600,exp:Math.floor(Date.now()/1000)+7200}]) {
+      const jwt=await new SignJWT(claims).setProtectedHeader({alg:'RS256',kid:'test-key'}).setIssuer('https://securetoken.google.com/test-project').setAudience('test-project').setSubject('admin').sign(privateKey);
+      assert.equal((await call('/history','admin',null,jwt)).status,401);
+    }
+    assert.equal(providerCalls,0);
+  });
   await t.test('client cannot choose its own professional year or continue after verification is withdrawn',async()=>{
     const session='a'.repeat(32);
     const response=await call('/studyPulse','student',{data:{session,action:'start',academicYear:5}});
