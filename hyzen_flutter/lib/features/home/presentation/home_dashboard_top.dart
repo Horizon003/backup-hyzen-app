@@ -193,8 +193,8 @@ class HomeDashboardTop extends ConsumerWidget {
                       ? '—'
                       : '#$rank${weeklyBoard!.cached ? '*' : ''}',
                   label: weeklyBoard?.cached == true
-                      ? 'Weekly Rank (saved)'
-                      : 'Professional Rank',
+                      ? 'Saved rank'
+                      : 'Prof. Rank',
                   icon: Icons.emoji_events_rounded,
                   tint: const Color(0xFFE3B22E),
                   onTap: () => context.push('/campus-rank'),

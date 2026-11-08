@@ -308,7 +308,8 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
         title: Column(
           children: [
             Text(
-              'Professional Rank',
+              scale > 1.4 ? 'Ranks' : 'Prof. Rank',
+              semanticsLabel: 'Professional Rank',
               style: TextStyle(
                 color: ink,
                 fontWeight: FontWeight.w900,
@@ -316,7 +317,7 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
               ),
             ),
             Text(
-              'Across all colleges in your professional year',
+              'All colleges',
               style: TextStyle(color: ink.withValues(alpha: .67), fontSize: 11),
             ),
           ],
@@ -345,7 +346,7 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 32),
           children: [
             Container(
-              height: 135,
+              height: 135 + 50 * (scale - 1),
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
@@ -386,9 +387,9 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
                               Flexible(
                                 child: Text(
                                   verifiedYear == null
-                                      ? 'All colleges · Separate professionals'
-                                      : 'Verified Professional $verifiedYear · All colleges',
-                                  maxLines: 2,
+                                      ? 'By professional\nAll colleges'
+                                      : 'Professional $verifiedYear\nAll colleges',
+                                  maxLines: 4,
                                   style: const TextStyle(
                                     color: _navy,
                                     fontWeight: FontWeight.w800,
@@ -407,12 +408,35 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
             ),
             const SizedBox(height: 14),
             SegmentedButton<String>(
+              style: const ButtonStyle(
+                padding: WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                ),
+              ),
               segments: const [
-                ButtonSegment(value: 'week', label: Text('This Week')),
-                ButtonSegment(value: 'month', label: Text('This Month')),
+                ButtonSegment(
+                  value: 'week',
+                  tooltip: 'This Week',
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Week', maxLines: 1),
+                  ),
+                ),
+                ButtonSegment(
+                  value: 'month',
+                  tooltip: 'This Month',
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Month', maxLines: 1),
+                  ),
+                ),
                 ButtonSegment(
                   value: 'semester',
-                  label: Text('Professional Total'),
+                  tooltip: 'Professional Total',
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Total', maxLines: 1),
+                  ),
                 ),
               ],
               selected: {period},
