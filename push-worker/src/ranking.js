@@ -24,7 +24,7 @@ function memberStatement(db,m,now) {
 // Student calls independently revalidate their own membership before any credit.
 export async function syncRoster(db,members,now=Date.now()) {
   await db.prepare('UPDATE rank_members SET verified=0 WHERE verified<>0').run();
-  for(let i=0;i<members.length;i+=80)await db.batch(members.slice(i,i+80).map(m=>memberStatement(db,m,now)));
+  for(let i=0;i<members.length;i+=200)await db.batch(members.slice(i,i+200).map(m=>memberStatement(db,m,now)));
 }
 export async function rememberMember(db,member,now=Date.now()) {
   await memberStatement(db,member,now).run();
@@ -66,8 +66,9 @@ export async function syncEvents(db,uid,events,now=Date.now()) {
   if(valid.length)await db.batch(valid.map(e=>db.prepare('INSERT OR IGNORE INTO study_events(uid,id,fingerprint,received_at) VALUES(?,?,?,?)').bind(uid,e.id,JSON.stringify(e),now)));
   // A conflicting immutable ID is never acknowledged. Offline events never
   // modify rank_days and therefore cannot manufacture competitive points.
-  for(const e of valid) {
-    const row=await db.prepare('SELECT fingerprint FROM study_events WHERE uid=? AND id=?').bind(uid,e.id).first();
+  const stored=valid.length?await db.batch(valid.map(e=>db.prepare('SELECT fingerprint FROM study_events WHERE uid=? AND id=?').bind(uid,e.id))):[];
+  for(let i=0;i<valid.length;i++) {
+    const e=valid[i],row=stored[i].results[0];
     if(row.fingerprint!==JSON.stringify(e))throw fail('An event ID cannot be rewritten.',409);
   }
   return {accepted:valid.map(e=>e.id)};

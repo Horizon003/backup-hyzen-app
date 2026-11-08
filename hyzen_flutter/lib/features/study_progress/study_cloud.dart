@@ -20,8 +20,9 @@ class StudyCloud {
     String method,
     Map<String, dynamic> data,
   ) async {
-    if (studyApiBase.isEmpty)
+    if (studyApiBase.isEmpty) {
       throw StateError('Study cloud is not configured.');
+    }
     final token = await user.getIdToken();
     final response = await client
         .post(
@@ -33,11 +34,13 @@ class StudyCloud {
           body: jsonEncode({'data': data}),
         )
         .timeout(const Duration(seconds: 20));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw StateError('Study cloud unavailable (${response.statusCode}).');
+    }
     final result = jsonDecode(response.body) as Map<String, dynamic>;
-    if (result['error'] != null)
+    if (result['error'] != null) {
       throw StateError('Study cloud rejected this request.');
+    }
     return Map<String, dynamic>.from(result['result'] ?? result['data']);
   }
 
@@ -95,12 +98,13 @@ class StudySyncWorker {
         if (!_disposed) await acknowledge(accepted);
         if (accepted.isEmpty) throw StateError('No events acknowledged.');
       }
-      if (!_disposed)
+      if (!_disposed) {
         onStatus(
           events().isEmpty
               ? 'Personal study history synced'
               : 'Syncing saved study history',
         );
+      }
       _failures = 0;
     } catch (_) {
       failed = true;

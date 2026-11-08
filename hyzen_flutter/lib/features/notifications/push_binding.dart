@@ -21,7 +21,9 @@ class _PushBindingState extends ConsumerState<PushBinding>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    subscription = PushService.instance.events.stream.listen(receive);
+    subscription = PushService.instance.events.stream.listen(
+      (item) => unawaited(receive(item)),
+    );
     ref.listenManual(authStateProvider, (_, next) async {
       if (next.isLoading) return;
       await PushService.instance.identify(next.valueOrNull?.uid);
@@ -29,7 +31,7 @@ class _PushBindingState extends ConsumerState<PushBinding>
       final buffered = [...PushService.instance.pending];
       PushService.instance.pending.clear();
       for (final item in buffered) {
-        receive(item);
+        unawaited(receive(item));
       }
       if (pushApiBase.isNotEmpty) {
         try {
@@ -40,13 +42,15 @@ class _PushBindingState extends ConsumerState<PushBinding>
             return;
           }
           for (final row in inbox['items'] as List? ?? []) {
-            receive({
-              'id': 'push_${row['id']}',
-              'title': row['title'],
-              'body': row['body'],
-              'url': safePushRoute(row['route']),
-              'owner': next.valueOrNull!.uid,
-            });
+            unawaited(
+              receive({
+                'id': 'push_${row['id']}',
+                'title': row['title'],
+                'body': row['body'],
+                'url': safePushRoute(row['route']),
+                'owner': next.valueOrNull!.uid,
+              }),
+            );
           }
         } catch (_) {
           /* Existing inbox remains available offline. */
@@ -55,13 +59,29 @@ class _PushBindingState extends ConsumerState<PushBinding>
     }, fireImmediately: true);
   }
 
-  void receive(Map<String, dynamic> item) {
+  Future<void> receive(Map<String, dynamic> item) async {
     final uid = ref.read(authStateProvider).valueOrNull?.uid;
     if (uid == null) {
       PushService.instance.pending.add(item);
       return;
     }
     if (item['owner'] != null && item['owner'] != uid) return;
+    if (item['needsVerification'] == true) {
+      // An old account's OS notification can arrive after account switching.
+      // Only this Firebase user's authenticated server inbox authorizes insertion
+      // and navigation. Never infer audience membership from the current SDK UID.
+      for (var attempt = 0; attempt < 3; attempt++) {
+        if (await syncInbox(
+          openedId: item['opened'] == true ? item['id']?.toString() : null,
+          expectedId: item['id']?.toString(),
+        ))
+          return;
+        if (!mounted || ref.read(authStateProvider).valueOrNull?.uid != uid)
+          return;
+        await Future<void>.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+      }
+      return;
+    }
     ref.read(notificationsProvider.notifier).receivePush(item);
     if (item['opened'] == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -72,28 +92,35 @@ class _PushBindingState extends ConsumerState<PushBinding>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(syncInbox());
+    if (state == AppLifecycleState.resumed) unawaited(syncInbox().then((_) {}));
   }
 
-  Future<void> syncInbox() async {
+  Future<bool> syncInbox({String? openedId, String? expectedId}) async {
     final user = ref.read(authStateProvider).valueOrNull;
-    if (user == null || pushApiBase.isEmpty) return;
+    if (user == null || pushApiBase.isEmpty) return false;
     try {
       final inbox = await PushApi.call(user, '/inbox');
-      if (!mounted || ref.read(authStateProvider).valueOrNull?.uid != user.uid) {
-        return;
+      if (!mounted ||
+          ref.read(authStateProvider).valueOrNull?.uid != user.uid) {
+        return false;
       }
       for (final row in inbox['items'] as List? ?? []) {
-        receive({
+        await receive({
           'id': 'push_${row['id']}',
           'title': row['title'],
           'body': row['body'],
           'url': safePushRoute(row['route']),
           'owner': user.uid,
+          'opened': openedId == 'push_${row['id']}',
         });
       }
+      return expectedId == null ||
+          (inbox['items'] as List? ?? []).any(
+            (row) => 'push_${row['id']}' == expectedId,
+          );
     } catch (_) {
       /* Local inbox is retained during connectivity loss. */
+      return false;
     }
   }
 

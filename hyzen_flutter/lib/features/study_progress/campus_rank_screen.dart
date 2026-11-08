@@ -244,12 +244,13 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
                               .privacy(alias.text.trim(), optOut);
                           if (dialog.mounted) Navigator.pop(dialog);
                         } catch (_) {
-                          if (dialog.mounted)
+                          if (dialog.mounted) {
                             update(() {
                               saving = false;
                               error =
                                   'Ranking service is unavailable. No privacy change was saved.';
                             });
+                          }
                         }
                       },
                 child: const Text('Save'),

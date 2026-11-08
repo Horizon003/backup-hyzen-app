@@ -9,7 +9,7 @@ function fixture() {
   sql.exec(readFileSync(new URL('../schema.sql',import.meta.url),'utf8'));
   function prepare(query,args=[]) {
     return {bind(...values){return prepare(query,values);},
-      execute(){return {meta:{changes:Number(sql.prepare(query).run(...args).changes)}};},
+      execute(){return query.startsWith('SELECT')?{results:sql.prepare(query).all(...args)}:{meta:{changes:Number(sql.prepare(query).run(...args).changes)}};},
       async run(){return this.execute();},
       async first(){return sql.prepare(query).get(...args)||null;},
       async all(){return {results:sql.prepare(query).all(...args)};}};
@@ -87,6 +87,9 @@ test('offline sync is idempotent and immutable and cannot earn ranking credit',a
   await syncEvents(db,'user',[event],now);
   await assert.rejects(syncEvents(db,'user',[{...event,start:now-9000}],now),/cannot be rewritten/);
   assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM study_events').get().n,1);
+  const hundred=Array.from({length:100},(_,i)=>({...event,id:i.toString(16).padStart(32,'0')}));
+  assert.equal((await syncEvents(db,'user',hundred,now)).accepted.length,100);
+  assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM study_events').get().n,101);
   assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM rank_days').get().n,0);
   const decoded=decodeMember({name:'documents/campusMemberships/user',fields:{academicYear:{stringValue:'1'},verified:{booleanValue:true}}});
   await assert.rejects(pulse(db,decoded,{session,action:'start'},now),/verified|Verified/);

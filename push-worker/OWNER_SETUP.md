@@ -77,6 +77,9 @@ match /campusMemberships/{uid} {
   health data are mapped as tags.
 - All, college and professional audiences are selected from server-read verified
   records, not editable OneSignal tags. The sender is bounded to 3,000 profiles.
+  Free Firebase/Worker/D1 quotas still apply. No automatic paid upgrade is enabled.
+  The sender and roster use batched database calls; personal-history batches of
+  100 events use two D1 requests rather than exceeding the free per-request limit.
 - New material/rank/update/task types are admin-composed sends. Automatic backend
   content/rank/update event broadcasts are not installed. No nonfunctional trigger
   UI has been added.

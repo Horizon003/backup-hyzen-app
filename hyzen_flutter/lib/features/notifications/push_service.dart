@@ -61,6 +61,7 @@ class PushService {
       'url': safePushRoute(data['route']),
       'opened': opened,
       'owner': uid,
+      'needsVerification': true,
     };
     if (!events.hasListener) {
       pending.add(item);

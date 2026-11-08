@@ -7,8 +7,8 @@ export async function materializeRecipients(db, row, fingerprint) {
     throw error;
   }
   const audience = JSON.parse(row.audience);
-  for (let i = 0; i < audience.length; i += 80) {
-    await db.batch(audience.slice(i, i + 80).map(uid => db.prepare(
+  for (let i = 0; i < audience.length; i += 200) {
+    await db.batch(audience.slice(i, i + 200).map(uid => db.prepare(
       'INSERT OR IGNORE INTO recipients(message_id,uid) VALUES(?,?)'
     ).bind(row.id, uid)));
   }

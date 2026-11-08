@@ -73,6 +73,7 @@ export default {
         let row=await env.DB.prepare('SELECT * FROM messages WHERE id=?').bind(message.id).first();
         if(row && row.fingerprint!==fingerprint)return reply({error:'Message ID belongs to different content'},409);
         if(row?.provider_id)return reply({id:row.provider_id,state:row.state,reused:true});
+        if(row&&Date.now()-row.created_at>86400000)return reply({error:'This unsent draft has expired. Create a new notification after reviewing provider history.'},410);
         if(!row) {
           const audience=selectRecipients(await profiles(user.token,env),message);
           if(!audience.length)return reply({error:'No eligible verified recipients'},422);
