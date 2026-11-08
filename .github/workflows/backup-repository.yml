@@ -24,7 +24,7 @@ jobs:
           git clone --mirror "https://github.com/Horizon003/pharm-d-with-hyzen.git" source.git
           cd source.git
           git config --local credential.helper '!f() { echo username=x-access-token; echo "password=$BACKUP_TOKEN"; }; f'
-          git push --mirror "https://github.com/Horizon003/backup-hyzen-app.git"
+          git push "https://github.com/Horizon003/backup-hyzen-app.git" "+refs/heads/*:refs/heads/*" "+refs/tags/*:refs/tags/*"
           git config --local --unset credential.helper
       - name: Confirm backup
         run: echo "Git mirror push completed. Verify branches and tags in backup repository."
