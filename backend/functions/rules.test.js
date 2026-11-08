@@ -23,6 +23,16 @@ test('clients cannot forge study events or self-verify campus membership',async(
  await assertSucceeds(getDoc(doc(db,'campusMemberships/alice')));
  await assertFails(getDocs(collection(db,'campusMemberships')));
 });
+test('only the existing admin can list and maintain canonical professional membership',async()=>{
+ const db=env.authenticatedContext('Vv6HtZjmUvfVACzvuyL2pFx5HR33').firestore();
+ await assertSucceeds(getDocs(collection(db,'campusMemberships')));
+ await assertSucceeds(setDoc(doc(db,'campusMemberships/bob'),{verified:true,academicYear:2,campusId:'other-college',optOut:false}));
+ await assertFails(setDoc(doc(db,'campusMemberships/bad'),{verified:true,academicYear:6}));
+ await assertFails(setDoc(doc(db,'campusMemberships/bad'),{verified:true,academicYear:'2'}));
+ await assertFails(getDoc(doc(env.authenticatedContext('alice').firestore(),'campusMemberships/bob')));
+ await assertFails(setDoc(doc(env.authenticatedContext('bob').firestore(),'campusMemberships/bob'),{verified:true,academicYear:5}));
+ await assertFails(getDocs(collection(env.unauthenticatedContext().firestore(),'campusMemberships')));
+});
 test('leaderboards require server privacy filtering, never direct client reads/writes',async()=>{
  const db=env.authenticatedContext('alice').firestore();
  await assertFails(getDoc(doc(db,'campusLeaderboards/campus/periods/week')));
