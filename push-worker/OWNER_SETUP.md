@@ -65,6 +65,9 @@ match /campusMemberships/{uid} {
    and matching Firebase UID external_id in OneSignal. Send to a verified test
    audience from Admin → Push Notification Center. Check foreground/background/
    terminated, click routing, account switching, offline inbox and repeated retries.
+   An offline tap retains only its message ID (up to 24 hours) and retries on
+   sign-in/app resume. The server must authorize that ID before navigation; an
+   old notification can be checked even when outside the newest 100 inbox rows.
    Preserve the same message ID on retry. History says accepted, never delivered,
    until separate delivery/device evidence exists.
 

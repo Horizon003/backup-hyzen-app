@@ -53,6 +53,8 @@ test('authenticated HTTP flow verifies tokens, roles, canonical membership and r
     assert.equal((await call('/send','admin',{...message,title:'Different'})).status,409);
     assert.equal((await (await call('/inbox','student')).json()).items.length,1);
     assert.equal((await (await call('/inbox','other-account')).json()).items.length,0);
+    assert.equal((await (await call(`/inbox/${message.id}`,'student')).json()).items.length,1);
+    assert.equal((await (await call(`/inbox/${message.id}`,'other-account')).json()).items.length,0);
     assert.equal(sql.prepare('SELECT state FROM messages').get().state,'accepted');
   });
 });

@@ -50,8 +50,10 @@ export default {
         const result=path==='/studyPulse'?await pulse(env.DB,member,data):path==='/setRankPrivacy'?await rankPrivacy(env.DB,member,data):await readBoard(env.DB,member,data);
         return reply({result});
       }
-      if(path==='/inbox' && request.method==='GET') {
-        const rows=await env.DB.prepare("SELECT m.id,m.title,m.body,m.route,m.category,m.created_at FROM messages m JOIN recipients r ON r.message_id=m.id WHERE r.uid=? AND m.state='accepted' ORDER BY m.created_at DESC LIMIT 100").bind(user.uid).all();
+      if((path==='/inbox'||path.startsWith('/inbox/')) && request.method==='GET') {
+        const id=path.startsWith('/inbox/')?decodeURIComponent(path.slice(7)):null;
+        const query="SELECT m.id,m.title,m.body,m.route,m.category,m.created_at FROM messages m JOIN recipients r ON r.message_id=m.id WHERE r.uid=? AND m.state='accepted'";
+        const rows=await (id?env.DB.prepare(`${query} AND m.id=?`).bind(user.uid,id):env.DB.prepare(`${query} ORDER BY m.created_at DESC LIMIT 100`).bind(user.uid)).all();
         return reply({items:rows.results});
       }
       if(user.uid!==env.ADMIN_UID)return reply({error:'Administrator access required'},403);

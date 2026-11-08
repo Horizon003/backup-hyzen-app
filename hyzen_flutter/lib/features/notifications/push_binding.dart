@@ -6,6 +6,7 @@ import '../../app/router.dart';
 import 'notifications_screen.dart';
 import 'push_service.dart';
 import 'push_api.dart';
+import 'push_click_store.dart';
 
 class PushBinding extends ConsumerStatefulWidget {
   const PushBinding({super.key, required this.child});
@@ -33,34 +34,24 @@ class _PushBindingState extends ConsumerState<PushBinding>
       for (final item in buffered) {
         unawaited(receive(item));
       }
-      if (pushApiBase.isNotEmpty) {
-        try {
-          final inbox = await PushApi.call(next.valueOrNull!, '/inbox');
-          if (!mounted ||
-              ref.read(authStateProvider).valueOrNull?.uid !=
-                  next.valueOrNull?.uid) {
-            return;
-          }
-          for (final row in inbox['items'] as List? ?? []) {
-            unawaited(
-              receive({
-                'id': 'push_${row['id']}',
-                'title': row['title'],
-                'body': row['body'],
-                'url': safePushRoute(row['route']),
-                'owner': next.valueOrNull!.uid,
-              }),
-            );
-          }
-        } catch (_) {
-          /* Existing inbox remains available offline. */
-        }
-      }
+      await syncInbox();
     }, fireImmediately: true);
   }
 
   Future<void> receive(Map<String, dynamic> item) async {
+    if (!mounted) return;
     final uid = ref.read(authStateProvider).valueOrNull?.uid;
+    final clickId = item['opened'] == true ? item['id']?.toString() : null;
+    if (clickId != null &&
+        item['needsVerification'] == true &&
+        (item['owner'] == null || item['owner'] == uid)) {
+      await PushClickStore(
+        ref.read(sharedPrefsProvider),
+      ).remember(uid ?? '', clickId);
+      if (!mounted || ref.read(authStateProvider).valueOrNull?.uid != uid) {
+        return;
+      }
+    }
     if (uid == null) {
       PushService.instance.pending.add(item);
       return;
@@ -72,7 +63,7 @@ class _PushBindingState extends ConsumerState<PushBinding>
       // and navigation. Never infer audience membership from the current SDK UID.
       for (var attempt = 0; attempt < 3; attempt++) {
         if (await syncInbox(
-          openedId: item['opened'] == true ? item['id']?.toString() : null,
+          openedId: clickId,
           expectedId: item['id']?.toString(),
         )) {
           return;
@@ -87,7 +78,9 @@ class _PushBindingState extends ConsumerState<PushBinding>
     ref.read(notificationsProvider.notifier).receivePush(item);
     if (item['opened'] == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) ref.read(routerProvider).go(safePushRoute(item['url']));
+        if (mounted && ref.read(authStateProvider).valueOrNull?.uid == uid) {
+          ref.read(routerProvider).go(safePushRoute(item['url']));
+        }
       });
     }
   }
@@ -98,28 +91,51 @@ class _PushBindingState extends ConsumerState<PushBinding>
   }
 
   Future<bool> syncInbox({String? openedId, String? expectedId}) async {
+    if (!mounted) return false;
     final user = ref.read(authStateProvider).valueOrNull;
     if (user == null || pushApiBase.isEmpty) return false;
+    final clicks = PushClickStore(ref.read(sharedPrefsProvider));
+    final requestedId = expectedId;
+    openedId ??= clicks.pending(user.uid) ?? clicks.pending('');
+    expectedId ??= openedId;
     try {
-      final inbox = await PushApi.call(user, '/inbox');
+      final path = requestedId == null
+          ? '/inbox'
+          : '/inbox/${Uri.encodeComponent(requestedId.replaceFirst('push_', ''))}';
+      final inbox = await PushApi.call(user, path);
+      final rows = List<dynamic>.from(inbox['items'] as List? ?? []);
+      if (requestedId == null &&
+          openedId != null &&
+          !rows.any((row) => 'push_${row['id']}' == openedId)) {
+        final older = await PushApi.call(
+          user,
+          '/inbox/${Uri.encodeComponent(openedId.replaceFirst('push_', ''))}',
+        );
+        rows.addAll(older['items'] as List? ?? []);
+      }
       if (!mounted ||
           ref.read(authStateProvider).valueOrNull?.uid != user.uid) {
         return false;
       }
-      for (final row in inbox['items'] as List? ?? []) {
+      for (final row in rows) {
         await receive({
           'id': 'push_${row['id']}',
           'title': row['title'],
           'body': row['body'],
           'url': safePushRoute(row['route']),
           'owner': user.uid,
-          'opened': openedId == 'push_${row['id']}',
+          'opened':
+              openedId == 'push_${row['id']}' &&
+              (clicks.pending(user.uid) ?? clicks.pending('')) == openedId,
         });
+        if (openedId == 'push_${row['id']}') {
+          final confirmedId = 'push_${row['id']}';
+          await clicks.forget(user.uid, confirmedId);
+          await clicks.forget('', confirmedId);
+        }
       }
       return expectedId == null ||
-          (inbox['items'] as List? ?? []).any(
-            (row) => 'push_${row['id']}' == expectedId,
-          );
+          rows.any((row) => 'push_${row['id']}' == expectedId);
     } catch (_) {
       /* Local inbox is retained during connectivity loss. */
       return false;
