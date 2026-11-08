@@ -10,7 +10,7 @@ test('authenticated HTTP flow verifies tokens, roles, canonical membership and r
   const jwk={...await exportJWK(publicKey),kid:'test-key',alg:'RS256',use:'sig'};
   const env={DB:db,FIREBASE_PROJECT_ID:'test-project',ADMIN_UID:'admin',
     ONESIGNAL_APP_ID:'test-app',ONESIGNAL_REST_API_KEY:'ephemeral-test-only',ALLOWED_ORIGIN:'https://horizon003.github.io'};
-  let providerCalls=0,verified=true;
+  let providerCalls=0,verified=true,concurrentAcceptedId=null;
   const fields={verified:{booleanValue:true},academicYear:{integerValue:'1'},campusId:{stringValue:'college-a'},optOut:{booleanValue:false},alias:{stringValue:'Student'}};
   const doc=()=>({name:'projects/test-project/databases/(default)/documents/campusMemberships/student',fields:{...fields,verified:{booleanValue:verified}}});
   const originalFetch=globalThis.fetch;
@@ -19,7 +19,14 @@ test('authenticated HTTP flow verifies tokens, roles, canonical membership and r
     if(url.startsWith('https://www.googleapis.com/'))return Response.json({keys:[jwk]});
     if(url.includes('/documents/campusMemberships?'))return Response.json({documents:[doc()]});
     if(url.endsWith('/documents/campusMemberships/student'))return Response.json(doc());
-    if(url==='https://api.onesignal.com/notifications'){providerCalls++;return Response.json({id:'11111111-1111-4111-8111-111111111111',recipients:1});}
+    if(url==='https://api.onesignal.com/notifications'){
+      providerCalls++;
+      if(concurrentAcceptedId){
+        sql.prepare("UPDATE messages SET provider_id='accepted-by-other-request',state='accepted' WHERE id=?").run(concurrentAcceptedId);
+        throw Error('Late network failure');
+      }
+      return Response.json({id:'11111111-1111-4111-8111-111111111111',recipients:1});
+    }
     throw Error(`Unexpected test request: ${url}`);
   };
   t.after(()=>{globalThis.fetch=originalFetch;sql.close();});
@@ -64,5 +71,13 @@ test('authenticated HTTP flow verifies tokens, roles, canonical membership and r
     assert.equal((await (await call(`/inbox/${message.id}`,'student')).json()).items.length,1);
     assert.equal((await (await call(`/inbox/${message.id}`,'other-account')).json()).items.length,0);
     assert.equal(sql.prepare('SELECT state FROM messages').get().state,'accepted');
+  });
+  await t.test('late retry failure cannot downgrade another request\'s accepted message',async()=>{
+    concurrentAcceptedId='33333333-3333-4333-8333-333333333333';
+    const response=await call('/send','admin',{id:concurrentAcceptedId,title:'Study notice',body:'Public announcement',route:'/study',category:'announcement',target:'all'});
+    assert.equal(response.status,400);
+    assert.equal(sql.prepare('SELECT state FROM messages WHERE id=?').get(concurrentAcceptedId).state,'accepted');
+    const inbox=await (await call('/inbox','student')).json();
+    assert.ok(inbox.items.some(item=>item.id===concurrentAcceptedId));
   });
 });

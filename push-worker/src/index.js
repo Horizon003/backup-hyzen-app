@@ -96,7 +96,9 @@ export default {
           await env.DB.prepare("UPDATE messages SET provider_id=?,state='accepted',error=NULL WHERE id=?").bind(result.id,message.id).run();
           return reply({id:result.id,state:'accepted',recipients:result.recipients});
         } catch(error) {
-          await env.DB.prepare("UPDATE messages SET state='retryable',error=? WHERE id=?").bind(error.message,message.id).run();throw error;
+          // Another retry may already have persisted provider acceptance. A late
+          // network failure must not hide that accepted message from its inbox.
+          await env.DB.prepare("UPDATE messages SET state='retryable',error=? WHERE id=? AND provider_id IS NULL").bind(error.message,message.id).run();throw error;
         }
       }
       return reply({error:'Not found'},404);
