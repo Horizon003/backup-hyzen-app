@@ -1,6 +1,6 @@
 const {test,before,after}=require('node:test');
 const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/rules-unit-testing');
-const {doc,setDoc,getDoc,collection,getDocs}=require('firebase/firestore');
+const {doc,setDoc,getDoc,deleteDoc,collection,getDocs}=require('firebase/firestore');
 const fs=require('node:fs');let env;
 before(async()=>{
  env=await initializeTestEnvironment({projectId:'demo-hyzen-study',firestore:{rules:fs.readFileSync('../study.rules','utf8')}});
@@ -37,4 +37,14 @@ test('leaderboards require server privacy filtering, never direct client reads/w
  const db=env.authenticatedContext('alice').firestore();
  await assertFails(getDoc(doc(db,'campusLeaderboards/campus/periods/week')));
  await assertFails(setDoc(doc(db,'campusLeaderboards/campus/periods/week'),{score:99999}));
+});
+test('membership deletion, verification and consent cannot be changed by students',async()=>{
+ const admin=env.authenticatedContext('Vv6HtZjmUvfVACzvuyL2pFx5HR33').firestore();
+ const student=env.authenticatedContext('carol').firestore();
+ await assertSucceeds(setDoc(doc(admin,'campusMemberships/carol'),{verified:true,academicYear:5,optOut:true,pushOptOut:true}));
+ await assertFails(setDoc(doc(student,'campusMemberships/carol'),{verified:true,academicYear:1,optOut:false,pushOptOut:false}));
+ await assertFails(deleteDoc(doc(student,'campusMemberships/carol')));
+ for(const academicYear of [0,-1,1.5,6])await assertFails(setDoc(doc(admin,'campusMemberships/invalid'),{verified:true,academicYear}));
+ await assertFails(setDoc(doc(admin,'campusMemberships/invalid'),{verified:'true',academicYear:1}));
+ await assertSucceeds(deleteDoc(doc(admin,'campusMemberships/carol')));
 });

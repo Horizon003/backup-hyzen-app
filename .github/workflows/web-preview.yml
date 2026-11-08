@@ -24,6 +24,8 @@ jobs:
       PUSH_API_BASE: ${{ vars.HYZEN_PUSH_API_BASE }}
     steps:
       - uses: actions/checkout@v4
+      - name: Require the configured production backend URL
+        run: python tools/ci/validate_push_url.py
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.4'

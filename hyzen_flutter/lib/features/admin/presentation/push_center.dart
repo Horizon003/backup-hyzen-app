@@ -153,6 +153,11 @@ class _PushCenterState extends ConsumerState<PushCenter> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          const Text(
+            'Send public study announcements only. Do not include private student '
+            'details, health information or confidential messages in push alerts.',
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: title,
             maxLength: 100,

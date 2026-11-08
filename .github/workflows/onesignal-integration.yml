@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Require the configured production backend URL
-        run: test "$PUSH_API_BASE" = 'https://hyzen-onesignal-sender.harisaslam003.workers.dev'
+        run: python tools/ci/validate_push_url.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -90,6 +90,8 @@ jobs:
       ONESIGNAL_DISABLE_LOCATION: 'true'
     steps:
       - uses: actions/checkout@v4
+      - name: Require the configured production backend URL
+        run: python tools/ci/validate_push_url.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
