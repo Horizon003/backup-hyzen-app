@@ -23,6 +23,8 @@ class HomeDashboardTop extends ConsumerWidget {
         .clamp(0.0, 1.0)
         .toDouble();
     final progressColor = dark ? const Color(0xFF79BCFF) : _blue;
+    final heroHeight =
+        148 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 4.0);
     return Column(
       children: [
         Padding(
@@ -218,13 +220,13 @@ class HomeDashboardTop extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: HomePhaseArtwork(
-            height: 148,
+            height: heroHeight,
             builder: (context, phase) => Stack(
               children: [
                 Positioned.fill(
                   child: HomeLandscape(
                     phase: phase,
-                    height: 148,
+                    height: heroHeight,
                     key: const ValueKey('home-hero-art'),
                   ),
                 ),
@@ -235,6 +237,7 @@ class HomeDashboardTop extends ConsumerWidget {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: FilledButton.icon(
+                      key: const ValueKey('home-continue-study'),
                       onPressed: () {
                         p.start();
                         context.go('/study');
@@ -257,6 +260,7 @@ class HomeDashboardTop extends ConsumerWidget {
                   left: 12,
                   bottom: 14,
                   child: Material(
+                    key: const ValueKey('home-professional-badge'),
                     color: dark
                         ? const Color(0xEE152338)
                         : const Color(0xEFFFFFFF),

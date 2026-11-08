@@ -1486,6 +1486,19 @@ void main() {
             );
             scrollable.position.jumpTo(scrollable.position.minScrollExtent);
             await tester.pumpAndSettle();
+            if (path == '/home') {
+              final button = tester.getRect(
+                find.byKey(const ValueKey('home-continue-study')),
+              );
+              final badge = tester.getRect(
+                find.byKey(const ValueKey('home-professional-badge')),
+              );
+              expect(
+                button.bottom,
+                lessThan(badge.top),
+                reason: 'Home actions must not overlap at $width / $scale',
+              );
+            }
             if (const bool.fromEnvironment('HYZEN_CAPTURE_QA')) {
               await tester.runAsync(() async {
                 final context = tester.element(find.byType(HyzenApp));
