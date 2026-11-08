@@ -4,11 +4,11 @@ const {onSchedule}=require('firebase-functions/v2/scheduler');
 const {initializeApp}=require('firebase-admin/app');
 const {getFirestore,FieldValue}=require('firebase-admin/firestore');
 const {randomUUID}=require('node:crypto');
-const {dayAt,validateEvents,score,rank,leaseDelta}=require('./scoring');
+const {dayAt,validateEvents,score,rank,leaseDelta,professionalGroup}=require('./scoring');
 initializeApp();const db=getFirestore();
 const options={region:'us-central1',maxInstances:20};
 const uidOf=r=>{if(!r.auth)throw new HttpsError('unauthenticated','Sign in first.');return r.auth.uid;};
-const eligible=m=>m?.verified===true&&m.optOut===false&&Number.isInteger(m.academicYear)&&m.academicYear>=1&&m.academicYear<=5;
+const eligible=m=>professionalGroup(m)!==null;
 const memberRef=uid=>db.collection('campusMemberships').doc(uid);
 const userRef=uid=>db.collection('studyUsers').doc(uid);
 
@@ -38,7 +38,7 @@ exports.studyPulse=onCall(options,async request=>{
   const member= (await tx.get(memberRef(uid))).data();
   if(!eligible(member))throw new HttpsError('permission-denied','Verified campus membership and ranking consent required.');
   const leaseRef=userRef(uid).collection('state').doc('lease');
-  const sessionRef=userRef(uid).collection('verifiedSessions').doc(session);
+  const sessionRef=userRef(uid).collection('verifiedSessions').doc(`${member.academicYear}_${session}`);
   const [leaseDoc,sessionDoc]=await tx.getAll(leaseRef,sessionRef);
   const lease=leaseDoc.data()||{},record=sessionDoc.data()||{seconds:0,completed:false};
   if(record.completed)return {status:'completed',seconds:record.seconds};
@@ -47,14 +47,14 @@ exports.studyPulse=onCall(options,async request=>{
   const zone=member.timezone||'Asia/Karachi',day=dayAt(now,zone);
   // A heartbeat crossing midnight is discarded conservatively; subsequent
   // heartbeats belong to the new campus day, never credited to both days.
-  const delta=lease.session===session&&lease.active&&dayAt(lease.last,zone)===day ? leaseDelta(lease.last,now):0;
+  const delta=lease.session===session&&lease.academicYear===member.academicYear&&lease.active&&dayAt(lease.last,zone)===day ? leaseDelta(lease.last,now):0;
   const total=record.seconds+delta;
   const completed=action==='stop'&&total>=600;
-  const dayRef=userRef(uid).collection('verifiedDays').doc(day);
+  const dayRef=userRef(uid).collection('verifiedDays').doc(`${member.academicYear}_${day}`);
   const dayRecord=(await tx.get(dayRef)).data()||{seconds:0,completed:0};
-  tx.set(dayRef,{academicYear:member.academicYear,seconds:dayRecord.seconds+delta,completed:dayRecord.completed+(completed?1:0)});
+  tx.set(dayRef,{day,academicYear:member.academicYear,seconds:dayRecord.seconds+delta,completed:dayRecord.completed+(completed?1:0)});
   tx.set(sessionRef,{seconds:total,completed:action==='stop',validCompletion:completed,updatedAt:now});
-  tx.set(leaseRef,{session,last:now,active:action==='start'||action==='heartbeat'});
+  tx.set(leaseRef,{session,academicYear:member.academicYear,last:now,active:action==='start'||action==='heartbeat'});
   return {status:action,seconds:total};
  });
 });
@@ -78,8 +78,8 @@ exports.refreshCampusRanks=onSchedule({schedule:'every 15 minutes',region:'us-ce
   const m=doc.data();if(!eligible(m))continue;
   const zone=m.timezone||'Asia/Karachi',today=dayAt(now,zone);
   const history=await userRef(doc.id).collection('verifiedDays').where('academicYear','==',m.academicYear).get();
-  const days=Object.fromEntries(history.docs.map(d=>[d.id,d.data()]));
-  const group = `professional-${m.academicYear}`;
+  const days=Object.fromEntries(history.docs.map(d=>[d.data().day||d.id,d.data()]));
+  const group = professionalGroup(m);
   if(!campuses.has(group))campuses.set(group,[]);
   campuses.get(group).push({uid:doc.id,alias:m.alias||'Student',academicYear:m.academicYear,days,today});
  }

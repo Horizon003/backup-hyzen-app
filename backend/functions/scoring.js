@@ -1,5 +1,10 @@
 'use strict';
 const DAY = 86400000;
+function professionalGroup(member) {
+  if (member?.verified !== true || member.optOut !== false ||
+      !Number.isInteger(member.academicYear) || member.academicYear < 1 || member.academicYear > 5) return null;
+  return `professional-${member.academicYear}`;
+}
 function dayAt(ms, zone = 'Asia/Karachi') {
   const parts = new Intl.DateTimeFormat('en-CA', {timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(ms);
   const get = type => parts.find(p => p.type === type).value;
@@ -55,4 +60,4 @@ function rank(rows) {
     .map((row,i) => ({...row,rank:i+1}));
 }
 function leaseDelta(last, now) { return Number.isFinite(last) && now >= last && now-last <= 30000 ? Math.floor((now-last)/1000) : 0; }
-module.exports = {DAY,dayAt,validateEvents,unionSeconds,periodStart,score,rank,leaseDelta};
+module.exports = {DAY,dayAt,validateEvents,unionSeconds,periodStart,score,rank,leaseDelta,professionalGroup};
