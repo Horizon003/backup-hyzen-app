@@ -10,6 +10,8 @@ class PushService {
   static final instance = PushService._();
   bool initialized = false;
   String? uid;
+  String? _desiredUid;
+  bool _identityBound = false;
   String? identityError;
   final subscriptionState = ValueNotifier<String>(
     'Push unavailable on this platform',
@@ -37,6 +39,10 @@ class PushService {
   }
 
   void _updateSubscription() {
+    if (identityError != null) {
+      subscriptionState.value = identityError!;
+      return;
+    }
     final id = OneSignal.User.pushSubscription.id;
     final registered = id != null && id.isNotEmpty && !id.startsWith('local-');
     subscriptionState.value = !registered
@@ -71,32 +77,49 @@ class PushService {
   }
 
   Future<void> identify(String? next) {
+    _desiredUid = next;
     if (!initialized) return Future.value();
     _identity = _identity
         .catchError((Object _) {})
         .then((_) async {
-          if (uid == next) return;
+          if (_identityBound && uid == next && identityError == null) return;
           await OneSignal.logout();
-          uid = next;
+          uid = null;
           if (next != null) await OneSignal.login(next);
+          uid = next;
+          _identityBound = true;
           identityError = null;
+          _updateSubscription();
         })
         .catchError((Object _) {
+          uid = null;
+          _identityBound = false;
           identityError =
-              'Push identity update failed. Sign in again to retry.';
+              'Push identity update failed. Enable push again to retry.';
+          subscriptionState.value = identityError!;
         });
     return _identity;
   }
 
   Future<bool> enable(bool on) async {
     if (!initialized) return false;
-    if (!on) {
-      await OneSignal.User.pushSubscription.optOut();
+    if (identityError != null) {
+      await identify(_desiredUid);
+      if (identityError != null) return false;
+    }
+    try {
+      if (!on) {
+        await OneSignal.User.pushSubscription.optOut();
+        return false;
+      }
+      final allowed = await OneSignal.Notifications.requestPermission(true);
+      if (allowed) await OneSignal.User.pushSubscription.optIn();
+      return allowed;
+    } catch (_) {
+      subscriptionState.value =
+          'Push preference could not be saved. Try again.';
       return false;
     }
-    final allowed = await OneSignal.Notifications.requestPermission(true);
-    if (allowed) await OneSignal.User.pushSubscription.optIn();
-    return allowed;
   }
 
   String? get subscriptionId =>
