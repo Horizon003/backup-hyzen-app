@@ -516,17 +516,17 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
-  void saveTask(StudyTask task) {
+  Future<void> saveTask(StudyTask task) async {
     final i = _tasks.indexWhere((t) => t.id == task.id);
     if (i < 0) {
       _tasks.insert(0, task);
     } else {
       _tasks[i] = task;
     }
-    unawaited(_scheduleDevice(task));
     _save();
     _manageTicker();
     notifyListeners();
+    await _scheduleDevice(task);
   }
 
   void addDetailedTask(

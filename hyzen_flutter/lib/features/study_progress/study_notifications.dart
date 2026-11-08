@@ -104,7 +104,16 @@ class StudyNotificationScheduler {
     }
   }
 
-  Future<void> cancel(String key) async {
+  Future<void> _operations = Future.value();
+  String? lastError;
+  Future<void> _enqueue(Future<void> Function() operation) {
+    final next = _operations.then((_) => operation());
+    _operations = next.catchError((Object _) {});
+    return next;
+  }
+  Future<void> cancel(String key) => _enqueue(() => _cancel(key));
+
+  Future<void> _cancel(String key) async {
     if (kIsWeb) return;
     await initialize();
     try {
@@ -125,10 +134,26 @@ class StudyNotificationScheduler {
     int extraAlerts = 0,
     bool quiet = true,
     DateTime? until,
+  }) => _enqueue(() => _schedule(key:key,title:title,due:due,repeat:repeat,
+    route:route,leadMinutes:leadMinutes,weekdays:weekdays,extraAlerts:extraAlerts,
+    quiet:quiet,until:until));
+
+  Future<void> _schedule({
+    required String key,
+    required String title,
+    required DateTime due,
+    String repeat = 'none',
+    String route = '/study-goals',
+    int leadMinutes = 0,
+    List<int> weekdays = const [],
+    int extraAlerts = 0,
+    bool quiet = true,
+    DateTime? until,
   }) async {
     if (kIsWeb) return;
     await initialize();
-    await cancel(key);
+    await _cancel(key);
+    lastError = null;
     try {
       final now = DateTime.now();
       final notice = const NotificationDetails(
@@ -179,6 +204,7 @@ class StudyNotificationScheduler {
         );
       }
     } catch (error) {
+      lastError = 'System reminder could not be scheduled. Check notification permission and retry.';
       if (kDebugMode) debugPrint('Could not schedule reminder: $error');
     }
   }

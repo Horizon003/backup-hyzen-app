@@ -127,7 +127,7 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
           if (error != null) Text(error!),
         ])),
         actions: [
-          IconButton(tooltip: 'Ranking privacy', onPressed: _privacy, icon: const Icon(Icons.privacy_tip_outlined)),TextButton(onPressed: saving ? null : () => Navigator.pop(dialog), child: const Text('Cancel')),
+          TextButton(onPressed: saving ? null : () => Navigator.pop(dialog), child: const Text('Cancel')),
           FilledButton(onPressed: saving ? null : () async {
             if (alias.text.trim().isEmpty) { update(() => error='Enter an alias.'); return; }
             update(() => saving=true);
@@ -171,7 +171,7 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
         title: Column(
           children: [
             Text(
-              '🏆 Campus Rank',
+              'Campus Rank',
               style: TextStyle(
                 color: ink,
                 fontWeight: FontWeight.w900,
@@ -190,6 +190,7 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
               context.canPop() ? context.pop() : context.go('/home'),
         ),
         actions: [
+          IconButton(tooltip: 'Ranking privacy', onPressed: _privacy, icon: const Icon(Icons.privacy_tip_outlined)),
           IconButton(
             icon: Icon(Icons.info_outline_rounded, color: ink),
             onPressed: () => _showRules(context),

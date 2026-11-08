@@ -97,7 +97,7 @@ class _StudyStreakScreenState extends ConsumerState<StudyStreakScreen> {
         title: Column(
           children: [
             Text(
-              '🔥 Study Streak',
+              'Study Streak',
               style: TextStyle(color: ink, fontWeight: FontWeight.w900),
             ),
             Text(
@@ -163,7 +163,7 @@ class _StudyStreakScreenState extends ConsumerState<StudyStreakScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '🔥  ${p.currentStreak} Days',
+                        '${p.currentStreak} Days',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,

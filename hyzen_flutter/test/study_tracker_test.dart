@@ -11,8 +11,8 @@ void main() {
     };
     expect(StudyStats.streak(days, DateTime(2026, 11, 7)), 1);
     expect(StudyStats.streak(days, DateTime(2026, 11, 6)), 3);
-    expect(StudyStats.bestStreak(days), 3);
-    expect(StudyStats.recentBreaks(days), isNotEmpty);
+    expect(StudyStats.bestStreak(days, DateTime(2026, 11, 7)), 3);
+    expect(StudyStats.recentBreaks(days, DateTime(2026, 11, 7)), isNotEmpty);
   });
 
   test('calendar week starts on Monday and goal is based on real seconds', () {
@@ -23,7 +23,8 @@ void main() {
       '2026-11-08': 60,
       '2026-11-09': 400,
     };
-    expect(StudyStats.weekSeconds(days, DateTime(2026, 11, 7)), 360);
+    expect(StudyStats.weekSeconds(days, DateTime(2026, 11, 7)), 300);
+    expect(StudyStats.weekSeconds(days, DateTime(2026, 11, 8)), 360);
     expect(StudyStats.weekSeconds(days, DateTime(2026, 11, 9)), 400);
   });
 

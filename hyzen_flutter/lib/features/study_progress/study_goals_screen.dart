@@ -127,6 +127,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
 
     return Theme(
       data: ThemeData.dark(useMaterial3: true).copyWith(
+        textTheme: Theme.of(context).textTheme.apply(bodyColor: Colors.white, displayColor: Colors.white),
         colorScheme: const ColorScheme.dark(primary: _sky, surface: _panel),
       ),
       child: Scaffold(
@@ -138,7 +139,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
           title: const Column(
             children: [
               Text(
-                '🎯 Study Goals',
+                'Study Goals',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
               ),
               Text(

@@ -31,6 +31,7 @@ class _StudyForm extends StatefulWidget {
 
 class _StudyFormState extends State<_StudyForm> {
   final form = GlobalKey<FormState>();
+  late final String taskId;
   late final TextEditingController title, category, duration;
   late String priority, repeat;
   late DateTime? due, until;
@@ -43,6 +44,7 @@ class _StudyFormState extends State<_StudyForm> {
   void initState() {
     super.initState();
     final task = widget.existing;
+    taskId = task?.id ?? studyId();
     title = TextEditingController(text: task?.title ?? '');
     category = TextEditingController(
       text: task?.category ?? (widget.reminder ? 'Study' : 'General'),
@@ -125,7 +127,7 @@ class _StudyFormState extends State<_StudyForm> {
       error = null;
     });
     final task = StudyTask(
-      widget.existing?.id ?? studyId(),
+      taskId,
       title.text.trim(),
       due: due,
       kind: widget.reminder ? 'reminder' : 'task',
@@ -141,7 +143,7 @@ class _StudyFormState extends State<_StudyForm> {
       enabled: widget.existing?.enabled ?? true,
       done: widget.existing?.done ?? false,
     );
-    widget.tracker.saveTask(task);
+    await widget.tracker.saveTask(task);
     await widget.tracker.flush();
     if (!mounted) return;
     if (widget.tracker.saveError != null) {
@@ -163,6 +165,10 @@ class _StudyFormState extends State<_StudyForm> {
           ),
         ),
       );
+    }
+    final scheduleError = StudyNotificationScheduler.instance.lastError;
+    if (widget.reminder && allowed && scheduleError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Reminder saved locally. $scheduleError')));
     }
     Navigator.pop(context);
   }

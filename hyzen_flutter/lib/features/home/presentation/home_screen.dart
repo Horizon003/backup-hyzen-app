@@ -201,33 +201,33 @@ class HomeScreen extends ConsumerWidget {
                               ],
                             ),
                             child: Material(
-                              color: Colors.white,
+                              color: dark ? const Color(0xFF212123) : Colors.white,
                               borderRadius: BorderRadius.circular(32),
                               clipBehavior: Clip.antiAlias,
                               child: InkWell(
                                 onTap: () => context.go('/search', extra: true),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 16,
-                                    vertical: 12,
+                                    vertical: 4,
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.search, color: Colors.black),
-                                      SizedBox(width: 10),
+                                      Icon(Icons.search, color: dark ? Colors.white : Colors.black),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
                                           'Search subjects, topics or files',
                                           style: TextStyle(
-                                            color: Colors.black,
+                                            color: dark ? Colors.white : Colors.black,
                                             fontSize: 13,
                                           ),
                                         ),
                                       ),
-                                      Icon(
-                                        Icons.arrow_forward,
-                                        color: Colors.black,
-                                      ),
+                                      IconButton(tooltip: 'Scan a document',
+                                        onPressed: () => context.push('/create-pdf'),
+                                        icon: Icon(Icons.document_scanner_outlined,
+                                          color: dark ? Colors.white : Colors.black)),
                                     ],
                                   ),
                                 ),
