@@ -38,7 +38,8 @@ const assert = require('node:assert/strict');
   await assertFails(getDoc(doc(stranger,'students/owner')));
   await assertFails(getDocs(collection(owner,'students')));
   await assertSucceeds(getDocs(collection(admin,'students')));
-  await assertFails(setDoc(doc(anon,'orders_inbox/test'),{message:'x'}).then(()=>getDoc(doc(anon,'orders_inbox/test'))));
+  await assertSucceeds(setDoc(doc(anon,'orders_inbox/test'),{message:'x'}));
+  await assertFails(getDoc(doc(anon,'orders_inbox/test')));
   console.log('Merged production Firestore rules access tests PASSED');
  } finally {await env.cleanup();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
