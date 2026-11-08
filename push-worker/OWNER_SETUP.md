@@ -47,6 +47,9 @@ match /campusMemberships/{uid} {
    collection name is retained for migration compatibility; ranking groups are
    **all colleges within the same academicYear**. College is only a push filter.
 5. Build Flutter with `--dart-define=PUSH_API_BASE=https://YOUR_WORKER.workers.dev`.
+   The same URL supplies the free study sync and ranking API. Do not set the old
+   `STUDY_API_BASE` to undeployed Cloud Functions. Admin → Push Notification Center
+   → reload audiences synchronizes the verified ranking roster, including removals.
    Without the URL the Admin Center shows an explicit configuration error and the
    existing inbox remains usable. Firebase stays Spark. Do not deploy the old
    experimental FCM Worker or enable Firebase Blaze.
@@ -60,8 +63,11 @@ match /campusMemberships/{uid} {
 
 ## Explicit limits and release gates
 
-- Remote scheduled sending is disabled. Local study reminder schedules stay in the
-  existing Android notification plugin. These require closed-app/offline/reboot
+- Remote scheduled sending is disabled. Local task, opt-in daily goal (6 PM) and
+  opt-in streak (8 PM) reminders use the existing Android notification plugin.
+  Goal nudges cover a rolling week, refreshed on app resume; streak alerts cover
+  only the next known risk day. Completed goals/qualifying study cancel today's
+  relevant alert. Logout cancels account-scoped alarms. These require closed-app/offline/reboot
   testing on a real device; Firebase or OneSignal does not prove local scheduling.
 - OneSignal's current official identity-verification documentation says Flutter
   cannot supply the verification JWT. Do not turn that dashboard toggle on for this
@@ -72,13 +78,18 @@ match /campusMemberships/{uid} {
 - All, college and professional audiences are selected from server-read verified
   records, not editable OneSignal tags. The sender is bounded to 3,000 profiles.
 - New material/rank/update/task types are admin-composed sends. Automatic backend
-  event triggers and automatic streak/goal reminder generation are not finished;
-  no nonfunctional trigger UI has been added.
-- Ranking source groups `professional-1`…`professional-5`; weekly, monthly and
-  professional-total scores use the existing validated scoring policy. Its existing
-  Cloud Functions implementation remains **not deployed**. Those functions require
-  Blaze and must not be deployed under this Spark-only request. A free ranking
-  runtime migration remains a separate incomplete part of this integration.
+  content/rank/update event broadcasts are not installed. No nonfunctional trigger
+  UI has been added.
+- The free D1 runtime implements study sync, server-receipt leases, professional
+  ranking and privacy. Weekly/monthly/professional-total SQL scores are regression
+  tested against the shared policy. Professional history stays separate. D1
+  transactions/version checks prevent concurrent heartbeat double credit.
+  Students' own verified Firestore membership is rechecked before each pulse/board
+  call. Other students' roster revocations/removals propagate when the admin reloads
+  audiences; refresh this after roster edits. Offline events never earn rank points.
+  This runtime is uploaded, but public access/owner rules and live ranking validation
+  remain blocked by the setup above. The old Cloud Functions implementation remains
+  **not deployed**; do not deploy it or enable Blaze.
 - Do not merge/publish Pages or a production release until relevant CI and real
   Android delivery pass. Production APK must use the existing owner signing secrets
   and existing certificate fingerprint. No replacement signing key is permitted.

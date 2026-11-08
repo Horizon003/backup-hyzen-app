@@ -364,16 +364,18 @@ class StudyProgressScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 14),
           panel(
-            'Campus rank',
+            'Professional Rank',
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(Icons.groups_outlined, size: 28),
                 const SizedBox(height: 10),
-                const Text('Campus rankings are not available yet.'),
+                const Text(
+                  'Open Professional Rank for your verified leaderboard.',
+                ),
                 const SizedBox(height: 5),
                 Text(
-                  'Verified campus-wide study data is required to show real ranks.',
+                  'Students from all colleges compete within their verified professional year.',
                   style: TextStyle(fontSize: 12, color: secondary),
                 ),
               ],

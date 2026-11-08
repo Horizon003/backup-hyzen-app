@@ -1,4 +1,5 @@
 import 'reminder_plan.dart';
+import 'engagement_reminders.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -111,7 +112,46 @@ class StudyNotificationScheduler {
     _operations = next.catchError((Object _) {});
     return next;
   }
+
   Future<void> cancel(String key) => _enqueue(() => _cancel(key));
+
+  Future<void> engagement(
+    String key,
+    List<EngagementReminder> reminders,
+  ) => _enqueue(() async {
+    if (kIsWeb) return;
+    await initialize();
+    await _cancel(key);
+    lastError = null;
+    try {
+      for (var i = 0; i < reminders.length; i++) {
+        final reminder = reminders[i];
+        await _plugin.zonedSchedule(
+          idFor('$key:$i'),
+          'PHARM D WITH HYZEN',
+          reminder.message,
+          tz.TZDateTime.from(reminder.time, tz.local),
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'hyzen_study_v1',
+              'Study and task reminders',
+              channelDescription: 'Your scheduled study goals and tasks',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+            iOS: DarwinNotificationDetails(),
+          ),
+          payload: reminder.route,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      }
+    } catch (_) {
+      lastError =
+          'Study alerts could not be scheduled. Check Android notification settings and retry.';
+    }
+  });
 
   Future<void> _cancel(String key) async {
     if (kIsWeb) return;
@@ -134,9 +174,20 @@ class StudyNotificationScheduler {
     int extraAlerts = 0,
     bool quiet = true,
     DateTime? until,
-  }) => _enqueue(() => _schedule(key:key,title:title,due:due,repeat:repeat,
-    route:route,leadMinutes:leadMinutes,weekdays:weekdays,extraAlerts:extraAlerts,
-    quiet:quiet,until:until));
+  }) => _enqueue(
+    () => _schedule(
+      key: key,
+      title: title,
+      due: due,
+      repeat: repeat,
+      route: route,
+      leadMinutes: leadMinutes,
+      weekdays: weekdays,
+      extraAlerts: extraAlerts,
+      quiet: quiet,
+      until: until,
+    ),
+  );
 
   Future<void> _schedule({
     required String key,
@@ -204,7 +255,8 @@ class StudyNotificationScheduler {
         );
       }
     } catch (error) {
-      lastError = 'System reminder could not be scheduled. Check notification permission and retry.';
+      lastError =
+          'System reminder could not be scheduled. Check notification permission and retry.';
       if (kDebugMode) debugPrint('Could not schedule reminder: $error');
     }
   }

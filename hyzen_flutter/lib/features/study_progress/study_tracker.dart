@@ -11,6 +11,7 @@ import '../notifications/notifications_screen.dart';
 import 'study_notifications.dart';
 import 'study_session.dart';
 import 'study_cloud.dart';
+import 'engagement_reminders.dart';
 
 String studyDayKey(DateTime d) =>
     d.year.toString().padLeft(4, '0') +
@@ -52,15 +53,23 @@ class StudyStats {
   }
 
   static int bestStreak(Map<String, int> days, [DateTime? now]) {
-    final dates = days.keys.where((k) => (days[k] ?? 0) >= 900 && k.compareTo(studyDayKey(now ?? DateTime.now())) <= 0).toList()
-      ..sort();
+    final dates =
+        days.keys
+            .where(
+              (k) =>
+                  (days[k] ?? 0) >= 900 &&
+                  k.compareTo(studyDayKey(now ?? DateTime.now())) <= 0,
+            )
+            .toList()
+          ..sort();
     DateTime? last;
     var current = 0;
     var best = 0;
     for (final value in dates) {
       final day = DateTime.tryParse(value);
       if (day == null) continue;
-      current = last != null && day == DateTime(last.year, last.month, last.day + 1)
+      current =
+          last != null && day == DateTime(last.year, last.month, last.day + 1)
           ? current + 1
           : 1;
       if (current > best) best = current;
@@ -70,8 +79,15 @@ class StudyStats {
   }
 
   static List<String> recentBreaks(Map<String, int> days, [DateTime? now]) {
-    final dates = days.keys.where((k) => (days[k] ?? 0) >= 900 && k.compareTo(studyDayKey(now ?? DateTime.now())) <= 0).toList()
-      ..sort();
+    final dates =
+        days.keys
+            .where(
+              (k) =>
+                  (days[k] ?? 0) >= 900 &&
+                  k.compareTo(studyDayKey(now ?? DateTime.now())) <= 0,
+            )
+            .toList()
+          ..sort();
     final breaks = <String>[];
     for (var i = dates.length - 1; i > 0; i--) {
       final newer = DateTime.tryParse(dates[i]);
@@ -202,6 +218,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
         unawaited(_scheduleDevice(task));
       }
     }
+    refreshEngagementReminders();
   }
 
   final SharedPreferences prefs;
@@ -255,6 +272,48 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   int dailyGoal = 120;
   int weeklyGoal = 840;
   int customGoal = 90;
+  bool goalAlerts = false, streakAlerts = false;
+  String? _engagementState;
+  Future<void> _engagementWrite = Future.value();
+
+  Future<bool> setEngagementReminders({bool? goals, bool? streaks}) async {
+    if ((goals == true || streaks == true) &&
+        !await StudyNotificationScheduler.instance.requestPermission()) {
+      return false;
+    }
+    if (_disposed) return false;
+    goalAlerts = goals ?? goalAlerts;
+    streakAlerts = streaks ?? streakAlerts;
+    _save();
+    refreshEngagementReminders(force: true);
+    notifyListeners();
+    await _engagementWrite;
+    return true;
+  }
+
+  void refreshEngagementReminders({bool force = false}) {
+    if (!scheduleDevice || _disposed) return;
+    final now = clock();
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    final qualified = (_days[studyDayKey(yesterday)] ?? 0) >= 900;
+    final state =
+        '${studyDayKey(now)}:$goalAlerts:$streakAlerts:$dailyGoal:'
+        '${todaySeconds >= dailyGoal * 60}:${todaySeconds >= 900}:$qualified';
+    if (!force && state == _engagementState) return;
+    _engagementState = state;
+    _engagementWrite = StudyNotificationScheduler.instance.engagement(
+      '$storageKey:engagement',
+      engagementReminders(
+        now: now,
+        goals: goalAlerts,
+        streaks: streakAlerts,
+        todaySeconds: todaySeconds,
+        dailyGoalMinutes: dailyGoal,
+        yesterdayQualified: qualified,
+      ),
+    );
+    unawaited(_engagementWrite);
+  }
 
   void _load() {
     try {
@@ -278,6 +337,8 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
       }
       _completed.addAll(((data['completed'] as List?) ?? []).cast<String>());
       _recompute();
+      goalAlerts = data['goalAlerts'] == true;
+      streakAlerts = data['streakAlerts'] == true;
       dailyGoal = ((data['dailyGoal'] as num?)?.toInt() ?? 120)
           .clamp(1, 1440)
           .toInt();
@@ -314,6 +375,8 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
       'dailyGoal': dailyGoal,
       'weeklyGoal': weeklyGoal,
       'customGoal': customGoal,
+      'goalAlerts': goalAlerts,
+      'streakAlerts': streakAlerts,
       'tasks': _tasks.map((t) => t.toJson()).toList(),
     });
     _writes = _writes
@@ -386,6 +449,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
         _lastTick = end;
         _lastMs += used;
         _recompute();
+        refreshEngagementReminders();
         if (++_elapsedTicks % 5 == 0) _save();
         notifyListeners();
       }
@@ -399,10 +463,22 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   String _cloudStatus = 'Saved on this device · cloud sync not configured';
   void attachCloud(StudyCloud cloud) {
     _sync?.dispose();
-    _sync = StudySyncWorker(cloud: cloud, events: () => pendingEvents,
-      acknowledge: (ids) async { acknowledge(ids); await flush(); },
-      running: () => running, session: () => _session,
-      onStatus: (status) { if (!_disposed && status != _cloudStatus) { _cloudStatus = status; notifyListeners(); } });
+    _sync = StudySyncWorker(
+      cloud: cloud,
+      events: () => pendingEvents,
+      acknowledge: (ids) async {
+        acknowledge(ids);
+        await flush();
+      },
+      running: () => running,
+      session: () => _session,
+      onStatus: (status) {
+        if (!_disposed && status != _cloudStatus) {
+          _cloudStatus = status;
+          notifyListeners();
+        }
+      },
+    );
   }
 
   void start() {
@@ -441,6 +517,7 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   void setGoals(int daily, int weekly) {
     dailyGoal = daily.clamp(1, 1440).toInt();
     weeklyGoal = weekly.clamp(1, 10080).toInt();
+    refreshEngagementReminders();
     _save();
     notifyListeners();
   }
@@ -621,7 +698,10 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) pause();
-    if (state == AppLifecycleState.resumed) _checkReminders();
+    if (state == AppLifecycleState.resumed) {
+      _checkReminders();
+      refreshEngagementReminders(force: true);
+    }
   }
 
   @override
@@ -631,6 +711,17 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
     pause();
     _watch.stop();
     _timer?.cancel();
+    // Account-scoped alarms must not survive a logout/account switch.
+    if (scheduleDevice) {
+      unawaited(
+        StudyNotificationScheduler.instance.cancel('$storageKey:engagement'),
+      );
+      for (final task in _tasks) {
+        unawaited(
+          StudyNotificationScheduler.instance.cancel('$storageKey:${task.id}'),
+        );
+      }
+    }
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -639,13 +730,19 @@ class StudyTracker extends ChangeNotifier with WidgetsBindingObserver {
 final studyTrackerProvider = ChangeNotifierProvider<StudyTracker>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   final uid = user?.uid ?? 'guest';
-  final tracker = StudyTracker(ref.read(sharedPrefsProvider), 'hyzen_study_v1_$uid', (
-    task,
-  ) {
-    ref
-        .read(notificationsProvider.notifier)
-        .addLocalReminder('Study reminder', task.title, task.id);
-  });
-  if (user != null && studyApiBase.isNotEmpty && ref.watch(firebaseReadyProvider)) { tracker.attachCloud(StudyCloud(user)); }
+  final tracker = StudyTracker(
+    ref.read(sharedPrefsProvider),
+    'hyzen_study_v1_$uid',
+    (task) {
+      ref
+          .read(notificationsProvider.notifier)
+          .addLocalReminder('Study reminder', task.title, task.id);
+    },
+  );
+  if (user != null &&
+      studyApiBase.isNotEmpty &&
+      ref.watch(firebaseReadyProvider)) {
+    tracker.attachCloud(StudyCloud(user));
+  }
   return tracker;
 });

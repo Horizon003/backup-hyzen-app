@@ -23,7 +23,14 @@ class CampusEntry {
   );
   final int rank, year, minutes, points;
   final String name, uid;
-  Map<String,dynamic> toJson() => {'rank':rank,'alias':name,'academicYear':year,'verifiedMinutes':minutes,'score':points,'uid':uid};
+  Map<String, dynamic> toJson() => {
+    'rank': rank,
+    'alias': name,
+    'academicYear': year,
+    'verifiedMinutes': minutes,
+    'score': points,
+    'uid': uid,
+  };
   factory CampusEntry.fromMap(Map<String, dynamic> d) => CampusEntry(
     (d['rank'] as num?)?.toInt() ?? 0,
     (d['alias'] ?? 'Student').toString(),
@@ -35,8 +42,15 @@ class CampusEntry {
 }
 
 class CampusBoard {
-  const CampusBoard(this.status, this.entries, this.mine, this.updatedAt,
-    {this.next, this.generation, this.cached = false});
+  const CampusBoard(
+    this.status,
+    this.entries,
+    this.mine,
+    this.updatedAt, {
+    this.next,
+    this.generation,
+    this.cached = false,
+  });
   final String status;
   final List<CampusEntry> entries;
   final CampusEntry? mine;
@@ -47,62 +61,122 @@ class CampusBoard {
 }
 
 class CampusController extends StateNotifier<AsyncValue<CampusBoard>> {
-  CampusController(this.cloud, this.prefs, this.key, this.period) : super(const AsyncLoading()) {
+  CampusController(this.cloud, this.prefs, this.key, this.period)
+    : super(const AsyncLoading()) {
     if (cloud == null) {
-      state = const AsyncData(CampusBoard('Verified Professional Rank is not connected yet.', [], null, null));
-    } else { unawaited(load()); }
+      state = const AsyncData(
+        CampusBoard(
+          'Verified Professional Rank is not connected yet.',
+          [],
+          null,
+          null,
+        ),
+      );
+    } else {
+      unawaited(load());
+    }
   }
   final StudyCloud? cloud;
   final SharedPreferences prefs;
   final String key, period;
   bool loading = false;
-  CampusBoard decode(Map<String,dynamic> data, {bool cached = false}) => CampusBoard(
-    data['status'] ?? 'ready',
-    (data['entries'] as List? ?? []).map((e) => CampusEntry.fromMap(Map<String,dynamic>.from(e))).toList(),
-    data['mine'] == null ? null : CampusEntry.fromMap(Map<String,dynamic>.from(data['mine'])),
-    data['updatedAt'] == null ? null : DateTime.fromMillisecondsSinceEpoch(data['updatedAt']),
-    next: data['next'], generation: data['generation'], cached: cached);
+  CampusBoard decode(Map<String, dynamic> data, {bool cached = false}) =>
+      CampusBoard(
+        data['status'] ?? 'ready',
+        (data['entries'] as List? ?? [])
+            .map((e) => CampusEntry.fromMap(Map<String, dynamic>.from(e)))
+            .toList(),
+        data['mine'] == null
+            ? null
+            : CampusEntry.fromMap(Map<String, dynamic>.from(data['mine'])),
+        data['updatedAt'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(data['updatedAt']),
+        next: data['next'],
+        generation: data['generation'],
+        cached: cached,
+      );
   Future<void> load({bool more = false}) async {
     if (loading || cloud == null) return;
     loading = true;
     final prior = state.valueOrNull;
     try {
-      var data = await cloud!.call('readCampusBoard', {'period':period,
-        if (more) 'after':prior?.next, if (more) 'generation':prior?.generation});
-      if (data['status'] == 'refresh') { data = await cloud!.call('readCampusBoard', {'period':period}); more = false; }
+      var data = await cloud!.call('readCampusBoard', {
+        'period': period,
+        if (more) 'after': prior?.next,
+        if (more) 'generation': prior?.generation,
+      });
+      if (data['status'] == 'refresh') {
+        data = await cloud!.call('readCampusBoard', {'period': period});
+        more = false;
+      }
       if (!mounted) return;
       if (more && prior != null) {
-        final rows = {for(final entry in prior.entries) entry.uid:entry.toJson()};
-        for(final row in data['entries'] as List? ?? []) { rows[row['uid']] = Map<String,dynamic>.from(row); }
+        final rows = {
+          for (final entry in prior.entries) entry.uid: entry.toJson(),
+        };
+        for (final row in data['entries'] as List? ?? []) {
+          rows[row['uid']] = Map<String, dynamic>.from(row);
+        }
         data['entries'] = rows.values.toList();
       }
       state = AsyncData(decode(data));
-      await prefs.setString(key,jsonEncode(data));
+      await prefs.setString(key, jsonEncode(data));
     } catch (_) {
       if (!mounted) return;
       try {
         final cached = prefs.getString(key);
-        state = AsyncData(cached == null
-          ? const CampusBoard('Rankings are unavailable. Your local study history is safe.', [], null, null)
-          : decode(Map<String,dynamic>.from(jsonDecode(cached)),cached:true));
-      } catch (_) { state = const AsyncData(CampusBoard('No cached rankings available.',[],null,null)); }
-    } finally { loading = false; }
+        state = AsyncData(
+          cached == null
+              ? const CampusBoard(
+                  'Rankings are unavailable. Your local study history is safe.',
+                  [],
+                  null,
+                  null,
+                )
+              : decode(
+                  Map<String, dynamic>.from(jsonDecode(cached)),
+                  cached: true,
+                ),
+        );
+      } catch (_) {
+        state = const AsyncData(
+          CampusBoard('No cached rankings available.', [], null, null),
+        );
+      }
+    } finally {
+      loading = false;
+    }
   }
+
   Future<void> privacy(String alias, bool optOut) async {
     if (cloud == null) throw StateError('Campus backend is not connected.');
-    await cloud!.call('setRankPrivacy', {'alias':alias,'optOut':optOut});
+    await cloud!.call('setRankPrivacy', {'alias': alias, 'optOut': optOut});
     await prefs.remove(key);
     await load();
   }
+
   @override
-  void dispose() { cloud?.dispose(); super.dispose(); }
+  void dispose() {
+    cloud?.dispose();
+    super.dispose();
+  }
 }
-final campusBoardProvider = StateNotifierProvider.autoDispose.family<CampusController,AsyncValue<CampusBoard>,String>((ref,period) {
-  final user = ref.watch(authStateProvider).valueOrNull;
-  final ready = ref.watch(firebaseReadyProvider) && studyApiBase.isNotEmpty && user != null;
-  return CampusController(ready ? StudyCloud(user) : null, ref.watch(sharedPrefsProvider),
-    'hyzen_campus_${user?.uid ?? 'guest'}_$period',period);
-});
+
+final campusBoardProvider = StateNotifierProvider.autoDispose
+    .family<CampusController, AsyncValue<CampusBoard>, String>((ref, period) {
+      final user = ref.watch(authStateProvider).valueOrNull;
+      final ready =
+          ref.watch(firebaseReadyProvider) &&
+          studyApiBase.isNotEmpty &&
+          user != null;
+      return CampusController(
+        ready ? StudyCloud(user) : null,
+        ref.watch(sharedPrefsProvider),
+        'hyzen_campus_${user?.uid ?? 'guest'}_$period',
+        period,
+      );
+    });
 
 class CampusRankScreen extends ConsumerStatefulWidget {
   const CampusRankScreen({super.key});
@@ -113,31 +187,80 @@ class CampusRankScreen extends ConsumerStatefulWidget {
 class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
   var period = 'week';
   Future<void> _privacy() async {
-    final alias = TextEditingController(text: ref.read(campusBoardProvider(period)).valueOrNull?.mine?.name ?? 'Student');
+    final alias = TextEditingController(
+      text:
+          ref.read(campusBoardProvider(period)).valueOrNull?.mine?.name ??
+          'Student',
+    );
     var optOut = true;
     String? error;
     var saving = false;
     try {
-      await showDialog<void>(context: context, builder: (dialog) => StatefulBuilder(builder: (dialog, update) => AlertDialog(
-        title: const Text('Ranking privacy'),
-        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Only verified campus members can join. Your alias is shown to other verified members.'),
-          TextField(controller: alias, maxLength: 40, decoration: const InputDecoration(labelText: 'Display alias')),
-          SwitchListTile(title: const Text('Hide me from ranking'), value: optOut, onChanged: saving ? null : (v) => update(() => optOut=v)),
-          if (error != null) Text(error!),
-        ])),
-        actions: [
-          TextButton(onPressed: saving ? null : () => Navigator.pop(dialog), child: const Text('Cancel')),
-          FilledButton(onPressed: saving ? null : () async {
-            if (alias.text.trim().isEmpty) { update(() => error='Enter an alias.'); return; }
-            update(() => saving=true);
-            try {
-              await ref.read(campusBoardProvider(period).notifier).privacy(alias.text.trim(),optOut);
-              if(dialog.mounted) Navigator.pop(dialog);
-            } catch (_) { if(dialog.mounted) update(() {saving=false;error='Verified campus service is unavailable. No privacy change was saved.';}); }
-          },child: const Text('Save'))],
-      )));
-    } finally { alias.dispose(); }
+      await showDialog<void>(
+        context: context,
+        builder: (dialog) => StatefulBuilder(
+          builder: (dialog, update) => AlertDialog(
+            title: const Text('Ranking privacy'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Verified students from all colleges join their professional year. Your alias is shown to other participants.',
+                  ),
+                  TextField(
+                    controller: alias,
+                    maxLength: 40,
+                    decoration: const InputDecoration(
+                      labelText: 'Display alias',
+                    ),
+                  ),
+                  SwitchListTile(
+                    title: const Text('Hide me from ranking'),
+                    value: optOut,
+                    onChanged: saving ? null : (v) => update(() => optOut = v),
+                  ),
+                  if (error != null) Text(error!),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: saving ? null : () => Navigator.pop(dialog),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        if (alias.text.trim().isEmpty) {
+                          update(() => error = 'Enter an alias.');
+                          return;
+                        }
+                        update(() => saving = true);
+                        try {
+                          await ref
+                              .read(campusBoardProvider(period).notifier)
+                              .privacy(alias.text.trim(), optOut);
+                          if (dialog.mounted) Navigator.pop(dialog);
+                        } catch (_) {
+                          if (dialog.mounted)
+                            update(() {
+                              saving = false;
+                              error =
+                                  'Ranking service is unavailable. No privacy change was saved.';
+                            });
+                        }
+                      },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      alias.dispose();
+    }
   }
 
   @override
@@ -190,7 +313,11 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
               context.canPop() ? context.pop() : context.go('/home'),
         ),
         actions: [
-          IconButton(tooltip: 'Ranking privacy', onPressed: _privacy, icon: const Icon(Icons.privacy_tip_outlined)),
+          IconButton(
+            tooltip: 'Ranking privacy',
+            onPressed: _privacy,
+            icon: const Icon(Icons.privacy_tip_outlined),
+          ),
           IconButton(
             icon: Icon(Icons.info_outline_rounded, color: ink),
             onPressed: () => _showRules(context),
@@ -264,7 +391,10 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
             segments: const [
               ButtonSegment(value: 'week', label: Text('This Week')),
               ButtonSegment(value: 'month', label: Text('This Month')),
-              ButtonSegment(value: 'semester', label: Text('Professional Total')),
+              ButtonSegment(
+                value: 'semester',
+                label: Text('Professional Total'),
+              ),
             ],
             selected: {period},
             showSelectedIcon: false,
@@ -283,7 +413,13 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
                 panel(Text('Could not load verified rankings: $e')),
             data: (data) => Column(
               children: [
-                if (data.next != null) TextButton(onPressed: () => ref.read(campusBoardProvider(period).notifier).load(more:true), child: const Text('Load more learners')),
+                if (data.next != null)
+                  TextButton(
+                    onPressed: () => ref
+                        .read(campusBoardProvider(period).notifier)
+                        .load(more: true),
+                    child: const Text('Load more learners'),
+                  ),
                 panel(
                   Column(
                     children: [
@@ -432,12 +568,12 @@ class _CampusRankScreenState extends ConsumerState<CampusRankScreen> {
       title: const Text('How Professional Rank Works'),
       content: const SingleChildScrollView(
         child: Text(
-          'Ranks must be generated by the verified campus backend from active study sessions, not from editable local time.\n\n'
-          'Proposed scoring: 1 point per verified minute (max 360 minutes per day), '
+          'All colleges compete together within each verified professional year (1–5). Weekly, monthly and Professional Total scores stay separate.\n\n'
+          'Scoring: 1 point per verified minute (max 360 minutes per day), '
           '+2 points per valid 10-minute session (max 5 sessions per day), '
           'and +5 for each consecutive qualifying day after the first.\n\n'
-          'Your school must verify membership and students must be able to opt out. '
-          'Until this backend is deployed and verified, no fake rankings are shown.',
+          'An administrator verifies your professional year and you can opt out. Only server-timed active sessions earn points; offline personal history does not. '
+          'Periods use Pakistan time. No ranking is shown without verified data.',
         ),
       ),
       actions: [

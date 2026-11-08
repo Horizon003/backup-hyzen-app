@@ -1,6 +1,7 @@
 import {createRemoteJWKSet,jwtVerify} from 'jose';
 import {validateMessage,selectRecipients} from './policy.js';
 import {materializeRecipients} from './draft.js';
+import {decodeMember,membership,rememberMember,syncRoster,pulse,syncEvents,readBoard,rankPrivacy} from './ranking.js';
 const keys=createRemoteJWKSet(new URL('https://www.googleapis.com/service_accounts/v1/metadata/jwk/securetoken@system.gserviceaccount.com'));
 async function identity(request,env) {
   const token=(request.headers.get('authorization')||'').match(/^Bearer (.+)$/)?.[1];
@@ -16,8 +17,7 @@ async function profiles(token,env) {
     const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
     if(!response.ok) throw Error('Verified profile access unavailable. Apply the documented Firestore admin rules.');
     const data=await response.json();
-    rows.push(...(data.documents||[]).map(doc=>({uid:doc.name.split('/').at(-1),verified:doc.fields?.verified?.booleanValue===true,
-      academicYear:Number(doc.fields?.academicYear?.integerValue),campusId:doc.fields?.campusId?.stringValue,pushOptOut:doc.fields?.pushOptOut?.booleanValue===true})));
+    rows.push(...(data.documents||[]).map(decodeMember));
     page=data.nextPageToken||'';
     if(rows.length>3000)throw Error('Audience exceeds the current bounded sender limit.');
   } while(page);
@@ -39,6 +39,15 @@ export default {
     if(request.method==='OPTIONS')return reply({});
     try {
       const user=await identity(request,env),path=new URL(request.url).pathname;
+      if(['/syncStudy','/studyPulse','/readCampusBoard','/setRankPrivacy'].includes(path)&&request.method==='POST') {
+        const text=await request.text();if(text.length>32768)return reply({error:'Payload too large'},413);
+        const data=JSON.parse(text).data||{};
+        if(path==='/syncStudy')return reply({result:await syncEvents(env.DB,user.uid,data.events)});
+        const member=await membership(user,env);
+        await rememberMember(env.DB,member);
+        const result=path==='/studyPulse'?await pulse(env.DB,member,data):path==='/setRankPrivacy'?await rankPrivacy(env.DB,member,data):await readBoard(env.DB,member,data);
+        return reply({result});
+      }
       if(path==='/inbox' && request.method==='GET') {
         const rows=await env.DB.prepare("SELECT m.id,m.title,m.body,m.route,m.category,m.created_at FROM messages m JOIN recipients r ON r.message_id=m.id WHERE r.uid=? AND m.state='accepted' ORDER BY m.created_at DESC LIMIT 100").bind(user.uid).all();
         return reply({items:rows.results});
@@ -47,6 +56,7 @@ export default {
       if(path==='/history' && request.method==='GET')return reply(await env.DB.prepare('SELECT id,title,body,route,category,state,provider_id,created_at,error FROM messages ORDER BY created_at DESC LIMIT 100').all());
       if(path==='/audiences' && request.method==='GET') {
         const rows=await profiles(user.token,env);
+        await syncRoster(env.DB,rows);
         return reply({verified:rows.filter(p=>p.verified).length,colleges:[...new Set(rows.filter(p=>p.verified).map(p=>p.campusId).filter(Boolean))]});
       }
       if(path.startsWith('/status/') && request.method==='GET') {
