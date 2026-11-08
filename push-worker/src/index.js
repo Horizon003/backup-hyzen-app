@@ -1,5 +1,6 @@
 import {createRemoteJWKSet,jwtVerify} from 'jose';
 import {validateMessage,selectRecipients} from './policy.js';
+import {materializeRecipients} from './draft.js';
 const keys=createRemoteJWKSet(new URL('https://www.googleapis.com/service_accounts/v1/metadata/jwk/securetoken@system.gserviceaccount.com'));
 async function identity(request,env) {
   const token=(request.headers.get('authorization')||'').match(/^Bearer (.+)$/)?.[1];
@@ -65,14 +66,12 @@ export default {
         if(!row) {
           const audience=selectRecipients(await profiles(user.token,env),message);
           if(!audience.length)return reply({error:'No eligible verified recipients'},422);
-          const statements=[env.DB.prepare('INSERT OR IGNORE INTO messages(id,fingerprint,title,body,route,category,audience,state,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(message.id,fingerprint,message.title,message.body,message.route,message.category,JSON.stringify(audience),'pending',Date.now()),...audience.map(uid=>env.DB.prepare('INSERT OR IGNORE INTO recipients(message_id,uid) VALUES(?,?)').bind(message.id,uid))];
-          for(let i=0;i<statements.length;i+=80)await env.DB.batch(statements.slice(i,i+80));
+          await env.DB.prepare('INSERT OR IGNORE INTO messages(id,fingerprint,title,body,route,category,audience,state,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(message.id,fingerprint,message.title,message.body,message.route,message.category,JSON.stringify(audience),'pending',Date.now()).run();
           row=await env.DB.prepare('SELECT * FROM messages WHERE id=?').bind(message.id).first();
         }
         if(row.fingerprint!==fingerprint)return reply({error:'Conflicting message ID'},409);
         // Repair an interrupted recipient write before retrying the same send.
-        const audience=JSON.parse(row.audience);
-        for(let i=0;i<audience.length;i+=80)await env.DB.batch(audience.slice(i,i+80).map(uid=>env.DB.prepare('INSERT OR IGNORE INTO recipients(message_id,uid) VALUES(?,?)').bind(message.id,uid)));
+        await materializeRecipients(env.DB,row,fingerprint);
         try {
           const result=await provider(env,'notifications','POST',{app_id:env.ONESIGNAL_APP_ID,target_channel:'push',include_aliases:{external_id:JSON.parse(row.audience)},headings:{en:message.title},contents:{en:message.body},data:{route:message.route,messageId:message.id,category:message.category},idempotency_key:message.id});
           if(!result.id)throw Error('OneSignal found no subscribed recipients.');
@@ -83,6 +82,6 @@ export default {
         }
       }
       return reply({error:'Not found'},404);
-    }catch(error){return reply({error:error.message==='401'?'Sign in required':error.message},error.message==='401'?401:400);}
+    }catch(error){return reply({error:error.message==='401'?'Sign in required':error.message},error.message==='401'?401:error.status||400);}
   }
 };
