@@ -461,7 +461,7 @@ class _StudyGoalsScreenState extends ConsumerState<StudyGoalsScreen> {
                 Expanded(
                   child: _LinkCard(
                     icon: Icons.emoji_events_rounded,
-                    title: 'Campus Rank',
+                    title: 'Professional Rank',
                     value: 'View leaderboard',
                     onTap: () => context.push('/campus-rank'),
                   ),

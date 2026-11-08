@@ -10,6 +10,11 @@ class PushService {
   static final instance = PushService._();
   bool initialized = false;
   String? uid;
+  String? identityError;
+  final subscriptionState = ValueNotifier<String>(
+    'Push unavailable on this platform',
+  );
+  bool _loggedSubscription = false;
   Future<void> _identity = Future.value();
   final events = StreamController<Map<String, dynamic>>.broadcast();
   final pending = <Map<String, dynamic>>[];
@@ -21,12 +26,28 @@ class PushService {
     }
     initialized = true;
     OneSignal.initialize(hyzenOneSignalAppId);
+    OneSignal.User.pushSubscription.addObserver((_) => _updateSubscription());
+    _updateSubscription();
     OneSignal.Notifications.addForegroundWillDisplayListener((event) {
       _receive(event.notification, false);
     });
     OneSignal.Notifications.addClickListener(
       (event) => _receive(event.notification, true),
     );
+  }
+
+  void _updateSubscription() {
+    final id = OneSignal.User.pushSubscription.id;
+    final registered = id != null && id.isNotEmpty && !id.startsWith('local-');
+    subscriptionState.value = !registered
+        ? 'Waiting for device registration'
+        : OneSignal.User.pushSubscription.optedIn == true
+        ? 'Device registered · push enabled'
+        : 'Device registered · push disabled';
+    if (kDebugMode && registered && !_loggedSubscription) {
+      _loggedSubscription = true;
+      debugPrint('Hyzen OneSignal test subscription: $id');
+    }
   }
 
   void _receive(OSNotification notification, bool opened) {
@@ -50,12 +71,19 @@ class PushService {
 
   Future<void> identify(String? next) {
     if (!initialized) return Future.value();
-    _identity = _identity.catchError((Object _) {}).then((_) async {
-      if (uid == next) return;
-      await OneSignal.logout();
-      uid = next;
-      if (next != null) await OneSignal.login(next);
-    });
+    _identity = _identity
+        .catchError((Object _) {})
+        .then((_) async {
+          if (uid == next) return;
+          await OneSignal.logout();
+          uid = next;
+          if (next != null) await OneSignal.login(next);
+          identityError = null;
+        })
+        .catchError((Object _) {
+          identityError =
+              'Push identity update failed. Sign in again to retry.';
+        });
     return _identity;
   }
 

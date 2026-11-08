@@ -173,8 +173,11 @@ class NotificationsScreen extends ConsumerWidget {
               context: context,
               builder: (dialog) => AlertDialog(
                 title: const Text('Android push notifications'),
-                content: const Text(
-                  'Enable alerts for announcements, new material, rank and app updates. Study reminders use local device schedules.',
+                content: ValueListenableBuilder<String>(
+                  valueListenable: PushService.instance.subscriptionState,
+                  builder: (_, status, child) => Text(
+                    '$status\n\nEnable announcements, new material, rank and app updates. Study reminders use local device schedules.',
+                  ),
                 ),
                 actions: [
                   TextButton(

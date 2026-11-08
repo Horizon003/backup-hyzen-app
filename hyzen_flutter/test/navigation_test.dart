@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:hyzen_pharmd/features/notifications/notifications_screen.dart';
 import 'package:hyzen_pharmd/features/study_progress/study_forms.dart';
 import 'package:hyzen_pharmd/features/study_progress/study_tracker.dart';
 import 'package:hyzen_pharmd/features/home/presentation/home_time_artwork.dart';
@@ -169,6 +170,38 @@ void main() {
     container.read(routerProvider).go(path);
     await tester.pumpAndSettle();
   }
+
+  testWidgets('push inbox deduplicates receipt and preserves read status', (
+    tester,
+  ) async {
+    await open(tester, '/home');
+    final inbox = container.read(notificationsProvider.notifier);
+    const message = {
+      'id': 'push_same-provider-id',
+      'title': 'New material',
+      'body': 'Notes ready',
+      'url': '/study',
+    };
+    inbox.receivePush(message);
+    inbox.receivePush(message);
+    expect(
+      container
+          .read(notificationsProvider)
+          .where((m) => m['id'] == message['id'])
+          .length,
+      1,
+    );
+    inbox.receivePush({...message, 'opened': true});
+    inbox.receivePush(message);
+    expect(
+      container
+          .read(notificationsProvider)
+          .singleWhere((m) => m['id'] == message['id'])['read'],
+      isTrue,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
 
   test('HOME-03 time greeting boundaries', () {
     expect(homeGreeting(DateTime(2026, 1, 1, 6)), 'Good morning');
@@ -1495,26 +1528,39 @@ void main() {
       tester.platformDispatcher.textScaleFactorTestValue = 1;
       for (final mode in [ThemeMode.light, ThemeMode.dark]) {
         container.read(themeModeProvider.notifier).set(mode);
-        for (final hour in [6,9,12,15,18,22]) {
-          qaClock = DateTime(2026,1,1,hour);
-          await open(tester,'/home');
+        for (final hour in [6, 9, 12, 15, 18, 22]) {
+          qaClock = DateTime(2026, 1, 1, hour);
+          await open(tester, '/home');
           container.read(homePhaseClockProvider).refresh();
-          tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);
+          tester
+              .state<ScrollableState>(find.byType(Scrollable).first)
+              .position
+              .jumpTo(0);
           await tester.pumpAndSettle();
-          await expectLater(find.byKey(const ValueKey('qa-app')),
-            matchesGoldenFile('../qa/pr9/home-phase-$hour-${mode.name}.png'));
-          expect(tester.takeException(),isNull);
+          await expectLater(
+            find.byKey(const ValueKey('qa-app')),
+            matchesGoldenFile('../qa/pr9/home-phase-$hour-${mode.name}.png'),
+          );
+          expect(tester.takeException(), isNull);
         }
-        for (final reminder in [false,true]) {
-          await open(tester,'/study-goals');
+        for (final reminder in [false, true]) {
+          await open(tester, '/study-goals');
           final context = tester.element(find.byType(Scaffold).last);
-          showStudyForm(context,container.read(studyTrackerProvider),reminder:reminder);
+          showStudyForm(
+            context,
+            container.read(studyTrackerProvider),
+            reminder: reminder,
+          );
           await tester.pumpAndSettle();
-          await expectLater(find.byKey(const ValueKey('qa-app')),
-            matchesGoldenFile('../qa/pr9/form-${reminder ? 'reminder' : 'task'}-${mode.name}.png'));
+          await expectLater(
+            find.byKey(const ValueKey('qa-app')),
+            matchesGoldenFile(
+              '../qa/pr9/form-${reminder ? 'reminder' : 'task'}-${mode.name}.png',
+            ),
+          );
           Navigator.pop(tester.element(find.byType(TextFormField).first));
           await tester.pumpAndSettle();
-          expect(tester.takeException(),isNull);
+          expect(tester.takeException(), isNull);
         }
       }
     }
